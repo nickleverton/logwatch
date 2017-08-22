@@ -206,6 +206,9 @@ while (defined($ThisLine = <STDIN>)) {
       # Some hosts ask for TLS even when not offered (generalised to all cmds)
       $Proto{$ThisLine}++;
    }
+   elsif ( $ThisLine =~ /TLS error on connection from (\S+) \(([^)]*)\) \[(\S+)\]:(\d+) I=\[(\S+)\]:(\d+) \(send\): Error in the push function\./ ) {
+      # Ignore this, office 365 connector early disconnect.
+   }
    elsif ( $ThisLine =~ /Connection from .* too many connections from that IP address/ ) {
       # Some hosts make lots of simultaneous connections
 	  # this is an extra error message when logging is high
