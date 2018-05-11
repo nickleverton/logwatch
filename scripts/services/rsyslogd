@@ -68,6 +68,7 @@ while (defined($ThisLine = <STDIN>)) {
       $ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/ or
       $ThisLine =~ /^imjournal: journal reloaded/ or
       $ThisLine =~ /^message repeated \d+ times:/ or
+      $ThisLine =~ m!^imuxsock: Acquired UNIX socket '/run/systemd/journal/syslog' \(fd 3\) from systemd! or
       0 # This line prevents blame shifting as lines are added above
       ) {
       # Ignore these lines
