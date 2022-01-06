@@ -1,0 +1,198 @@
+########################################################
+# Please file all bug reports, patches, and feature
+# requests under:
+#      https://sourceforge.net/p/logwatch/_list/tickets
+# Help requests and discusion can be filed under:
+#      https://sourceforge.net/p/logwatch/discussion/
+########################################################
+
+#######################################################
+## Copyright (c) 2021-2022 Orion Poplawski
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use warnings;
+use strict;
+use Logwatch ':all';
+
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $IgnoreHost = $ENV{'ignore_host'} || "";
+my $IllegalUsersThreshold = $ENV{'illegal_users_threshold'} || 0;
+$main::DoLookup = $ENV{'sshd_ip_lookup'}; 
+my $DebugCounter = 0;
+
+#Init String Containers
+my (
+$Host,          $Key,           $Method,
+$Port,          $User,          $user,
+);
+
+my %Users = ();
+my %NonexistentUsers = ();
+my %BadPassword = ();
+my %OtherList = ();
+
+my $NetworkErrors = 0;
+my $Kills = 0;
+
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+   if (
+       ($ThisLine =~ /Connection reset by peer/) or
+       ($ThisLine =~ /^Child connection from/) or
+       ($ThisLine =~ /Disconnect received/) or
+       ($ThisLine =~ /Exited normally/) or
+       ($ThisLine =~ /Not backgrounding/) or
+       0 # This line prevents blame shifting as lines are added above
+   ) {
+      # Ignore these
+   } elsif ( ($Method,$User,$Host,$Port) = ($ThisLine =~ /^(\S+) auth succeeded for '(.*)' from ([\d\.:a-f]+)(?:%\w+)?:(\d+)/) ) {
+      if ($Detail >= 20) {
+         $Users{$User}{$Host}{$Method}++;
+      } else {
+         if ( $Host !~ /$IgnoreHost/ ) {
+            $Users{$User}{$Host}{"(all)"}++;
+         }
+      }
+   } elsif ( ($Method,$User,$Key,$Host,$Port) = ($ThisLine =~ /^(\S+) auth succeeded for '(.*)' with.* key (.*) from ([\d\.:a-f]+)(?:%\w+)?:(\d+)/) ) {
+      if ($Detail >= 20) {
+         $Users{$User}{$Host}{$Method . " ($Key)"}++;
+      } else {
+         if ( $Host !~ /$IgnoreHost/ ) {
+            $Users{$User}{$Host}{"(all)"}++;
+         }
+      }
+   } elsif (
+      ($ThisLine =~ m/^Error reading/ ) or
+      0
+   ) {
+      $NetworkErrors++;
+   } elsif ( ($User,$Host) = ($ThisLine =~ /^Bad password attempt for '(.*)' from ([^ ]*):/)) {
+      $BadPassword{$Host}{$User}++;
+   } elsif ( ($Host) = ($ThisLine =~ /^Login attempt for nonexistent user from ([^ ]*):/)) {
+      $NonexistentUsers{$Host}++;
+   } elsif ( $ThisLine =~ /^Login attempt for nonexistent user/) {
+      $NonexistentUsers{"unknown"}++;
+   } elsif ( $ThisLine =~ m/Terminated by signal/) {
+      $Kills++;
+   } else {
+      $OtherList{$ThisLine} += 1;
+   }
+}
+
+###########################################################
+
+sub timesplural {
+   my ($count) = @_;
+   my $plural = ($count > 1) ? "s" : "";
+   return "$count Time$plural\n";
+}
+
+if ($NetworkErrors) {
+   print "\nNetwork Read Write Errors: " . $NetworkErrors . "\n";
+}
+if ($Kills) {
+   print "\nKilled: " . timesplural($Kills);
+}
+
+if (keys %BadPassword) {
+   print "\nBad password attempts:\n";
+   foreach my $ip (sort SortIP keys %BadPassword) {
+      my $name = LookupIP($ip);
+      my $totcount = 0;
+      foreach my $user (keys %{$BadPassword{$ip}}) {
+         $totcount += $BadPassword{$ip}{$user};
+      }
+      print "   $name: ". timesplural($totcount);
+      if ($Detail >= 5) {
+         my $sort = CountOrder(%{$BadPassword{$ip}});
+         foreach my $user (sort $sort keys %{$BadPassword{$ip}}) {
+            my $val = $BadPassword{$ip}{$user};
+            print "      $user: " . timesplural($val);
+         }
+      }
+   }
+}
+
+if (keys %NonexistentUsers) {
+   print "\nNon-existent users from";
+   if ($IllegalUsersThreshold) {
+      print " (with threshold >= $IllegalUsersThreshold)";
+      }
+   print ":\n";
+   foreach my $ip (sort SortIP keys %NonexistentUsers) {
+      my $name = LookupIP($ip);
+      print "   $name: " . timesplural($NonexistentUsers{$ip});
+   }
+}
+
+if (keys %Users) {
+   print "\nUsers logging in through sshd:\n";
+   foreach my $user (sort {$a cmp $b} keys %Users) {
+      print "   $user:\n";
+      if ($Detail < 20) {
+         my $totalSort = TotalCountOrder(%{$Users{$user}}, \&SortIP);
+         foreach my $ip (sort $totalSort keys %{$Users{$user}}) {
+            my $name = LookupIP($ip);
+            my $val  = (values %{$Users{$user}{$ip}})[0];
+            print "      $name: " . timesplural($val);
+         }
+      } else {
+         my %Methods = ();
+         foreach my $ip (keys %{$Users{$user}}) {
+            foreach my $method (keys %{$Users{$user}{$ip}}) {
+               $Methods{$method}{$ip} = $Users{$user}{$ip}{$method};
+            }
+         }
+         if (scalar keys %{$Users{$user}} < scalar %Methods) {
+            my $totalSort = TotalCountOrder(%{$Users{$user}}, \&SortIP);
+            foreach my $ip (sort $totalSort keys %{$Users{$user}}) {
+               my $name = LookupIP($ip);
+               print "      $name:\n";
+               my $sort = CountOrder(%{$Users{$user}{$ip}});
+               foreach my $method (sort $sort keys %{$Users{$user}{$ip}}) {
+                  my $val = $Users{$user}{$ip}{$method};
+                  print "         $method: " . timesplural($val);
+               }
+            }
+         } else {
+            my $totalSort = TotalCountOrder(%Methods);
+            foreach my $method (sort $totalSort keys %Methods) {
+               print "      $method:\n";
+               my $sort = CountOrder(%{$Methods{$method}});
+               foreach my $ip (sort $sort keys %{$Methods{$method}}) {
+                  my $name = LookupIP($ip);
+                  my $val  = (values %{$Users{$user}{$ip}})[0];
+                  print "         $name: " . timesplural($val);
+               }
+            }
+         }
+      }
+   }
+}
+
+if (keys %OtherList) {
+   print "\n**Unmatched Entries**\n";
+   print "$_ : " . timesplural($OtherList{$_}) foreach sort keys %OtherList;
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
