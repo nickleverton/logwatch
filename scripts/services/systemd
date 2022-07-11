@@ -64,6 +64,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    if ($ThisLine =~ /^(Activat|Deactivat|Mount|Unmount|Reload|Start|Stopp)ing / or
        $ThisLine =~ /^Finished / or
+       # sssd users @ in usernames
+       $ThisLine =~ /^Accepting user\/group name '.*\@.*', which does not match strict user\/group name rules\.$/ or
        # These events will be caught with the Failed with or failed message
        $ThisLine =~ /^Failed to start / or
        $ThisLine =~ /Failed to .* socket / or
