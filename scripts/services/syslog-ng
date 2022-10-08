@@ -313,7 +313,7 @@ if ($Perms) {
         }
         print "\n";
     } else {
-        printf "\n$-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms;
+        printf "\n%-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms;
     }
 }
 
