@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:tns="http://www.example.org/syslog-ng/"
+	targetNamespace="http://www.example.org/syslog-ng/">
+	<element name="LogwatchReport" type="tns:logwatchReportType"></element>
+
+	<complexType name="logwatchReportType">
+		<sequence>
+			<element name="Service" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="perms" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="FileOpenErrors" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="Connections" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element name="Connection" minOccurs="1"
+							maxOccurs="unbounded">
+							<complexType>
+								<sequence>
+									<element ref="tns:Count" minOccurs="1"
+										maxOccurs="unbounded">
+									</element>
+								</sequence>
+								<attribute name="cat" type="string" use="required">
+								</attribute>
+							</complexType>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="WriteErrors" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="ExceedConnections" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1" maxOccurs="1">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="LogStatistics" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+
+			<element name="ConnectionStates" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element name="ConnectionState" minOccurs="1"
+							maxOccurs="unbounded">
+							<complexType>
+								<sequence>
+									<element name="interface" minOccurs="0"
+										maxOccurs="unbounded">
+										<complexType>
+											<sequence>
+												<element ref="tns:Count" minOccurs="0"
+													maxOccurs="unbounded">
+												</element>
+											</sequence>
+											<attribute name="addr" type="string" use="required">
+											</attribute>
+										</complexType>
+									</element>
+								</sequence>
+								<attribute name="state" type="string" use="required">
+								</attribute>
+							</complexType>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="Drops" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1" maxOccurs="1">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="InternalErrors" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element name="InternalError" minOccurs="1"
+							maxOccurs="unbounded">
+							<complexType>
+								<sequence>
+									<element ref="tns:Count" minOccurs="0"
+										maxOccurs="unbounded">
+									</element>
+								</sequence>
+								<attribute name="class" type="string" use="required">
+								</attribute>
+							</complexType>
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="Warnings" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded">
+						</element>
+					</sequence>
+				</complexType>
+			</element>
+			<element name="UnmatchedEntries" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<sequence>
+						<element ref="tns:Count" minOccurs="1"
+							maxOccurs="unbounded"></element>
+					</sequence>
+				</complexType>
+			</element>
+		</sequence>
+	</complexType>
+
+	<element name="Count" type="tns:countType"></element>
+
+	<complexType name="countType">
+		<attribute name="count" type="int"></attribute>
+		<attribute name="cat" type="string" use="optional"></attribute>
+		<attribute name="subcat" type="string" use="optional"></attribute>
+		<attribute name="msg" type="string" use="optional"></attribute>
+	</complexType>
+
+</schema>
