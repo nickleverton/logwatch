@@ -2725,6 +2725,7 @@ LINE: while ( <> ) {
    # ignored postfix services...
    next if $service_name eq 'postlog';
    next if $service_name =~ /^$Opts{'ignore_services'}$/o;
+   next if $p1 =~ /^[A-Z0-9]+: passing <[^>]+> to transport=lmtp$/;
 
    # common log entries up front
    if ($p1 =~ s/^connect from //) {
