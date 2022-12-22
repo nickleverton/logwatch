@@ -84,7 +84,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UnalignedErrors{$1}++;
    } elsif ($ThisLine =~ /([^(]*)\(\d+\): floating-point assist fault at ip/) {
       $FPAssists{$1}++;
-   } elsif ($ThisLine =~ /(?:[KK]illed|[Kk]ill) process \d+ \((.*)\)/) {
+   } elsif ($ThisLine =~ /(?:[Kk]illed|[Kk]ill) process \d+ \((.*)\)/) {
       $OOM{$1}++;
    } elsif ($ThisLine =~ /(EDAC (MC|PCI)\d:.*)/) {
       # Standard boot messages
