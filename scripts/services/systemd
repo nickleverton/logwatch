@@ -173,6 +173,13 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ConfigError{$reason}{$service}++;
    } elsif (($service,$reason) = ($ThisLine =~ /^\[?([^\]:]+(?::\d+)?)[\]:]? (Unknown .* in section '.*')/)) {
       $ConfigError{$reason}{$service}++;
+   # Skipped goes before failed to catch "was skipped because all trigger condition checks failed."
+   } elsif (($name) = ($ThisLine =~ /^Condition check resulted in (.*) being skipped\.$/)) {
+      $Skipped{$name}++ if $Detail;
+   } elsif (($name) = ($ThisLine =~ /^(.*): Skipped due to /)) {
+      $Skipped{$name}++ if $Detail;
+   } elsif (($name) = ($ThisLine =~ /^(.*) was skipped because/)) {
+      $Skipped{$name}++ if $Detail;
    } elsif (($service) = ($ThisLine =~ /(\S+): Failed (:?to execute command|with result)/)) {
       $Failed{$service}++;
    } elsif (($service) = ($ThisLine =~ /(\S+) failed\.$/)) {
@@ -210,12 +217,6 @@ while (defined(my $ThisLine = <STDIN>)) {
       $TimeChanged++;
    } elsif (my ($slice) = ($ThisLine =~ /^Created slice (.*)\.$/)) {
       $Slice{$slice}++;
-   } elsif (($name) = ($ThisLine =~ /^Condition check resulted in (.*) being skipped\.$/)) {
-      $Skipped{$name}++ if $Detail;
-   } elsif (($name) = ($ThisLine =~ /^(.*): Skipped due to /)) {
-      $Skipped{$name}++ if $Detail;
-   } elsif (($name) = ($ThisLine =~ /^(.*) was skipped because/)) {
-      $Skipped{$name}++ if $Detail;
    } elsif (($pidfile) = ($ThisLine =~ /^PID file (.*) not readable \(yet\?\) after start\.$/)) {
       $Slow{$pidfile}++;
    } elsif (($pidfile) = ($ThisLine =~ /Can't open PID file (.*) \(yet\?\) after start:/)) {
