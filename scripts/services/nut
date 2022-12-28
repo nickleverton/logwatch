@@ -67,6 +67,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^upsd: mainloop: Interrupted system call/
        or $ThisLine =~ /^upsd: Network UPS Tools upsd/
        or $ThisLine =~ /^upsd: fopen \S+\/upsd.pid: No such file or directory/
+       or $ThisLine =~ /^upsd: Running as foreground process, not saving a PID file/
        or $ThisLine =~ /^upsmon: Connected to/
        or $ThisLine =~ /^upsmon: Connecting in SSL to/
        or $ThisLine =~ /^upsmon: Certificate verification is disabled/
