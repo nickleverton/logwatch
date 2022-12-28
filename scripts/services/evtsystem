@@ -35,6 +35,14 @@ my %Updates;
 my %UpdatesInstalled;
 my %UpdatesReadyForInstall;
 
+sub human() {
+   my $b=$_;
+   my $i;
+   for ($i=0;$b>1024;$i++) { $b/=1024 }
+   my $u=qw{B K M G T}[$i];
+   return "$b$u";
+}
+
 while (defined(my $ThisLine = <STDIN>)) {
    # User specified ignore messages, lower cased
    next if $ThisLine =~ /$Ignore_messages/i;
@@ -66,6 +74,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ExpandedString =~ s/processor \d+/processor X/;
       $ExpandedString =~ s/for \d+ seconds/for XX seconds/;
       $ExpandedString =~ s/(APPID|CLSID)\s+\{[0-9A-F\-]+\}/$1 {XXX}/g;
+      while ($ExpandedString =~ /(\d{4,}) bytes/) {
+         my $h = &human($1);
+         $ExpandedString =~ s/$1 bytes/${h}b/g;
+      }
    }
 
    if ($System eq "Application Popup") {
