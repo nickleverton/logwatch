@@ -72,6 +72,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Timed out / or
        $ThisLine =~ /^Unit.* entered failed state\.$/ or
        # Informational
+       $ThisLine =~ /bpf-lsm: LSM BPF program attached/ or
        $ThisLine =~ /^Closed .*\.$/ or
        $ThisLine =~ /: Consumed .+? CPU time/ or
        # crond will never restart process when it is restarted
