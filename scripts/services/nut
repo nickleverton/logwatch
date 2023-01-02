@@ -28,7 +28,7 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my ($Hostname) = ($ENV{'HOSTNAME'} =~ /^([^.]+)/);
 my $CannotConnectThreshold = $ENV{'cannot_connect_threshold'} || 0;
 my %CannotConnect;
-my %Communication;
+my %CommunicationLost;
 my %CommunicationState;
 my %Connected;
 my %ConnectionFailure;
@@ -52,9 +52,10 @@ while (defined(my $ThisLine = <STDIN>)) {
    my $state;
    my $user;
 
-   if ($ThisLine =~ /^upsd: User .* logged out/
+   if ($ThisLine =~ /^(?:nut-server|upsd): User .* logged out/
        # CUPS matches our generous service regex
        or $ThisLine =~ /^cupsd:/
+       or $ThisLine =~ /: Could not find PID file/
        # TODO - count start/stops
        or $ThisLine =~ /Signal 15: exiting/
        or $ThisLine =~ /Startup successful/
@@ -63,23 +64,27 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^upsdrvctl: USB communication driver/
        or $ThisLine =~ /^upsdrvctl: Using subdriver:/
        or $ThisLine =~ /^upsdrvctl: using '.*' to set battery low state/
-       or $ThisLine =~ /^upsd: listening on /
-       or $ThisLine =~ /^upsd: mainloop: Interrupted system call/
-       or $ThisLine =~ /^upsd: Network UPS Tools upsd/
-       or $ThisLine =~ /^upsd: fopen \S+\/upsd.pid: No such file or directory/
-       or $ThisLine =~ /^upsmon: Connected to/
-       or $ThisLine =~ /^upsmon: Connecting in SSL to/
-       or $ThisLine =~ /^upsmon: Certificate verification is disabled/
-       or $ThisLine =~ /^upsmon: Do not intend to authenticate server/
-       or $ThisLine =~ /^upsmon: fopen \S+\/upsmon.pid: No such file or directory/
-       or $ThisLine =~ /^upsmon: Init SSL without certificate database/
-       or $ThisLine =~ /^upsmon: Network UPS Tools upsmon/
+       or $ThisLine =~ /^(?:nut-server|upsd): \/etc\/pki\/nssdb is world readable/
+       or $ThisLine =~ /^(?:nut-server|upsd): Intend to retrieve password for NSS User Private Key and Certificate Services \/ NSS Certificate DB: password configured/
+       or $ThisLine =~ /^(?:nut-server|upsd): listening on /
+       or $ThisLine =~ /^(?:nut-server|upsd): mainloop: Interrupted system call/
+       or $ThisLine =~ /^(?:nut-server|upsd): Network UPS Tools upsd/
+       or $ThisLine =~ /^(?:nut-server|upsd): fopen \S+\/upsd.pid: No such file or directory/
+       or $ThisLine =~ /^(?:nut-server|upsd): Running as foreground process, not saving a PID file/
+       or $ThisLine =~ /^(?:nut-server|upsd): SSL handshake done successfully with client/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Connected to/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Connecting in SSL to/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Certificate verification is disabled/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Do not intend to authenticate server/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): fopen \S+\/upsmon.pid: No such file or directory/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Init SSL without certificate database/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Network UPS Tools upsmon/
        # This will generate a communication lost message - TODO - track reasons?
-       or $ThisLine =~ /^upsmon: Poll UPS \[(\S+)\] failed -/
-       or $ThisLine =~ /^upsmon: SSL handshake done successfully with server/
-       or $ThisLine =~ /^upsmon: UPS: \S+ \(master\)/
-       or $ThisLine =~ /^upsmon: UPS: \S+ \(slave\)/
-       or $ThisLine =~ /^upsmon: Using power down flag file/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Poll UPS \[(\S+)\] failed -/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): SSL handshake done successfully with server/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): UPS: \S+ \((?:master:primary)\)/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): UPS: \S+ \((?:slave:secondary)\)/
+       or $ThisLine =~ /^(?:nut-monitor|upsmon): Using power down flag file/
        or $ThisLine =~ /^upssched: (?:Cancelling|New) timer:/
        or $ThisLine =~ /^upssched: Timer daemon started/
        or $ThisLine =~ /^upssched: Timer queue empty/
@@ -91,31 +96,36 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^UPS: Started a self-test/
       ) {
      # Ignore these
-   } elsif (($ups) = ($ThisLine =~ /^upsd: Can't connect to UPS \[(\S+)\]/)) {
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Can't connect to UPS \[(\S+)\]/)) {
       $CannotConnect{$ups}++;
-   } elsif (($ups) = ($ThisLine =~ /^upsd: Connected to UPS \[(\S+)\]/)) {
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Connected to UPS \[(\S+)\]/)) {
       $Connected{$ups}++;
-   } elsif (($ups) = ($ThisLine =~ /^upsmon: Communications with UPS (\S+) lost/)) {
-      $Communication{$ups}++;
-      $CommunicationState{$ups}++;
-   } elsif (($ups) = ($ThisLine =~ /^upsmon: Communications with UPS (\S+) established/)) {
-      $CommunicationState{$ups}--;
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): Communications with UPS (\S+) lost/)) {
+      $CommunicationLost{$ups}++;
+      $CommunicationState{$ups} = "lost";
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): Communications with UPS (\S+) established/)) {
+      $CommunicationState{$ups} = "established";
    # This may always be paired with the "unavailable" message below - so may want to ignore or move to higher detail
-   } elsif (($ups) = ($ThisLine =~ /^upsmon: UPS \[(.+)\]: connect failed:/)) {
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS \[(.+)\]: connect failed:/)) {
       $ConnectionFailure{$ups}++;
-   } elsif (($ups) = ($ThisLine =~ /^upsmon: UPS (.+)\ is unavailable/)) {
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS (.+)\ is unavailable/)) {
       $Unavailable{$ups}++;
-   } elsif (($ups, $state) = ($ThisLine =~ /^upsmon: UPS (\S+) on (.*)/)) {
+   } elsif (($ups, $state) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS (\S+) on (.*)/)) {
       my ($host) = ($ups =~ /@([^.]+)/);
       next unless $host eq "localhost" or $host eq $Hostname;
       $State{$ups} = $state;
       $OnBattery{$ups}++ if $state eq "battery";
-   } elsif (($ups) = ($ThisLine =~ /^upsd: Data for UPS \[(\S+)\] is stale/)) {
+   } elsif (($ups, $state) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS: (\S+) \(\S+\) \((.*)\)/)) {
+      my ($host) = ($ups =~ /@([^.]+)/);
+      next unless $host eq "localhost" or $host eq $Hostname;
+      $State{$ups} = $state;
+      #$OnBattery{$ups}++ if $state eq "battery";
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Data for UPS \[(\S+)\] is stale/)) {
       $DataStale{$ups}++;
       $DataStaleState{$ups}++;
-   } elsif (($ups) = ($ThisLine =~ /^upsd: UPS \[(\S+)\] data is no longer stale/)) {
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): UPS \[(\S+)\] data is no longer stale/)) {
       $DataStaleState{$ups}--;
-   } elsif (($user, $ups) = ($ThisLine =~ /^upsd: User (\S+) logged into UPS \[(\S+)\]/)) {
+   } elsif (($user, $ups) = ($ThisLine =~ /^(?:nut-server|upsd): User (\S+) logged into UPS \[(\S+)\]/)) {
       $Logins{$user}->{$ups}++;
    } elsif (my ($msg) = ($ThisLine =~ /^upsdrvctl: (.*)/)) {
       $UpsdrvctlMessages .= "   $msg\n";
@@ -180,16 +190,16 @@ if (keys %OnBattery) {
 }
    
 # TODO - Alert if too many disconnects?
-my $CommunicationStateTotal = 0;
-foreach my $ups (keys %Communication) {
-   $CommunicationStateTotal += $CommunicationState{$ups};
+my $CommunicationLostCurrent = 0;
+foreach my $ups (keys %CommunicationLost) {
+   $CommunicationLostCurrent += 1 if $CommunicationState{$ups} eq "lost";
 }
 
-if (keys %Communication and ($Detail or $CommunicationStateTotal)) {
+if (keys %CommunicationLost and ($Detail or $CommunicationLostCurrent)) {
    print "Communication lost:\n";
-   foreach my $ups (sort {$a cmp $b} keys %Communication) {
-      print "   $ups: $Communication{$ups} Time(s)";
-      print " * Currently lost" if $CommunicationState{$ups};
+   foreach my $ups (sort {$a cmp $b} keys %CommunicationLost) {
+      print "   $ups: $CommunicationLost{$ups} Time(s)";
+      print " * Currently " . $CommunicationState{$ups};
       print "\n";
    }
    print "\n";

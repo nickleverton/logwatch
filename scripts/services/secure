@@ -113,6 +113,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ( $ThisLine =~ /com.apple.SecurityServer: Entering service/) or
       ( $ThisLine =~ /^(xinetd|xinetd-ipv6)\[\d+\]: EXIT: /) or
       ( $ThisLine =~ /^crond\(\w+\)\[\d+\]: session /) or
+      ( $ThisLine =~ /^dropbear\[\d+\]: /) or
       ( $ThisLine =~ /pam_systemd\(.+:session\): Moving/) or
       ( $ThisLine =~ /^sshd\(\w+\)\[\d+\]: authentication failure/) or
       ( $ThisLine =~ /^sshd\(\w+\)\[\d+\]: check pass; user unknown/) or
