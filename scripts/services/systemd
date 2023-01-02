@@ -173,7 +173,6 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Failed to propagate agent release message: (?:Connection reset by peer|Transport endpoint is not connected)/ or
        $ThisLine =~ /^cgroup compatibility translation between legacy and unified hierarchy settings activated\. See cgroup-compat debug messages for details\.$/ or
        $ThisLine =~ /^\(This warning is only shown for the first unit using IP firewalling\.\)$/ or
-       $ThisLine =~ /^(?:bpf-lsm: )?LSM BPF program attached/ or
        $ThisLine =~ /^.*\.socket: Socket service .* already active/
    ) {
       # Ignore these
@@ -188,6 +187,16 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (($service,$reason) = ($ThisLine =~ /^(.*):\d+: (PIDFile= references a path below legacy directory .*), /)) {
       $ConfigError{$reason}{$service}++;
    } elsif (($service,$reason) = ($ThisLine =~ /^\[?([^\]:]+(?::\d+)?)[\]:]? (Unknown .* in section '.*')/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(.*): (unit configures an IP firewall, but not running as root)\.$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(bpf-lsm): (.*)$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^((BPF LSM) .*, LSM BPF not supported)$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^(ConfigurationDirectory .*)\. \((.*)\)$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^(System is tainted): (.*)$/)) {
       $ConfigError{$reason}{$service}++;
    # Skipped goes before failed to catch "was skipped because all trigger condition checks failed."
    } elsif (($name) = ($ThisLine =~ /^Condition check resulted in (.*) being skipped\.$/)) {
