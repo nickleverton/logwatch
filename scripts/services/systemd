@@ -32,6 +32,7 @@ my %Activated;
 my %Failed;
 my %Deactivated;
 my %LeftOver;
+my %NotStopped;
 my $Reexecuted = 0;
 my %Reloaded;
 my %Skipped;
@@ -64,11 +65,12 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    if ($ThisLine =~ /^(Activat|Deactivat|Mount|Unmount|Reload|Start|Stopp)ing / or
        $ThisLine =~ /^Finished / or
+       $ThisLine =~ / is inactive\.$/ or
        # These events will be caught with the Failed with or failed message
        $ThisLine =~ /^Failed to start / or
        $ThisLine =~ /Failed to .* socket / or
        $ThisLine =~ /Failed at step / or
-       $ThisLine =~ /([Cc]ontrol|[Mm]ain|[Mm]ount) process exited, code=(exited|killed|dumped),? status=/ or
+       $ThisLine =~ /([Cc]ontrol|[Mm]ain|[Mm]ount|[Ss]wap) process exited, code=(exited|killed|dumped),? status=/ or
        $ThisLine =~ /^Timed out / or
        $ThisLine =~ /^Unit.* entered failed state\.$/ or
        # Informational
@@ -83,6 +85,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Failed to connect to API bus: Connection refused/ or
        # Extransous scope messages with LanSweeper - revisit with EL8.4
        $ThisLine =~ /: Failed to add PIDs to scope's control group: No such process/ or
+       $ThisLine =~ /\.scope: Couldn't move process \d+ to requested cgroup '.*': No such process/ or
        $ThisLine =~ /scope: Failed with result 'resources'/ or
        $ThisLine =~ /session-[[:xdigit:]]+\.scope: Deactivated successfully\./ or
        $ThisLine =~ /^Found device / or
@@ -99,8 +102,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^RTC configured in / or
        $ThisLine =~ /^Running in initial RAM disk\.$/ or
        $ThisLine =~ /^selinux: avc: *received policyload notice/ or
+       $ThisLine =~ /^selinux: avc: *op=load_policy / or
        $ThisLine =~ /^Set hostname to / or
-       $ThisLine =~ /^(?:Set up|Unset) automount Arbitrary Executable File Formats File System Automount Point\.$/ or
+       $ThisLine =~ /^(?:Set up|Unset) automount(?: [^ ]+ -)? Arbitrary Executable File Formats File System Automount Point\.$/ or
        $ThisLine =~ /^Shutting down\.$/ or
        $ThisLine =~ /^Startup finished in / or
        $ThisLine =~ /^Stopped / or
@@ -128,13 +132,15 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /Scheduled restart job, restart counter is at .*\./ or
        $ThisLine =~ /: Watchdog timeout/ or
        $ThisLine =~ /^Dependency failed for / or
+       # This is preceeded by a more descriptive message
+       $ThisLine =~ / Triggering OnFailure= dependencies\./ or
        $ThisLine =~ /Processes still around after .*SIGKILL\./ or
        $ThisLine =~ /^Unmounted / or
        $ThisLine =~ /: Unit is bound to inactive unit / or
        $ThisLine =~ /[Hh]ardware watchdog / or
        # This is now trapped as a Slow Start error
        #$ThisLine =~ /PID file .* not readable \(yet\?\) after start/ or
-       $ThisLine =~ /Failed to read PID from file / or
+       $ThisLine =~ /Failed to (read|parse) PID from file / or
        # Units can depend on files that do not exist
        $ThisLine =~ /Cannot add dependency job(:? for unit .*)?, ignoring: Unit (:?.* failed to load: No such file or directory|not found)\.$/ or
        # https://bugs.freedesktop.org/show_bug.cgi?id=90386
@@ -164,6 +170,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        # https://github.com/systemd/systemd/issues/6777
        $ThisLine =~ /^Failed to propagate agent release message: (?:Connection reset by peer|Transport endpoint is not connected)/ or
        $ThisLine =~ /^cgroup compatibility translation between legacy and unified hierarchy settings activated\. See cgroup-compat debug messages for details\.$/ or
+       $ThisLine =~ /^\(This warning is only shown for the first unit using IP firewalling\.\)$/ or
+       $ThisLine =~ /^(?:bpf-lsm: )?LSM BPF program attached/ or
        $ThisLine =~ /^.*\.socket: Socket service .* already active/
    ) {
       # Ignore these
@@ -171,13 +179,29 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ConfigError{$reason}{$service}++;
    } elsif (($service,$reason) = ($ThisLine =~ /^\[(.*)\] (Support for option .* has been removed) and it is ignored/)) {
       $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(.*):\d+: (.* is obsolete, .*)\. /)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(.*):\d+: (.* this is not safe!)/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(.*):\d+: (PIDFile= references a path below legacy directory .*), /)) {
+      $ConfigError{$reason}{$service}++;
    } elsif (($service,$reason) = ($ThisLine =~ /^\[?([^\]:]+(?::\d+)?)[\]:]? (Unknown .* in section '.*')/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(.*): (unit configures an IP firewall, but not running as root)\.$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($service,$reason) = ($ThisLine =~ /^(bpf-lsm): (.*)$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^((BPF LSM) .*, LSM BPF not supported)$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^(ConfigurationDirectory .*)\. \((.*)\)$/)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^(System is tainted): (.*)$/)) {
       $ConfigError{$reason}{$service}++;
    } elsif (($service) = ($ThisLine =~ /(\S+): Failed (:?to execute command|with result)/)) {
       $Failed{$service}++;
    } elsif (($service) = ($ThisLine =~ /(\S+) failed\.$/)) {
       $Failed{$service}++;
-   } elsif (($service) = ($ThisLine =~ /^(.*) failed with error code \d+\.$/)) {
+   } elsif (($service) = ($ThisLine =~ /^(.*) failed with ((error code)|(exit status)) \d+\.$/)) {
       $Failed{$service}++;
    } elsif (($service) = ($ThisLine =~ /^(.*): Start request repeated too quickly\.$/)) {
       $Failed{$service}++;
@@ -222,6 +246,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Slow{$pidfile}++;
    } elsif (($Service, $Exe) = ($ThisLine =~ /^(.*): Found left-over process \d+ \((.*)\) in control group while starting unit\. Ignoring\.$/)) {
       $LeftOver{"$Service:$Exe"}++ unless "$Service:$Exe" =~/^$Ignore_leftover$/i;
+   } elsif (($Service, $Exe) = ($ThisLine =~ /^(.*): Unit process \d+ \((.*)\) remains running after unit stopped\.$/)) {
+      $NotStopped{"$Service:$Exe"}++ unless "$Service:$Exe" =~/^$Ignore_leftover$/i;
    } else {
       $OtherList{$ThisLine}++;
    }
@@ -277,6 +303,15 @@ if (keys %LeftOver) {
    foreach my $item (sort {$a cmp $b} keys %LeftOver) {
       my ($service, $exe) = split(":", $item);
       print "        $service($exe): $LeftOver{$item} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %NotStopped) {
+   print "Warning: Remained running after unit stopped:\n";
+   foreach my $item (sort {$a cmp $b} keys %NotStopped) {
+      my ($service, $exe) = split(":", $item);
+      print "        $service($exe): $NotStopped{$item} Time(s)\n";
    }
    print "\n";
 }
