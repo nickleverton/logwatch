@@ -91,6 +91,7 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ m/kernel reports .*: Clock Unsynchronized/) or # startup
         ($ThisLine =~ m/Starting/) or # startup
         ($ThisLine =~ m/(Built|Running) with /) or # startup
+        ($ThisLine =~ m/OpenSSL/) or # startup
         ($ThisLine =~ m/successfully locked into RAM/) or # startup
         ($ThisLine =~ m/Using SO_TIMESTAMPNS/) or # startup
         ($ThisLine =~ m/MRU \d+ entries, \d+ hash bits, \d+ bytes/) or # startup
