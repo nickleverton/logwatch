@@ -68,7 +68,8 @@ my (
 %GeoIPError,            %HUR,                   %Hints,
 %LimitSlip,             %NError,                %NUR,
 %NoSOA,                 %OtherList,             %StartLog,
-%UnknownCCCommands,
+%UnknownCCCommands,	%BadCookie,		%Timeout,
+%LoopDetected,
 );
 # Avoid "Use of uninitialized value" warning messages.
 sub ValueOrDefault {
@@ -227,6 +228,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /corporation.  Support and training for BIND \d+ are/) or
       ($ThisLine =~ /available at https:\/\/www.isc.org\/support/) or
       ($ThisLine =~ /----------------------------------------------------/) or
+      ($ThisLine =~ /^[^ ]+ algorithms: /) or
+      ($ThisLine =~ /^TKEY mode \d+ support /) or
       ($ThisLine =~ /next key event: /) or
       ($ThisLine =~ /reconfiguring zone keys/) or
       ($ThisLine =~ /using built-in DLV key/) or
@@ -240,6 +243,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /client .*: query failed .* for .* at /) or
       ($ThisLine =~ /increase from .* to .* RRL bins for .* entries/) or
       ($ThisLine =~ /flushing caches in all views succeeded/) or
+      ($ThisLine =~ /automatic interface scanning terminated/) or
       # ignore this line because the following line describes the error
       ($ThisLine =~ /unexpected error/)
    ) {
@@ -296,7 +300,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ZoneRemoved{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /received notify for zone '(.*)'/ ) ) {
       $ZoneReceivedNotify{$Zone}++;
-   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): refused notify from non-master/ ) ) {
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): refused notify from non-(?:master|primary)/ ) ) {
       $ZoneRefusedNotify{$Zone}++;
 #   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\d\.a-fA-F:]+) bad zone transfer request: '(.+)': (.+)$/ ) ) {
    } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+: bad zone transfer request: '(.+)': (.+)/ ) ) {
@@ -363,7 +367,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Host =~ s/#.*//;
       $UnexpRCODE{$Rcode}{$Zone}{$Host}++;
    } elsif ( ($ThisLine =~ /(?:error \()?FORMERR\)? resolving '[^ ]+: [.0-9a-fA-F:#]+/) or
-             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for client [^ ]+)?: .*/) ) {
+             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for( client)? [^ ]+)?: .*/) ) {
       chomp($ThisLine);
       $FormErr{$ThisLine}++;
    } elsif ( ($ThisLine =~ /found [0-9]* CPU(s)?, using [0-9]* worker thread(s)?/) ) {
@@ -399,6 +403,12 @@ while (defined(my $ThisLine = <STDIN>)) {
       $HUR{$Name}{$Address}++;
    } elsif (($Client) = ($ThisLine =~ /client ([\da-fA-F.:]+)(?:#\d*:)? notify question section contains no SOA/)) {
       $NoSOA{$Client}++;
+   } elsif (($Addr) = ($ThisLine =~ /bad cookie from (.*)/)) {
+      $BadCookie{$Addr}++;
+   } elsif (($Entry) = ($ThisLine =~ /shut down hung fetch while resolving '(.*)'/)) {
+      $Timeout{$Entry}++;
+   } elsif (($Entry) = ($ThisLine =~ /loop detected resolving '(.*)'/)) {
+      $LoopDetected{$Entry}++;
    } elsif (($Hint) = ($ThisLine =~ /checkhints: (.*)/) ) {
       $Hints{$Hint}++;
    } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit (.+) responses to (\S+)(?: for (.+) \()?/)) {
@@ -760,6 +770,13 @@ if ( ( $Detail >= 10 ) and (keys %NonAuthoritative) ) {
    }
 }
 
+if ( ( $Detail >= 10 ) and (keys %BadCookie) ) {
+   print "\nBad Cookie returned from these hosts:\n";
+   foreach my $ThisOne (keys %BadCookie) {
+      print "   " . $ThisOne . ": " . $BadCookie{$ThisOne} . " Time(s)\n";
+   }
+}
+
 if ( ($Detail >= 10) and (keys %RetryLimit) ) {
    print "\nRetry limit exceeded for these zones:\n";
    foreach my $Zone (sort {$a cmp $b} keys %RetryLimit) {
@@ -801,6 +818,20 @@ if ( ( $Detail >= 10 ) and (keys %HUR) ) {
        foreach my $Host (sort {$a cmp $b} keys %{$HUR{$ThisOne}}) {
           print "      $Host: $HUR{$ThisOne}{$Host} Time(s)\n";
        }
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %Timeout) ) {
+   print "\nTimeout resolving for:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %Timeout) {
+      print "   " . $ThisOne . ": " . $Timeout{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %LoopDetected) ) {
+   print "\nLoop detected resolving for:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %LoopDetected) {
+      print "   " . $ThisOne . ": " . $LoopDetected{$ThisOne} . " Time(s)\n";
    }
 }
 
