@@ -264,8 +264,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ShutdownNamed++;
    } elsif ( $ThisLine =~ /named shutdown failed/ ) {
       $ShutdownNamedFail++;
-   } elsif ( (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?zone transfer '(.+)' denied/ )) or
-             (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?bad zone transfer request: '(.+)':/ )) ) {
+   } elsif ( (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+:\s+)?zone transfer '(.+)' denied/ )) or
+             (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+:\s+)?bad zone transfer request: '(.+)':/ )) ) {
       $DeniedZoneTransfers{$Host}{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+) zone transfer deferred due to quota/ ) ) {
       $DeferredZoneTransfers{$Zone}++;
@@ -314,10 +314,10 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Way,$Host) = ( $ThisLine =~ /([^ ]+): sendto\(\[([^ ]+)\].+\): Network is unreachable/ ) ) {
       my $FullHost = LookupIP ($Host);
       $NetworkUnreachable{$Way}{$FullHost}++;
-   } elsif ( ($Host,$Way) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+: )?error ([^ ]+) response: network unreachable/ ) ) {
+   } elsif ( ($Host,$Way) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+:\s+)?error ([^ ]+) response: network unreachable/ ) ) {
       my $FullHost = LookupIP ($Host);
       $NetworkUnreachable{$Way}{$FullHost}++;
-   } elsif ( ($Zone,$Message) = ( $ThisLine =~ /client [^\#]+#[^\:]+: (?:view \w+: )?updating zone '([^\:]+)': (.*)$/ ) ) {
+   } elsif ( ($Zone,$Message) = ( $ThisLine =~ /client [^\#]+#[^\:]+: (?:view \w+:\s+)?updating zone '([^\:]+)': (.*)$/ ) ) {
       $ZoneUpdates{$Zone}{$Message}++;
    } elsif ( ($Zone,$Source) = ( $ThisLine =~ /transfer of '([^\']+)' (from [^\#]+)#[^\:]+: Transfer completed: / ) ) {
       $ZoneUpdates{$Zone}{$Source}++;
@@ -327,7 +327,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Client) = ( $ThisLine =~ /warning: client (.*) no more TCP clients/ ) ) {
       my $FullClient = LookupIP ($Client);
       $DeniedTCPClient{$FullClient}++;
-   } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+: )?query \(cache\) (?:'.*' )?denied/ ) ) {
+   } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+:\s+)?query \(cache\) (?:'.*' )?denied/ ) ) {
       my $FullClient = LookupIP ($Client);
       $DeniedQuery{$FullClient}++;
    } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?([^#]*)(#\d+)?(?: \(.*\))?: query '.*' denied/ ) ) {
@@ -414,43 +414,43 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit (.+) responses to (\S+)(?: for (.+) \()?/)) {
       $Zone = "None" unless defined($Zone);
       $Limit{$Zone}{$Response}{$Net}++;
-   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
+   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+:\s+)?rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
       $Zone = "None" unless defined($Zone);
       $LimitDrop{$Zone}{$Response}{$Net}{$Client}++;
-   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit slip (.+) response to (\S+)(?: for (\S+))?/)) {
+   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+:\s+)?rate limit slip (.+) response to (\S+)(?: for (\S+))?/)) {
       $Zone = "None" unless defined($Zone);
       $LimitSlip{$Zone}{$Response}{$Net}{$Client}++;
    } elsif (($Net,$Zone,$Response) = ($ThisLine =~/limit responses to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
       $Limit{$Zone}{$Response}{$Net}++;
-   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit drop response to (\S+)(?: for (\S+))? (.*) +\(/)) {
+   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+:\s+)?rate limit drop response to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
       $LimitDrop{$Zone}{$Response}{$Net}{$Client}++;
-   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit slip response to (\S+)(?: for (\S+))? (.*) +\(/)) {
+   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+:\s+)?rate limit slip response to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
       $LimitSlip{$Zone}{$Response}{$Net}{$Client}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): got insecure response; parent indicates it should be secure/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating \@0x[[:xdigit:]]+: (.*) (\w+): got insecure response; parent indicates it should be secure/)) {
       $DNSSECInsec{'__Total__'}++;
       $DNSSECInsec{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): no valid signature found/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating \@0x[[:xdigit:]]+: (.*) (\w+): no valid signature found/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): bad cache hit/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating \@0x[[:xdigit:]]+: (.*) (\w+): bad cache hit/)) {
       $DNSSECBadCache{'__Total__'}++;
       $DNSSECBadCache{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): verify failed due to bad signature/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating \@0x[[:xdigit:]]+: (.*) (\w+): verify failed due to bad signature/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating ([^\/]*)\/(\w+): got insecure response; parent indicates it should be secure/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating ([^\/]*)\/(\w+): got insecure response; parent indicates it should be secure/)) {
       $DNSSECInsec{'__Total__'}++;
       $DNSSECInsec{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating ([^\/]*)\/(\w+): no valid signature found/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating ([^\/]*)\/(\w+): no valid signature found/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating ([^\/]*)\/(\w+): verify failed due to bad signature/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating ([^\/]*)\/(\w+): verify failed due to bad signature/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:)\s*validating ([^\/]*)\/(\w+): bad cache hit/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+:\s+)?validating ([^\/]*)\/(\w+): bad cache hit/)) {
       $DNSSECBadCache{'__Total__'}++;
       $DNSSECBadCache{$Zone}{$RR}++;
    } elsif (($Error,$Host) = ($ThisLine =~ /^(?:error \()?(.*)\)? resolving '([^']+)':/)) {
