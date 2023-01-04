@@ -151,6 +151,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Unit .* cannot be reloaded because it is inactive\.$/ or
        $ThisLine =~ /^.*: Unit cannot be reloaded because it is inactive\.$/ or
        $ThisLine =~ / is not active\.$/ or
+       $ThisLine =~ / is inactive\.$/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1306452 
        $ThisLine =~ /^[^ ]*\.mount: Directory \/[^ ]* to mount over is not empty, mounting anyway\.$/ or
        # A known issue - reported by multiple distributions
