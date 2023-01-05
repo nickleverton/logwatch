@@ -234,6 +234,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /reconfiguring zone keys/) or
       ($ThisLine =~ /using built-in DLV key/) or
       ($ThisLine =~ /trust-anchor-telemetry/) or
+      ($ThisLine =~ /^adb: grow_entries /) or
 #      ($ThisLine =~ /reading built-in trusted keys from file/) or
       ($ThisLine =~ /all zones loaded/) or
       ($ThisLine =~ /resolver priming query complete/) or
