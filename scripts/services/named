@@ -68,8 +68,8 @@ my (
 %GeoIPError,            %HUR,                   %Hints,
 %LimitSlip,             %NError,                %NUR,
 %NoSOA,                 %OtherList,             %StartLog,
-%UnknownCCCommands,	%BadCookie,		%Timeout,
-%LoopDetected,
+%UnknownCCCommands,     %BadCookie,             %Timeout,
+%LoopDetected,          %MissingCookie,
 );
 # Avoid "Use of uninitialized value" warning messages.
 sub ValueOrDefault {
@@ -375,14 +375,14 @@ while (defined(my $ThisLine = <STDIN>)) {
       chomp($ThisLine);
       $StartLog{$ThisLine}++;
    } elsif ( (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(rndc.key|named.conf):([0-9]+): (unknown option '[^ ]*')/)) or
-	     (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(rndc.key|named.conf):([0-9]+): ('[^ ]' expected near end of file)/)) or
-	     (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(named.*.conf):([0-9]+): (.*)/)) or
-	     (($File,$Line,$Problem) = ($ThisLine =~ /()()(could not configure root hints from '.*': file not found)/))) {
+             (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(rndc.key|named.conf):([0-9]+): ('[^ ]' expected near end of file)/)) or
+             (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(named.*.conf):([0-9]+): (.*)/)) or
+             (($File,$Line,$Problem) = ($ThisLine =~ /()()(could not configure root hints from '.*': file not found)/))) {
        $ConfProb{$File}{"$Line,$Problem"}++;
    } elsif ( (($ErrorText) = ($ThisLine =~ /^(RUNTIME_CHECK.*)/))or
-	     (($ErrorText) = ($ThisLine =~ /^(.* REQUIRE.* failed.*)$/)) or
-	     (($ErrorText) = ($ThisLine =~ /(.*: fatal error)/)) or
-	     (($ErrorText) = ($ThisLine =~ /(.*: out of memory)/)) ) {
+             (($ErrorText) = ($ThisLine =~ /^(.* REQUIRE.* failed.*)$/)) or
+             (($ErrorText) = ($ThisLine =~ /(.*: fatal error)/)) or
+             (($ErrorText) = ($ThisLine =~ /(.*: out of memory)/)) ) {
       $NError{$ErrorText}++;
    } elsif ( (($ErrorText) = ($ThisLine =~ /^(GeoIP .* DB not available)/)) ) {
       $GeoIPError{$ErrorText}++;
@@ -392,7 +392,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($From,$Log) = ($ThisLine =~ /invalid command from ([\.0-9a-fA-F:]*)#[0-9]*: (.*)/) ) {
       $CCMessages{"$From,$Log"}++;
    } elsif ( (($Log) = ($ThisLine =~ /(freezing .*zone.*)/)) or
-	     (($Log) = ($ThisLine =~ /(thawing .*zone.*)/)) ) {
+             (($Log) = ($ThisLine =~ /(thawing .*zone.*)/)) ) {
       $CCMessages2{$Log}++;
    } elsif (($CCC) = ($ThisLine =~ /unknown control channel command '(.*)'/)) {
       $UnknownCCCommands{$CCC}++;
@@ -406,6 +406,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $NoSOA{$Client}++;
    } elsif (($Addr) = ($ThisLine =~ /bad cookie from (.*)/)) {
       $BadCookie{$Addr}++;
+   } elsif (($Addr) = ($ThisLine =~ /missing expected cookie from ([\da-fA-F.:]+)(?:#\d*)?/)) {
+      $MissingCookie{$Addr}++;
    } elsif (($Entry) = ($ThisLine =~ /shut down hung fetch while resolving '(.*)'/)) {
       $Timeout{$Entry}++;
    } elsif (($Entry) = ($ThisLine =~ /loop detected resolving '(.*)'/)) {
@@ -775,6 +777,13 @@ if ( ( $Detail >= 10 ) and (keys %BadCookie) ) {
    print "\nBad Cookie returned from these hosts:\n";
    foreach my $ThisOne (keys %BadCookie) {
       print "   " . $ThisOne . ": " . $BadCookie{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %MissingCookie) ) {
+   print "\nMissing expected Cookie returned from these hosts:\n";
+   foreach my $ThisOne (keys %MissingCookie) {
+      print "   " . $ThisOne . ": " . $MissingCookie{$ThisOne} . " Time(s)\n";
    }
 }
 
