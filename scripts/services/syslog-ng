@@ -67,6 +67,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD syslog-ng[2351]: New configuration initialized;
    if ( ($ThisLine =~ /^[Nn]ew configuration initialized/ ) ||
+        ($ThisLine =~ /^Configuration reload finished;/ ) ||
         ($ThisLine =~ /^EOF on control channel, closing connection;/ ) ||
         ($ThisLine =~ /^(?:POLLERR|EOF) occurred while idle;/ )
    ) {
@@ -313,22 +314,22 @@ if ($format eq 'xml') {
    print "<syslog-ng:LogwatchReport xmlns:syslog-ng='http://sourceforge.net/projects/logwatch/services/syslog-ng/20221002'>\n";
 }
 
-if ($Starts || $Stops || $Reloads) {
+if (($Starts || $Stops || $Reloads) && $Detail) {
    print "<syslog-ng:Service>\n" if $format eq 'xml';
 }
 
-if ($Starts) {
+if ($Starts && $Detail) {
     outCount(sprintf("\n%-48s %5i Time(s)", "Syslog-ng started:", $Starts), $Starts, "Service", "started");
 }
 
-if ($Stops) {
+if ($Stops && $Detail) {
     outCount(sprintf("\n%-48s %5i Time(s)", "Syslog-ng stopped:", $Stops), $Stops, "Service", "stopped");
 }
 
-if ($Reloads) {
+if ($Reloads && $Detail) {
     outCount(sprintf("\n%-48s %5i Time(s)", "Syslog-ng reloaded:", $Reloads), $Reloads, "Service", "reloaded");
 }
-if ($Starts || $Stops || $Reloads) {
+if (($Starts || $Stops || $Reloads) && $Detail) {
    print "</syslog-ng:Service>" if $format eq 'xml';
    print "\n";
 }
