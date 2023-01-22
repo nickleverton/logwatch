@@ -1,6 +1,6 @@
 Summary: Analyzes and Reports on system logs
 Name: logwatch
-Version: 7.7
+Version: 7.8
 Release: 1
 License: MIT
 Group: Applications/System
@@ -112,6 +112,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.8-1
+
 * Fri Jul 22 2022 Bjorn <bjorn1@users.sourceforge.net> 7.7
 
 * Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.6-1
