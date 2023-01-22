@@ -1,13 +1,13 @@
 Summary: Analyzes and Reports on system logs
 Name: logwatch
 Version: 7.8
-Release: 1
+Release: 2{?dist}
 License: MIT
 Group: Applications/System
 URL: https://sourceforge.net/projects/logwatch/
 BuildArch: noarch
 Source0: https://sourceforge.net/projects/logwatch/files/%{name}-%{version}/%{name}-%{version}.tar.gz
-Requires: perl,grep,crontabs
+Requires: perl,grep,crontabs,perl-HTML-Parser
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
 %description
@@ -112,6 +112,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.8-2
+- add missing requires (impacting EL8)
+- add dist to release
+
 * Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.8-1
 
 * Fri Jul 22 2022 Bjorn <bjorn1@users.sourceforge.net> 7.7
