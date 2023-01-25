@@ -1,7 +1,7 @@
 Summary: Analyzes and Reports on system logs
 Name: logwatch
 Version: 7.8
-Release: 2{?dist}
+Release: 2%{?dist}
 License: MIT
 Group: Applications/System
 URL: https://sourceforge.net/projects/logwatch/
