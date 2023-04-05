@@ -96,6 +96,12 @@ while (defined(my $ThisLine = <STDIN>)) {
       $DRBDErrors{$1}{"sock_sendmsg time expired"}++;
    } elsif ($ThisLine =~ /(block drbd\d+): Began resync as (SyncSource|SyncTarget)/) {
       $DRBDErrors{$1}{"Began resync as $2"}++;
+   } elsif ( $ThisLine =~ /raid.*CRIT/) {
+      # kernel: megaraid_sas 0000:88:00.0: 781934 (727946738s/0x0004/CRIT) - Enclosure PD 08(c Port 0 - 3/p1) phy bad for slot 19
+      # de-dupe
+      $ThisLine =~ s/: \d+ /: /;
+      $ThisLine =~ s/\(\d+s\//(Xs\//;
+      $Errors{$ThisLine}++;
    } elsif ( ( $errormsg ) = ( $ThisLine =~ /(.*?error.{0,17})/i ) ) {
       # filter out smb open/read errors cased by insufficient permissions
       my $SkipError = 0;
