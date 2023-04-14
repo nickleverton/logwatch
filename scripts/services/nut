@@ -114,6 +114,11 @@ while (defined(my $ThisLine = <STDIN>)) {
       $CommunicationState{$ups} = "lost";
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): Communications with UPS (\S+) established/)) {
       $CommunicationState{$ups} = "established";
+      # At Detail 0, we don't want to know about recovered disconnects
+      if ($Detail == 0) {
+         $Unavailable{$ups}--;
+         delete $Unavailable{$ups} if $Unavailable{$ups} <= 0;
+      }
    # This may always be paired with the "unavailable" message below - so may want to ignore or move to higher detail
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS \[(.+)\]: connect failed:/)) {
       $ConnectionFailure{$ups}++;
