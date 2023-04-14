@@ -27,6 +27,7 @@ use warnings;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my ($Hostname) = ($ENV{'HOSTNAME'} =~ /^([^.]+)/);
 my $CannotConnectThreshold = $ENV{'cannot_connect_threshold'} || 0;
+my %BatteryLow;
 my %CannotConnect;
 my %Commands;
 my %CommunicationLost;
@@ -100,6 +101,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^UPS: Started a self-test/
       ) {
      # Ignore these
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS (\S+) battery is low/)) {
+      $BatteryLow{$ups}++;
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Can't connect to UPS \[(\S+)\]/)) {
       $CannotConnect{$ups}++;
    } elsif (($user, $command, $ups) = ($ThisLine =~ /^(?:nut-server|upsd): Instant command: (\S+) did (\S+) on (\S+)/)) {
@@ -187,6 +190,14 @@ if ($UpsdrvctlMessages) {
    print $UpsdrvctlMessages;
 }
 
+if (keys %BatteryLow) {
+   print "UPS battery low:\n";
+   foreach my $ups (sort {$a cmp $b} keys %BatteryLow) {
+      print "   $ups: $BatteryLow{$ups} Time(s)\n";
+   }
+   print "\n";
+}
+   
 if (keys %OnBattery) {
    print "UPS on battery:\n";
    foreach my $ups (sort {$a cmp $b} keys %OnBattery) {
