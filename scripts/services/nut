@@ -28,6 +28,7 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my ($Hostname) = ($ENV{'HOSTNAME'} =~ /^([^.]+)/);
 my $CannotConnectThreshold = $ENV{'cannot_connect_threshold'} || 0;
 my %CannotConnect;
+my %Commands;
 my %CommunicationLost;
 my %CommunicationState;
 my %Connected;
@@ -51,6 +52,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    my $ups;
    my $state;
    my $user;
+   my $command;
 
    if ($ThisLine =~ /^(?:nut-server|upsd): User .* logged out/
        # CUPS matches our generous service regex
@@ -98,6 +100,8 @@ while (defined(my $ThisLine = <STDIN>)) {
      # Ignore these
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Can't connect to UPS \[(\S+)\]/)) {
       $CannotConnect{$ups}++;
+   } elsif (($user, $command, $ups) = ($ThisLine =~ /^(?:nut-server|upsd): Instant command: (\S+) did (\S+) on (\S+)/)) {
+      $Commands{$ups}->{$user}->{$command}++;
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Connected to UPS \[(\S+)\]/)) {
       $Connected{$ups}++;
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): Communications with UPS (\S+) lost/)) {
@@ -229,6 +233,20 @@ if (keys %Connected and ($Detail >= 5)) {
    print "Connected to UPS:\n";
    foreach my $ups (sort {$a cmp $b} keys %Connected) {
       print "   $ups: $Connected{$ups} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Commands and $Detail) {
+   print "Commands run:\n";
+   foreach my $ups (sort {$a cmp $b} keys %Commands) {
+      print "   UPS $ups:\n";
+      foreach my $user (sort {$a cmp $b} keys %{$Commands{$ups}}) {
+         print "      User $user:\n";
+         foreach my $command (sort {$a cmp $b} keys %{$Commands{$ups}{$user}}) {
+            print "         $command: $Commands{$ups}->{$user}->{$command} Time(s)\n";
+         }
+      }
    }
    print "\n";
 }
