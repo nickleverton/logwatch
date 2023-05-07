@@ -69,7 +69,7 @@ my (
 %LimitSlip,             %NError,                %NUR,
 %NoSOA,                 %OtherList,             %StartLog,
 %UnknownCCCommands,     %BadCookie,             %Timeout,
-%LoopDetected,          %MissingCookie,
+%LoopDetected,          %MissingCookie,		%FormatError,
 );
 # Avoid "Use of uninitialized value" warning messages.
 sub ValueOrDefault {
@@ -368,10 +368,15 @@ while (defined(my $ThisLine = <STDIN>)) {
       # Remove port number, for proper IP sorting
       $Host =~ s/#.*//;
       $UnexpRCODE{$Rcode}{$Zone}{$Host}++;
-   } elsif ( ($ThisLine =~ /(?:error \()?FORMERR\)? resolving '[^ ]+: [.0-9a-fA-F:#]+/) or
-             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for( client)? [^ ]+)?: .*/) ) {
+   } elsif ( ($Problem,$Addr,$Server) = ($ThisLine =~ /((?:error \()??FORMERR\)? resolving) '([^ \/]+)(?:\/[^ ]+)?': ([.0-9a-fA-F:]+)(?:#\d+)?/) ) {
+      $FormatError{$Problem}{$Addr}{$Server}++;
+   } elsif ($ThisLine =~ /(?:error \()?FORMERR\)? resolving .*/) {
       chomp($ThisLine);
       $FormErr{$ThisLine}++;
+   } elsif ( ($Server,$Addr,$Host,$Problem) = ($ThisLine =~ /DNS format error from ([.0-9a-fA-F:]+)(?:#\d+)? resolving ([^ \/]+)(?:\/[^ ]+)? for(?: client)? ([^ #]+)(?:#\d+)?: (.*) -- invalid response/) ) {
+      $FormatError{$Problem}{$Addr}{$Server}++;
+   } elsif ( ($Server,$Addr,$Host,$Problem) = ($ThisLine =~ /DNS format error from ([.0-9a-fA-F:]+)(?:#\d+)? resolving ([^ \/]+)(?:\/[^ ]+)? for(?: client)? ([^ #]+)(?:#\d+)?: (.*)/) ) {
+      $FormatError{$Problem}{$Addr}{$Server}++;
    } elsif ( ($ThisLine =~ /found [0-9]* CPU(s)?, using [0-9]* worker thread(s)?/) ) {
       chomp($ThisLine);
       $StartLog{$ThisLine}++;
@@ -873,6 +878,19 @@ if (($Detail >= 5) and (keys %FormErr)) {
    print "\nIncorrect response format:\n";
    foreach my $ThisOne (keys %FormErr) {
       print "   " . $ThisOne . ": " . $FormErr{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (($Detail >= 5) and (keys %FormatError)) {
+   print "\nDNS Format Error:\n";
+   foreach my $Problem (sort {$a cmp $b} keys %FormatError) {
+      print "   " . $Problem . ":\n";
+      foreach my $Addr (sort {$a cmp $b} keys %{$FormatError{$Problem}}) {
+         print "     " . $Addr . ":\n";
+         foreach my $Server (sort SortIP keys %{$FormatError{$Problem}{$Addr}}) {
+            print "         " . $Server . ": " . $FormatError{$Problem}{$Addr}{$Server} . " Time(s)\n";
+         }
+      }
    }
 }
 
