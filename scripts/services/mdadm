@@ -36,7 +36,7 @@ my $mdadm;
 if (
     open($mdadm, "<", "/etc/mdadm.conf") or
     open($mdadm, "<", "/etc/mdadm/mdadm.conf") or
-    open($mdadm, "<", "mdadm --detail --scan 2>/dev/null|")) {
+    open($mdadm, "-|", "mdadm --detail --scan")) {
    while (<$mdadm>) {
        if (/^ARRAY/) {
          push(@devices,(split())[1]);
