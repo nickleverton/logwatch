@@ -45,8 +45,9 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $CmdsThresh = $ENV{'command_run_threshold'} || 0;
 my %IgnoreCmds;
 
-my ($user, $error, $tty, $dir, $euser, $egroup, $cmd, $args);
-my (%ConFailed);
+my ($user, $error, $tty, $dir, $euser, $egroup, $tsid, $cmd, $args);
+my %ConFailed;
+my %ParseErrors;
 my $contlines = 0;
 my $argsprinted = 0;
 
@@ -72,7 +73,9 @@ while (defined(my $ThisLine = <STDIN>)) {
      # Ignore
    } elsif ($ThisLine =~ /(.+): conversation failed/) {
       $ConFailed{$1}++;
-   } elsif ( ($user, $error, $tty, $dir, $euser, $egroup, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : ([^=]+; )?(?:TTY=(\S+) ; )?PWD=(.*?) ; USER=(\S+) ;(?: GROUP=(\S+) ;)? COMMAND=(\S+)( ?.*)/) {
+   } elsif ($ThisLine =~ /parse error in (.*)/) {
+      $ParseErrors{$1}++;
+   } elsif ( ($user, $error, $tty, $dir, $euser, $egroup, $tsid, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : ([^=]+; )?(?:TTY=(\S+) ; )?PWD=(.*?) ; USER=(\S+) ;(?: GROUP=(\S+) ;)?(?: TSID=(\S+) ;)? COMMAND=(\S+)( ?.*)/) {
       next if (defined($IgnoreCmds{$user}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{$euser}}));
       next if (defined($IgnoreCmds{'any'}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{'any'}{$euser}}));
       next if (defined($IgnoreCmds{$user}{'any'}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{'any'}}));
@@ -89,6 +92,15 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    $OtherList{$ThisLine}++;
    }
+}
+
+if (keys %ParseErrors) {
+   print "\nConfiguration parse errors:";
+   print "\n---------------------------";
+   foreach my $error (sort keys %ParseErrors) {
+       printf "\n%-30s - %3i Time(s)", $error, $ParseErrors{$error};
+   }
+   print "\n";
 }
 
 foreach my $user (sort keys %byUser) {
