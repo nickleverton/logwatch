@@ -28,6 +28,7 @@ use strict;
 
 use Logwatch ':sort';
 use Errno;
+use POSIX qw(strerror);
 
 # PrettyHost decomposes host names and IP addresses and
 # formats them to align vertically
@@ -115,13 +116,14 @@ if (not defined $Detail) {
 
 # The following variables are auto-increment counts, so are initialized
 my $AddrRcpts =          my $BytesTransferred =   my $CantCreateOutput =
-my $DaemonThrottle =     my $LoadAvgQueueSkip =   my $LoadAvgReject =
-my $MsgsNoRcpt =
+my $DaemonThrottle =     my $Errno =
+my $LoadAvgQueueSkip =   my $LoadAvgReject =      my $MsgsNoRcpt =
 my $MsgsSent =           my $NoMilterFilters =    my $NoMoreSpace =
 my $OutdatedAliasdb =
 my $OverSize =           my $OverSizeBytes =      my $RelayLocalhost =
 my $RemoteProtocolError =my $SendmailStarts =
-my $SendmailStopped =    my $TooManyRcpts =       my $XS4ALL =
+my $SendmailStopped =    my $TLSPeerReset =       
+my $TooManyRcpts =       my $XS4ALL =
 0;
 
 
@@ -184,7 +186,8 @@ my (
 %StarttlsCipher,         %StatDeferred,           %StatFileError,
 %StatRejected,           %StatRejectedLog,
 %SysErr,                 %Timeouts,               %TLSAcceptFailed,
-%TLSConnectFailed,       %TLSFileMissing,         %ToList,
+%TLSConnectFailed,       %TLSErrno,
+%TLSFileMissing,         %ToList,
 %TooManyHops,            %UnknownUsers,           %UnknownUsersCheckRcpt,
 %WUnsafe
 );
@@ -382,10 +385,11 @@ next unless $ThisLine;
       # connection is already closed by the other side
       # file=tls.c, LogLevel>11, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=(server|client), SSL_shutdown failed/ ) or
-      # and similarly, an SSL write may fail because the remote host shuts down
-      # the connection first (ECONNRESET refers to "Connection reset by peer")
-      # file=sfsasl.c, LogLevel>8, LOG_WARNING
-      ( $ThisLine =~ /^STARTTLS: write error=syscall error \(-1\), errno=${\Errno::ECONNRESET}/ ) or
+      # for reads, the timeout is later captured by either a "lost channel" or
+      # a "collect: I/O error" statement, so we ignore the STARTTLS one
+      # and similarly for a read timeout
+      # file=sfsasl.c, LogLevel>7, LOG_WARNING
+      ( $ThisLine =~ /^STARTTLS: read error=timeout$/ ) or
       # file=srvsmtp.c, LogLevel>5, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=server, error: accept failed=-1, reason=unknown, SSL_error=5, errno=${\Errno::ECONNRESET}, retry=/ ) or
       # and yet another symptom of a connection shut down (EPIPE refers to "Broken pipe")
@@ -744,17 +748,34 @@ next unless $ThisLine;
    } elsif ( $ThisLine =~ /Milter: no active filter/) {
        $NoMilterFilters++;
    # file=srvrsmtp.c
-   } elsif ( ($Temp) = ($ThisLine=~ /\-\-\- 500 5\.5\.1 Command unrecognized: \"(.*)\"/) ) {
-      # first we try to delete it from the list of Unmatched Entries
-      $Temp1 = "<--";
-      # this also accounts for an empty command
-      if ($Temp) {$Temp1 .= " $Temp";}
+   } elsif ( ($Temp) = ($ThisLine=~ /\-\-\- 500 5\.5\.1 Command unrecognized: \"([^\"]*)/) ) {
+      chomp($Temp);
+      # And we write it like the incoming SMTP command, so we can later
+      # check it against unmatched entries ($OtherList).
+      $Temp1 = "<-- $Temp";
+      # It uses "..." to indicate shortened strings, so we ignore the
+      # rest of the line.
+      $Temp1 =~ s/\.\.\..*//;
+      # We normalize tab, newline, and return to use their octal values,
+      # as sendmail converts escaped octals.
+      $Temp1 =~ s/\\t/\\011/g;
+      $Temp1 =~ s/\\n/\\012/g;
+      $Temp1 =~ s/\\r/\\015/g;
+      # Remove non-printable space(s) at the end
+      $Temp1 =~ s/\s*$//;
+      # we try to delete it from the list of Unmatched Entries
       if (defined $OtherList{$Temp1}) {
          if ($OtherList{$Temp1} == 1) {
             delete ($OtherList{$Temp1});
-         } else {
+         } elsif ($OtherList{$Temp1} > 1) {
             $OtherList{$Temp1}--;
+         } else {
+            # This should not happen.  So we punt it to the
+            # OtherList to be printed at the end.
+            $OtherList{"Command unrecognized: " . $Temp}++;
          }
+      } else {
+         $OtherList{$Temp1}++;
       }
       # Ignore commands from connects that failed greeting
       if (not defined $PREGreetingQueue{$QueueID}) {
@@ -762,7 +783,7 @@ next unless $ThisLine;
             $CommandUnrecognized{$QueueID} = "";
          }
          if ($Temp =~ /^$/) { $Temp = "<Empty Line>"};
-         $CommandUnrecognized{$QueueID} =  $CommandUnrecognized{$QueueID} . "\t" . $Temp . "\n";
+         $CommandUnrecognized{$QueueID} .=  "\t" . $Temp . "\n";
       }
    # similarly, delete last unmatched entry when too many bad commands
    } elsif ( $ThisLine =~ /^--- 421 4\.\d\.\d .* Too many bad commands; closing connection$/) {
@@ -777,7 +798,7 @@ next unless $ThisLine;
    } elsif ( ( $Host ) = ($ThisLine =~ /(.*) (\(may be forged\) )?did not issue MAIL\/EXPN\/VRFY\/ETRN during connection to /) ) {
       # we test if they previously sent junk, because the connection is expected to fail
       if (defined $CommandUnrecognized{$QueueID}) {
-         $CommandUnrecognized{$QueueID} = $CommandUnrecognized{$QueueID} . "    ... and then exited without communicating\n";
+         $CommandUnrecognized{$QueueID} .= "    ... and then exited without communicating\n";
       } else {
       $DummyConnection{$Host}++;
       }
@@ -891,6 +912,16 @@ next unless $ThisLine;
          $Starttls{$StarttlsMode}{'Other'}++;
       }
       $StarttlsCipher{"Cipher: " . $StarttlsCipherType . " Bits: " . $StarttlsNumBits}++;
+   # We capture only certain STARTTLS errors.  Currently, only EPIPE (broken pipe) and
+   # ECONNRESET (connection reset by peer).
+   # Not strictly a STARTTLS error, but it happens when a client ungracefully
+   # exits during a STARTTLS exchange, often after actually delivering mail.
+   # But we make a note of it, anyway.  Unfortunately, there is no QueueID.
+   # We might add more errnos in the future, but need to make sure they are not
+   # due to a problem that can be resolved.
+   # file=sfsasl.c, LogLevel>7, LOG_WARNING
+   } elsif ( ($Errno) = ($ThisLine =~ /^STARTTLS: (?:read|write) error=syscall error \(-1\), errno=(${\Errno::EPIPE}|${\Errno::ECONNRESET}|${\Errno::ETIMEDOUT}), / )) {
+      $TLSErrno{$Errno}++;
    # file=queue.c, LogLevel>-1, LOG_ALERT
    } elsif ( ($Reason) = ($ThisLine=~ /^Losing (.*)/ ) ) {
       $LostQueueFile{$Reason}++;
@@ -1046,30 +1077,63 @@ next unless $ThisLine;
    # the following is the catch-all:
    } elsif ( ($Milter,$Error) = ($ThisLine =~ /^Milter \((.*)\): (.+)/) ) {
       $MilterErrors{$Milter}{$Error}++;
+   } elsif ( $ThisLine =~ /$QueueIDFormat\[[2-9]\]: / ) {
+      # For very large input command lines (hundreds of
+      # characters), sendmail breaks them down and puts an
+      # index after the QueueID when echoing in debug mode
+      # (level > 14).  So we'll process the first one, and
+      # ignore the other ones.
    } else {
       $ThisLine =~ s/.*\: (DSN\: .*)/$1/;
       $ThisLine =~ s/.*\: (postmaster notify\: .*)/$1/;
       chomp($ThisLine);
       # Report any unmatched entries...
-      if ($ThisLine =~ /^<-- /) {
-         # sendmail converts some characters, so we do the same
+
+      # Remove any whitespace at the end
+      $ThisLine =~ s/\s*$//;
+
+      # For the very first of the very long debug echo lines,
+      # handle the case of the first indexed QueueID.
+      $ThisLine =~ s/${QueueIDFormat}\[1\]: <-- /<-- /;
+      if ($ThisLine =~ /<--/) {
+         # We got here because these are unmatched entries.  Often it
+         # is because a client sends binary code when it shouldn't.
+         # When sendmail reads SMTP commands, it converts these
+         # non-printable characters into escaped sequences, so we do
+         # the same here.
+         # First, we deal with the special case of a string containing
+         # \200, as it becomes a null character, terminating the string.
+         #$ThisLine =~ s/(.*)\\200(.*)/$1\\0/g;
+         $ThisLine =~ s/\\200(.*)//;
          $ThisLine =~ s/\\([23]\d{2})/
             # clear the most significant bit if set
             my $tempchar = oct($1 - 200);
-            # if the new value is a printable ASCII character, print it
-            if (($tempchar >= 32) && ($tempchar != 127)) {
+            if ($tempchar == 92) {
+               # backslash is escaped with another backslash
+               sprintf("\\\\");
+            } elsif (($tempchar >= 32) && ($tempchar != 127)) {
+               # if the new value is a printable ASCII character, print it
                chr($tempchar);
             } else {
             # if not printable ASCII, leave as octal code
-               sprintf("\\%o", $tempchar);
+               sprintf("\\%03o", $tempchar);
             }/eg;
+         # When a string has embedded double-quotes, sendmail stops processing.
+         $ThisLine =~ s/".*//;
+         # We normalize tab, newline, and return to octal values
+         $ThisLine =~ s/\\t/\\011/g;
+         $ThisLine =~ s/\\n/\\012/g;
+         $ThisLine =~ s/\\r/\\015/g;
+         # Remove non-printable space(s) at the end
+         $ThisLine =~ s/\s*$//;
       }
-      # store last unmatched entry, in case it is needed later.  But note that some
+      $OtherList{$ThisLine}++;
+      # Store last unmatched entry, in case it is needed later.  But note that some
       # statements have no QueueID.
       if (defined $QueueID) {
          $LastCmd{$QueueID} = $ThisLine;
       }
-      $OtherList{$ThisLine}++;
+
    }
 }
 
@@ -1507,6 +1571,16 @@ if (keys %TLSAcceptFailed) {
       }
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
+}
+$TotalError[++$ErrorIndex] = 0;
+
+if (keys %TLSErrno) {
+   eval "$PrintCond" if ($Detail >= 3);
+   print "\n\nSTARTTLS Errors" if ($Detail >= 3);
+   foreach $Errno (sort {$a <=> $b} keys %TLSErrno) {
+      PrettyTimes("    Error Code " . sprintf("%3d: ", $Errno) . strerror($Errno), $TLSErrno{$Errno}) if ($Detail >=5);
+      $TotalError[$ErrorIndex] += $TLSErrno{$Errno};
+   }
 }
 $TotalError[++$ErrorIndex] = 0;
 
