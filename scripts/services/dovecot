@@ -47,6 +47,7 @@ my %Aborted;
 my %AuthDisconnectedWithPending;
 my %AuthTimedOut;
 my %AuthUsernameChars;
+my %AuthFail;
 my %ChildErr;
 my %Connection;
 my %ConnectionClosed;
@@ -128,7 +129,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /ssl-params: Generating SSL parameters/) or
       ($ThisLine =~ /auth-worker/) or
       ($ThisLine =~ /auth:.*: Connected to/) or
-      ($ThisLine =~ /Connection closed/) or
+      ($ThisLine =~ /Connection closed(?! \(auth failed)/) or
       ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
       ($ThisLine =~ /IMAP.* failed with mbox file/) or
       ($ThisLine =~ /discarded duplicate forward to/) or
@@ -268,6 +269,9 @@ while (defined(my $ThisLine = <STDIN>)) {
 
    } elsif ($ThisLine =~ /Disconnected (\[|bytes|top)/) {
       $Disconnected{"No reason"}++;
+   # Oct 24 14:10:24 host dovecot[114]: imap-login: Disconnected: Connection closed (auth failed, 1 attempts in 2 secs): user=<user@domain.com>, method=PLAIN, rip=192.168.1.110, lip=192.168.1.3, TLS, session=<lGZ01sXrvLzAqAFu>
+   } elsif ( ($User, $IP) = ($ThisLine =~ /Disconnected: Connection closed \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
+      $AuthFail{$User}{$IP}++;
    } elsif ( ($Reason) = ($ThisLine =~ /Disconnected: (.*) \[/) ) {
       $Disconnected{$Reason}++;
    } elsif ( ($Reason) = ($ThisLine =~ /Disconnected: (.*) (bytes|top|in)=.*/) ) {
@@ -554,6 +558,31 @@ if ( ( $Detail >= 10 ) and (keys %AuthTimedOut)) {
          $Total += $AuthTimedOut{$User}{$IP};
       }
       print ") $Total Time(s)";
+   }
+}
+
+if (keys %AuthFail) {
+   my $AuthFailCount = 0;
+   my %AuthFailUserCount;
+   foreach my $User (keys %AuthFail) {
+      foreach my $IP (keys %{$AuthFail{$User}}) {
+         $AuthFailUserCount{$User} += $AuthFail{$User}{$IP};
+      }
+      $AuthFailCount += $AuthFailUserCount{$User};
+   }
+   printf "\n" if ($Detail >= 5);
+   printf "\nDovecot Failed Logins: %s", $AuthFailCount;
+   if ($Detail >= 5) {
+      foreach my $User (sort { $AuthFailUserCount{$b} <=> $AuthFailUserCount{$a} }
+                        keys %AuthFailUserCount) {
+         printf("\n  %4s %s", $AuthFailUserCount{$User}, $User);
+         if ($Detail >= 10) {
+            foreach my $IP (sort { $AuthFail{$User}{$b} <=> $AuthFail{$User}{$a} }
+                              keys %{$AuthFail{$User}}) {
+               printf "\n      %4s %s", $AuthFail{$User}{$IP}, $IP;
+            }
+         }
+      }
    }
 }
 
