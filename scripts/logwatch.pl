@@ -1175,7 +1175,6 @@ sub initprint {
    } elsif ($Config{'output'} eq "file") {
       open(OUTFILE,">>" . $Config{'filename'}) or die "Can't open output file: $Config{'filename'} $!\n";
    } else {
-   #fixme mailto
       if (($Config{'hostformat'} eq "splitmail") || ($emailopen eq "")) {
          #Use mailer = in logwatch.conf to set options. Default should be "sendmail -t"
          #In theory this should be able to handle many different mailers. I might need to add
@@ -1183,10 +1182,13 @@ sub initprint {
          open(OUTFILE,"|$Config{'mailer'}") or die "Can't execute $Config{'mailer'}: $!\n";
          my $mailto = $Config{"mailto_$Config{'hostname'}"};
          $mailto = $Config{'mailto'} unless $mailto;
-         for my $to (split(/ /, $mailto)) {
-            print OUTFILE "To: $to\n";
+         my @mail_addrs = split(/ /, $mailto);
+         my $oneto = pop @mail_addrs;
+         print OUTFILE "To: $oneto ";
+         foreach (@mail_addrs) {
+            print OUTFILE ", $_";
          }
-         print OUTFILE "From: $Config{'mailfrom'}\n";
+         print OUTFILE "\nFrom: $Config{'mailfrom'}\n";
          #If $Config{'subject'} exists lets use it.
          #This does not allow for variable expansion as the default below does -mgt
          if ($Config{'subject'}) {
