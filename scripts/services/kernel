@@ -27,9 +27,11 @@ use strict;
 use Logwatch ':ip';
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Ignore_cpu_throttled = $ENV{'ignore_cpu_throttled'} || 0;
 my $Ignore_faults = $ENV{'ignore_faults'};
 my $Ignore_rpcsec_expired = $ENV{'ignore_rpcsec_expired'} || 0;
 my $Ignore_messages = $ENV{'kernel_ignore_messages'} || '^$';
+my $CPUThrottled = 0;
 my %SYNflood = ();
 my %RAIDErrors = ();
 my %DRBDErrors = ();
@@ -72,6 +74,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       my $Fullfrom = LookupIP($from);
       my $Fullon = LookupIP($on);
       $SYNflood{$Fullon}{$Fullfrom}++;
+   } elsif ($ThisLine =~ /temperature above threshold, cpu clock throttled/) {
+      $CPUThrottled++ if not $Ignore_cpu_throttled;
    } elsif ($ThisLine =~ /continuing in degraded mode/) {
       $RAIDErrors{$ThisLine}++;
    } elsif ($ThisLine =~ /([^(]*)\[\d+\]: segfault at/) {
@@ -267,6 +271,10 @@ if (keys %EXT4) {
          print "      $Msg\n";
       }
    }
+}
+
+if ($CPUThrottled) {
+   print "\nWARNING:  CPU Package temperature above threshold, cpu clock throttled $CPUThrottled Time(s)\n";
 }
 
 # OTHER
