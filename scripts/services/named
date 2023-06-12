@@ -70,6 +70,7 @@ my (
 %NoSOA,                 %OtherList,             %StartLog,
 %UnknownCCCommands,     %BadCookie,             %Timeout,
 %LoopDetected,          %MissingCookie,		%FormatError,
+%Rewrites,
 );
 # Avoid "Use of uninitialized value" warning messages.
 sub ValueOrDefault {
@@ -335,6 +336,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?([^#]*)(#\d+)?(?: \(.*\))?: query '.*' denied/ ) ) {
       my $FullClient = LookupIP ($Client);
       $DeniedQueryNoCache{$FullClient}++;
+   } elsif ( ($Entry) = ($ThisLine =~ / rewrite (\S+) /) ) {
+      $Rewrites{$Entry}++;
    } elsif ( ($Rhost, $ViewName, $Ldom) = ($ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?([\.0-9a-fA-F:]+)#\d+: (?:view (\w+): )?update '(.*)' denied/)) {
       $ViewName = ($ViewName ? "/$ViewName" : "");
       $UpdateDenied{"$Rhost ($Ldom$ViewName)"}++;
@@ -691,6 +694,13 @@ if ( ( $Detail >= 5 ) and (keys %ZoneRemoved) ) {
    print "\nRemoved Zones:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %ZoneRemoved) {
       print "   $ThisOne: $ZoneRemoved{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 5 ) and (keys %Rewrites) ) {
+   print "\nLookup rewrites:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %Rewrites) {
+      print "   $ThisOne: $Rewrites{$ThisOne} Time(s)\n";
    }
 }
 
