@@ -26,39 +26,46 @@
 #########################################################
 use strict;
 
-
 use POSIX qw(uname);
+
+my %CPUModel;
+my $Model;
+
 my ($OSname, $hostname, $release, $version, $machine) = POSIX::uname();
 print "   Machine: $machine\n";
 my $OStitle;
 $OStitle = $OSname;
 $OStitle = "Solaris" if ($OSname eq "SunOS" && $release >= 2);
-print "   Release: $OStitle $release\n";
+print ("   Release: $OStitle $release\n");
 
-if (open my $fh, '<' '/proc/cpuinfo') {
-   while (my $ThisLine) = <$fh>) {
-      if (($Model) = $ThisLine =~ /^model name\s*: (.*)$/) {
+if (open FH, '<', '/proc/cpuinfo') {
+   while (<FH>) {
+      if (($Model) = $_ =~ /^model name\s*: (.*)$/) {
          $CPUModel{$Model}++;
       }
    }
+   close(FH);
 }
 
 if (keys %CPUModel) {
-   print ("\nCPU Models:");
-   foreach $cpu (keys %CPUModel) {
-      print ("\n   CPU Model: $cpu: $CPUModel{$cpu} processors");
+   print ("\n   CPU Model(s):");
+   foreach my $cpu (keys %CPUModel) {
+      print ("\n      CPU Model: $cpu: $CPUModel{$cpu} processors");
    }
 }
+print ("\n\n");
 
-if (open my $fh, '<' '/proc/meminfo') {
-   while (my $ThisLine) = <$fh>) {
+if (open FH, '<', '/proc/meminfo') {
+   while (my $ThisLine = <FH>) {
       if ($ThisLine =~ /^(Mem|Swap)(Total|Free)/) {
-         print $ThisLine;
+         chomp ($ThisLine);
+         print ("   " . $ThisLine);
+         my @fields = split(' ', $ThisLine);
+         printf (" (%.2f GB)\n", @fields[1]/(1024*1024));
       }
    }
+   close(FH);
 }
-
-
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
 # Local Variables:
