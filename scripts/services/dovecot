@@ -278,8 +278,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Disconnected{$Reason}++;
    } elsif ($ThisLine =~ /Logged out (rcvd|bytes|top|in)=.*/) {
       $Disconnected{"Logged out"}++;
-   } elsif ( ($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
+   } elsif ( ($Reason) = ($ThisLine =~ /Disconnected(?:: Inactivity.*)? \((.*)\):/) ) {
       $Reason =~ s/ in \d+ secs//;
+      $Reason =~ s/, waited \d+ secs//;
       $Disconnected{$Reason}++;
    } elsif ($ThisLine =~ /Server shutting down./) {
       $ConnectionClosed{"Server shutting down"}++;
