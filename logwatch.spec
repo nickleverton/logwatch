@@ -1,7 +1,7 @@
 Summary: Analyzes and Reports on system logs
 Name: logwatch
 Version: 7.9
-Release: 1
+Release: 2
 License: MIT
 Group: Applications/System
 URL: https://sourceforge.net/projects/logwatch/
@@ -112,17 +112,20 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sat Jul 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.9-1
+* Sat Jul 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.9-2
+- corrected dates in changelog, not released
+
+* Sat Jul 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.9-1
 - release 7.8, noarch on EL and cygwin
 
-* Thu Jan 26 2022 Bjorn <bjorn1@users.sourceforge.net> 7.8-3
+* Thu Jan 26 2023 Bjorn <bjorn1@users.sourceforge.net> 7.8-3
 - Made noarch version for linux
 
-* Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.8-2
+* Sun Jan 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.8-2
 - add missing requires (impacting EL8)
 - add dist to release
 
-* Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.8-1
+* Sun Jan 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.8-1
 
 * Fri Jul 22 2022 Bjorn <bjorn1@users.sourceforge.net> 7.7
 
