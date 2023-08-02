@@ -37,7 +37,7 @@ my %OtherList;
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    my ($Service,$Message) = ($ThisLine =~ /^\d+ \d+ - (\w+) Service  (.*)$/);
-   if ($Message =~ /fail|disable|replace/i) {
+   if ($Message =~ /error|fail|degraded|disable|replace|timeout/i) {
       # Service erroneously detects failure on service startup
       next if (($Service eq "Instrumentation") and $Message =~ /^Power supply detected a failure.*Previous state was: Unknown/);
       $ServiceError{$Service}->{$Message}++;
