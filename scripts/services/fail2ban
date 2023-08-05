@@ -52,7 +52,7 @@ my %ServicesIgnored = ();
 #Init String Containers
 my (
 $Action,        $Host,      $Message,
-$NumFailures,   $Service
+$NumFailures,   $Service,   $Increase
 );
 if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG: Inside Fail2Ban Filter \n\n";
@@ -87,7 +87,10 @@ while (defined(my $ThisLine = <STDIN>)) {
     } elsif ( ($Service,$Action,$Host) = ($ThisLine =~ m/NOTICE:?\s+\[?(.*?)[]:]?\s(Restore Ban)[^\.]* (\S+)/)) {
         $ServicesBans{$Service}{$Host}{'ReBan'}++;
         $ServicesBans{$Service}{"(all)"}{'ReBan'}++;
-    } elsif ( ($Service,$Action,$Host) = ($ThisLine =~ m/(?:WARNING|NOTICE):?\s+\[?(.*?)[]:]?\s(Ban|Unban)[^\.]* (\S+)/)) {
+    } elsif ( ($Service,$Increase,$Action,$Host) = ($ThisLine =~ m/(?:WARNING|NOTICE):?\s+\[?(.*?)[]:]?\s(Increase\s)?(Ban|Unban)[^\.]* (\S+)/)) {
+        if ( $Increase ) {
+            $Service .= " increase"
+        }
         if ( $Debug >= 6 ) {
             print STDERR "DEBUG($DebugCounter): Found $Action for $Service from $Host\n";
         }
