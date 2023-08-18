@@ -102,7 +102,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Relabelled / or
        $ThisLine =~ /^Reloading\.$/ or         # Happens on each boot at switch root
        $ThisLine =~ /^RTC configured in / or
-       $ThisLine =~ /^Running in initial RAM disk\.$/ or
+       $ThisLine =~ /^Running in init(?:ial RAM disk|rd)\.$/ or
        $ThisLine =~ /^selinux: avc: *received policyload notice/ or
        $ThisLine =~ /^selinux: avc: *op=load_policy / or
        $ThisLine =~ /^Set hostname to / or
