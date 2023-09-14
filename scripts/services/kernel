@@ -90,9 +90,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       $FPAssists{$1}++;
    } elsif ($ThisLine =~ /(?:[Kk]illed|[Kk]ill) process \d+ \((.*)\)/) {
       $OOM{$1}++;
-   } elsif ($ThisLine =~ /(EDAC (MC|PCI)\d:.*)/) {
+   } elsif ($ThisLine =~ /(EDAC (?:igen6 )?(?:MC|PCI)\d:.*)/) {
       # Standard boot messages
-      next if $ThisLine =~ /Giving out device to /;
+      next if $ThisLine =~ /(?:Giving out device to |HANDLING IBECC MEMEORY )/;
       $EDACs{$1}++;
    } elsif ($ThisLine =~ /(block drbd\d+): Online verify found (\d+) \d+k block out of sync/) {
       $DRBDErrors{$1}{"$2 block(s) out of sync"} = 1;
