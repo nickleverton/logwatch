@@ -143,7 +143,8 @@ $LastIndex,              $LastIndex2,
 $Load,                   $Luser,                  $MailerName,
 $MailerString,           $MailerType,             $NewQueueID,
 $NoCommonName,
-$NumRcpts,               $Owner,                  $QueueID,
+$NumRcpts,               $Owner,                  $OtherListFound,
+$QueueID,
 $Reason,                 $RejCmd,                 $Relay,
 $RelayDeniedCount,       $RelayHost,              $RelayName,
 $Ruser,                  $Size,                   $Source,
@@ -765,6 +766,7 @@ next unless $ThisLine;
       $Temp1 =~ s/\s*$//;
       # we try to delete it from the list of Unmatched Entries
       if (defined $OtherList{$Temp1}) {
+         $OtherListFound = 1;
          if ($OtherList{$Temp1} == 1) {
             delete ($OtherList{$Temp1});
          } elsif ($OtherList{$Temp1} > 1) {
@@ -775,15 +777,19 @@ next unless $ThisLine;
             $OtherList{"Command unrecognized: " . $Temp}++;
          }
       } else {
+         $OtherListFound = 0;
          $OtherList{$Temp1}++;
       }
       # Ignore commands from connects that failed greeting
       if (not defined $PREGreetingQueue{$QueueID}) {
-         if (not defined $CommandUnrecognized{$QueueID}) {
-            $CommandUnrecognized{$QueueID} = "";
-         }
          if ($Temp =~ /^$/) { $Temp = "<Empty Line>"};
-         $CommandUnrecognized{$QueueID} .=  "\t" . $Temp . "\n";
+         if ($OtherListFound == 0) {
+            if (not defined $CommandUnrecognized{$QueueID}) {
+               # initialize string, as we will concatenate commands
+               $CommandUnrecognized{$QueueID} = "";
+            }
+            $CommandUnrecognized{$QueueID} .=  "\t" . $Temp . "\n";
+         }
       }
    # similarly, delete last unmatched entry when too many bad commands
    } elsif ( $ThisLine =~ /^--- 421 4\.\d\.\d .* Too many bad commands; closing connection$/) {
