@@ -203,21 +203,6 @@ sub compPerMacAddr {
   return $wrong_client{$b} <=> $wrong_client{$a};
 }
 
-if (keys %loginsOk) {
-   if ($Detail >= 10) {
-      print "\nSuccessful logins:\n";
-      foreach my $user (sort {$loginsOk{$b} <=> $loginsOk{$a}} keys %loginsOk) {
-        printf "  %-40s : %5d time(s)\n", $user, $loginsOk{$user};
-      }
-   } elsif ($Detail >= 6) {
-      my $loginsOkSum = 0;
-      foreach my $user (keys %loginsOk) {
-         $loginsOkSum += $loginsOk{$user};
-      }
-      printf "\n%-42s : %5d time(s)\n", "Successful logins", $loginsOkSum;
-   }
-}
-
 if ($Detail >= 8) {
    if (keys %wrong_client) {
       print "\nSum of failed logins per client (wrong password or user)\n";
@@ -228,7 +213,7 @@ if ($Detail >= 8) {
 }
 
 if (keys %wrongUser) {
-   if ($Detail >= 6) {
+   if ($Detail >= 3) {
       print "\nFailed logins - wrong user name:\n";
       foreach my $client (sort compPerMacAddr keys %wrongUser) {
          printf "  %-40s\n",  $client;
@@ -328,6 +313,21 @@ if (%warnings) {
       foreach my $component (keys %$components) {
          printf "    %-38s : %5d time(s)\n", $component, $components->{$component};
       }
+   }
+}
+
+if (keys %loginsOk) {
+   if ($Detail >= 10) {
+      print "\nSuccessful logins:\n";
+      foreach my $user (sort {$loginsOk{$b} <=> $loginsOk{$a}} keys %loginsOk) {
+        printf "  %-40s : %5d time(s)\n", $user, $loginsOk{$user};
+      }
+   } elsif ($Detail >= 6) {
+      my $loginsOkSum = 0;
+      foreach my $user (keys %loginsOk) {
+         $loginsOkSum += $loginsOk{$user};
+      }
+      printf "\n%-42s : %5d time(s)\n", "Successful logins", $loginsOkSum;
    }
 }
 
