@@ -41,6 +41,7 @@ if ( $Debug >= 5 ) {
 my %OtherList = ();
 
 my %loginsOk = ();
+my %certificateExpired = ();
 my %wrongPassword = ();
 my %wrongUser = ();
 my %wrong_client = ();
@@ -86,6 +87,8 @@ while (defined($ThisLine = <STDIN>)) {
         # TD:      [/etc/raddb/mods-config/attr_filter/access_reject]:11 Check item "FreeRADIUS-Response-Delay-USec"    found in filter list for realm "DEFAULT".
         # This is triggered by a standard config item and is harmless
         ( $ThisLine =~ /access_reject\]:\d+ Check item "FreeRADIUS-Response-Delay(?:-USec)?"\s*found in filter list for realm/ ) ||
+        # These should precede Login incoreect messages
+        ( $ThisLine =~ /^eap_tls: *ERROR: \(TLS\) .*(?:certificate.*expired|Error in error)/ ) ||
         # We count completed events below
         ( $ThisLine =~ /^(?:Info: )?(?:Start|Stopp|Reload)ing FreeRADIUS/ )
       ) {
@@ -115,6 +118,13 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ( my ($user, $client) = ($ThisLine =~ m/^(?:Auth: )?Login incorrect: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
       if (! $client) { $client = "*not named*"; }
       $wrongPassword{$client}{$user}++;
+      $wrong_client{$client}++;
+   }
+
+   # TD: Login incorrect (eap_tls: (TLS) OpenSSL says error 10 : certificate has expired): [USERNAME] (from client CLIENTNAME port 50427 cli F8-E4-3B-F1-80-90)
+   elsif ( my ($user, $client) = ( $ThisLine =~ m/^(?:Auth: )?Login incorrect \(.*certificate has expired\): \[(.*)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+)(?:;\w+)?)?(?: via TLS tunnel)?\)/) ) {
+      if (! $client) { $client = "*not named*"; }
+      $certificateExpired{$client}{$user}++;
       $wrong_client{$client}++;
    }
 
@@ -209,6 +219,29 @@ if ($Detail >= 8) {
       foreach my $client (sort compPerMacAddr keys %wrong_client) {
          printf "  %-40s : %5d time(s)\n", $client, $wrong_client{$client};
       } 
+   }
+}
+
+if (keys %certificateExpired) {
+   if ($Detail >= 3) {
+      print "\nFailed logins - certificate expired:\n";
+      foreach my $client (sort compPerMacAddr keys %certificateExpired) {
+         my $users = $certificateExpired{$client};
+         printf "  %-40s\n", $client ;
+         foreach my $user (sort {$users->{$b} <=> $users->{$a}} keys %$users) {
+            #print "    $user ", $users->{$user}, " time(s)\n";
+            printf "    %-38s : %5d time(s)\n", $user, $users->{$user};
+         }
+      }
+   } else {
+      my $certificateExpiredSum = 0;
+      foreach my $client (%certificateExpired) {
+         my $users = $certificateExpired{$client};
+         foreach my $user (keys %$users) {
+            $certificateExpiredSum += $users->{$user};
+         }
+      }
+      printf "\n%-42s : %5d time(s)\n", "Failed logins - certificate expired", $certificateExpiredSum;
    }
 }
 
