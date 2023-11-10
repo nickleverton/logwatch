@@ -175,6 +175,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /too many timeouts resolving '.*' .*: disabling EDNS/) or
       ($ThisLine =~ /too many timeouts resolving '.*' .*: reducing the advertised EDNS UDP packet size to .* octets/) or
       ($ThisLine =~ /reloading zones succeeded/) or
+      ($ThisLine =~ /rpz: .*: reload (?:start|done)/) or
       ($ThisLine =~ /generating session key/) or
       ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after disabling EDNS/) or
       ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after disabling EDNS/) or
