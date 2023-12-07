@@ -62,6 +62,7 @@ use Logwatch ':dates';
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
 my $Ignore_Outdated = $ENV{'ignore_outdated'} || 0;
 my $Ignore_No_Updates = $ENV{'ignore_no_updates'} || 0;
+my $Last_Run_Only = $ENV{'last_run_only'} || 0;
 
 my $time          = time;
 my $Date;
@@ -112,6 +113,10 @@ while (defined(my $ThisLine = <STDIN>)) {
          if ($Version) {
             # $Starts is only set if $Version was set just before the current update process
             $Starts{$Version}++;
+         }
+         if ($Last_Run_Only) {
+            %Errors = ();
+            %Warnings = ();
          }
       } else {
          $InRange = 0;
