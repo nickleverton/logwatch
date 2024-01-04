@@ -84,6 +84,7 @@ if ($ENV{'MAILTO'}) {
    $Config{'mailto'} = "root";
 }
 $Config{'mailfrom'} = "Logwatch";
+$Config{'mailer'} = "/usr/sbin/sendmail -t";
 $Config{'subject'} = "";
 $Config{'filename'} = "";
 $Config{'range'} = "yesterday";
