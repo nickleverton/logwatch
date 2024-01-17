@@ -1556,7 +1556,7 @@ if (keys %TLSConnectFailed) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nTLS Connect Failed" if ($Detail >=3);
    foreach $TLSReason (sort keys %TLSConnectFailed) {
-         PrettyTimes("    " . $TLSConnectFailed{$TLSReason})
+         PrettyTimes("    " . $TLSReason, $TLSConnectFailed{$TLSReason})
             if ($Detail >= 5);
          $TotalError[$ErrorIndex] += $TLSConnectFailed{$TLSReason};
    }
