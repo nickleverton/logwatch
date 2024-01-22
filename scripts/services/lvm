@@ -44,11 +44,11 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    # Seeing leading space on Fedora 26
    $ThisLine =~ s/^ *//;
-   if ($ThisLine =~ /^pvscan\[\d+\] PV .* online(?:|, VG .* is complete)\.$/ 
-       or $ThisLine =~ /pvscan\[\d+\] activating all complete VGs for init/
-       or $ThisLine =~ /pvscan\[\d+\] PVID .* read from .* last written to/
-       or $ThisLine =~ /pvscan\[\d+\] VG .* not using quick activation/
-       or $ThisLine =~ /pvscan\[\d+\] VG .* run autoactivation/
+   if ($ThisLine =~ /^(pvscan\[\d+\] )?PV .* online(?:|, VG .* is complete)\.$/ 
+       or $ThisLine =~ /(pvscan\[\d+\] )?activating all complete VGs for init/
+       or $ThisLine =~ /(pvscan\[\d+\] )?PVID .* read from .* last written to/
+       or $ThisLine =~ /(pvscan\[\d+\] )?VG .* not using quick activation/
+       or $ThisLine =~ /(pvscan\[\d+\] )?VG .* run autoactivation/
        # This happens often at startup
        or $ThisLine =~ /WARNING: lvmetad is being updated, retrying/
        # This happens on shutdown
