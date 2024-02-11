@@ -153,7 +153,8 @@ if ($UpdatedNum) {
 elsif ($Ignore_No_Updates == 0) {
    print "\nNo updates detected in the log for the freshclam daemon (the\n";
    print "ClamAV update process).  If the freshclam daemon is not running,\n";
-   print "you may need to restart it.  Other options:\n\n";
+   print "you may need to restart it.  (Or if run from a cron job, ensure\n";
+   print "it is run periodically.)  Other options:\n\n";
    print "A. If you no longer wish to run freshclam, deleting the log file\n";
    print "   (configured is $ENV{'LOGWATCH_LOGFILE_LIST'}) will suppress this error message.\n\n";
    print "B. If you use a different log file, update the appropriate\n";
