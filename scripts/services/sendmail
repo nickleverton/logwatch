@@ -583,7 +583,15 @@ next unless $ThisLine;
           $StatRejected{"Unable to deliver mail"}{"system notify"}++;
       # Return Receipts from successful delivery
       } elsif ($Reason =~ /^Return receipt$/) {
-         $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
+         if (not defined $Msgs{$QueueID}{"FromUser"}) {
+            # The most likely reason for this condition is that the
+            # original email, which identifies the sender, was received
+            # before the --range period specified.
+            $ReturnReceipts{"(Unknown Sender)"}++;
+         } else {
+            $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
+         }
+
       # Timeouts
       } elsif ($Reason =~ /^(Warning: could not send message for past .*)/ ) {
           $SentTimeouts{$Reason}++;
