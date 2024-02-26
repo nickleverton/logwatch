@@ -58,8 +58,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    # Modify some items that prevent de-duplication
    if ($Detail < 10) {
       $ExpandedString =~ s/(NextScheduled\S+|PID) \d+/$1 XXX/;
-      $ExpandedString =~ s,\d{4}/\d\d/\d\d \d\d:\d\d:\d\d(?:\.\d+)?,TIMESTAMP,g;
-      $ExpandedString =~ s/(?:\w{3}, )?\d{2} \w{3} \d{4},? \d\d:\d\d(?::\d\d \w{3})?/TIMESTAMP/g;
+      $ExpandedString =~ s,\d{4}/\d\d/\d\d \d\d:\d\d:\d\d(?:\.\d+)?,TIME,g;
+      $ExpandedString =~ s/(?:\w{3}, )?\d{2} \w{3} \d{4},? \d\d:\d\d(?::\d\d \w{3})?/TIME/g;
       $ExpandedString =~ s/(SessionId|ThreadId):( ?0x)[0-9A-Fa-f]{2,16}(?::0x[0-9a-f]{5})?/$1:${2}XXXX/g;
       $ExpandedString =~ s/Session-trace:.*$/Session-trace: XXXX/;
    }

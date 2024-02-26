@@ -74,6 +74,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ExpandedString =~ s/processor \d+/processor X/;
       $ExpandedString =~ s/for \d+ seconds/for XX seconds/;
       $ExpandedString =~ s/(APPID|CLSID)\s+\{[0-9A-F\-]+\}/$1 {XXX}/g;
+      $ExpandedString =~ s/(Time:) \d+:\d+:\d+\.\d+ \d+\/\d+\/\d+ Z/$1 TIME/g;
       while ($ExpandedString =~ /(\d{4,}) bytes/) {
          my $h = &human($1);
          $ExpandedString =~ s/$1 bytes/${h}b/g;
