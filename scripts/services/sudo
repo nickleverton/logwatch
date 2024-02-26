@@ -44,6 +44,7 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 # maximum number of commands user ran to display at low detail
 my $CmdsThresh = $ENV{'command_run_threshold'} || 0;
 my %IgnoreCmds;
+my %IgnoreCmdArgs;
 
 my ($user, $error, $tty, $dir, $euser, $egroup, $tsid, $cmd, $args);
 my %ConFailed;
@@ -55,7 +56,11 @@ if (defined($ENV{'ignore_commands'})) {
    foreach my $entry (split(',',$ENV{'ignore_commands'})) {
       $entry =~ s/['"]//g;
       my ($from_user,$to_user,$cmd) = split(';',$entry);
-      push(@{$IgnoreCmds{$from_user}{$to_user}},$cmd);
+      if ($cmd =~ " ") {
+         push(@{$IgnoreCmdArgs{$from_user}{$to_user}},$cmd);
+      } else {
+         push(@{$IgnoreCmds{$from_user}{$to_user}},$cmd);
+      }
    }
 }
 
@@ -79,6 +84,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       next if (defined($IgnoreCmds{$user}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{$euser}}));
       next if (defined($IgnoreCmds{'any'}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{'any'}{$euser}}));
       next if (defined($IgnoreCmds{$user}{'any'}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{'any'}}));
+      next if (defined($IgnoreCmdArgs{$user}{$euser}) && "$cmd$args" =~ join("|",@{$IgnoreCmdArgs{$user}{$euser}}));
+      next if (defined($IgnoreCmdArgs{'any'}{$euser}) && "$cmd$args" =~ join("|",@{$IgnoreCmdArgs{'any'}{$euser}}));
+      next if (defined($IgnoreCmdArgs{$user}{'any'}) && "$cmd$args" =~ join("|",@{$IgnoreCmdArgs{$user}{'any'}}));
       if ($egroup) {
          $euser .= ":${egroup}";
       }
