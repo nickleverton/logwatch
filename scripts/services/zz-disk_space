@@ -162,7 +162,7 @@ sub DiskFull {
 #Main
 
 if ($OSname eq "Linux") {
-	$df_options = "-h -x tmpfs -x devtmpfs -x udf -x iso9660 -x squashfs";
+	$df_options = "-h -x tmpfs -x devtmpfs -x udf -x iso9660 -x squashfs -x overlay";
 	if ($local_disks_only) { $df_options .= " -l"; }
 } elsif ($OSname eq "Darwin") {
 	$df_options = "-h -T nodevfs,autofs";
