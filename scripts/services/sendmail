@@ -295,6 +295,7 @@ next unless $ThisLine;
       ( $ThisLine =~ /^--- 334 / ) or
       # status code 354 used to request data
       ( $ThisLine =~ /^--- 354 Enter mail, end with \"\.\" on a line by itself/ ) or
+      ( $ThisLine =~ /^--- 354 End data with <CR><LF>.<CR><LF>/) or
       # invalid smtp commands detected later ($RejCmd)
       ( $ThisLine =~ /^--- 502 5(\.[0-9]){2} Sorry, we do not allow this operation$/ ) or
       # Need RCPT most likely because of incorrect RCPT command, in which case ignore it
@@ -631,6 +632,9 @@ next unless $ThisLine;
    #   $CollectError{$Reason}{$Source}++;
    # file=collect.c, LogLevel>0, LOG_NOTICE
    } elsif ( ($Reason, $Source) = ($ThisLine =~ /collect: (unexpected close|I\/O error|read timeout) on connection from (.*)?, /) ) {
+      $CollectError{$Reason}{$Source}++;
+   # file=collect.c, LogLevel>0, LOG_NOTICE
+   } elsif ( ($Source, $Reason) = ($ThisLine =~ /collect: relay=(.*), from=.*, info=(.*), where=/) ) {
       $CollectError{$Reason}{$Source}++;
    # file=collect.c, LogLevel>6, LOG_NOTICE
    } elsif (($Size) = ($ThisLine =~ /^message size \(([0-9]+)\) exceeds maximum/)) {
