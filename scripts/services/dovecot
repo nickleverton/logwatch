@@ -130,6 +130,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /auth-worker/) or
       ($ThisLine =~ /auth:.*: Connected to/) or
       ($ThisLine =~ /Disconnected: Connection closed(?! \(auth failed)/) or
+      ($ThisLine =~ /Info: Connection closed/) or
       ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
       ($ThisLine =~ /IMAP.* failed with mbox file/) or
       ($ThisLine =~ /discarded duplicate forward to/) or
@@ -142,6 +143,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^$dovecottag imap\(\w+\): copy from /) or
       ($ThisLine =~ /^$dovecottag imap\(\w+\): delete: /) or
       ($ThisLine =~ /^$dovecottag imap\(\w+\): expunge: /) or
+      # Error string is in separate statement; backtrace not useful for logwatch
+      ($ThisLine =~ /Error: Raw backtrace: /) or
       0 # This line prevents blame shifting as lines are added above
       )
    {
