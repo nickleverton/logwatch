@@ -109,7 +109,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (
       (($User, $Host) = ( $ThisLine =~ /^user (.*?) authenticated - (.*)$/ )) or
       (($User, $Host) = ( $ThisLine =~ /^fork_child: \[\d\].*\((.*)\): began session for `(.*)' with .*; child PID is \d+$/ ))
-      or (($User, $Host) = ( $ThisLine =~ /^LOGIN, user=([^ ,]+), ip=\[([^ ,]+)\](?:, port=\[\d+\])?$/ ))
+      or (($User, $Host) = ( $ThisLine =~ /^LOGIN, user=([^ ,]+), ip=\[([^ ,]+)\](?:, port=\[\d+\](?:, stls=\d+)?)?$/ ))
    ) {
       $Login{$User}{$Host}++;
    } elsif ( ($User,$Downloaded,$DownloadSize,$Left,$LeftSize) = ( $ThisLine =~ /^Stats: (.*?) (.*?) (.*?) (.*?) (.*?)$/) ) {
