@@ -49,6 +49,10 @@ my %ServicesBans = ();
 my %ServicesFound = ();
 my %ServicesIgnored = ();
 
+# IP lookups disabled by default.  Set in fail2ban services
+# configuration file to enable.
+DoLookup( $ENV{'fail2ban_ip_lookup'} );
+
 #Init String Containers
 my (
 $Action,        $Host,      $Message,
@@ -225,8 +229,12 @@ if (keys %ServicesFound and $Detail>5) {
     foreach my $service (sort {$a cmp $b} keys %ServicesFound) {
         print("    $service:\n");
         foreach my $ip (sort {$a cmp $b} keys %{$ServicesFound{$service}}) {
+            my @name = split(/ /, LookupIP($ip));
             printf("       %-15s (%3d Times)\n", "$ip",
                    $ServicesFound{$service}{$ip});
+            if (scalar @name > 1) {
+               printf("          %s\n", $name[1]);
+               }
         }
     }
 }
@@ -236,8 +244,12 @@ if (keys %ServicesIgnored and $Detail>5) {
     foreach my $service (sort {$a cmp $b} keys %ServicesIgnored) {
         print("    $service:\n");
         foreach my $ip (sort {$a cmp $b} keys %{$ServicesIgnored{$service}}) {
+            my @name = split(/ /, LookupIP($ip));
             printf("       %-15s (%3d Times)\n", "$ip",
                    $ServicesIgnored{$service}{$ip});
+            if (scalar @name > 1) {
+               printf("          %s\n", $name[1]);
+               }
         }
     }
 }
