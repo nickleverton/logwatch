@@ -50,11 +50,14 @@ my %SataDisk = ();
 my %CheckFailed = ();
 my %Monitoring = ();
 my %DeviceInfo = ();
+my %Reconnected = ();
+my %Removed = ();
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $IgnoreUnmatched = $ENV{'smartd_ignore_unmatched'} || 0;
 my $IgnoreCapabilities = $ENV{'smartd_ignore_capabilities'} || 0;
 my $IgnorePower = $ENV{'smartd_ignore_power'} || 0;
+my $IgnoreRemoval = $ENV{'smartd_ignore_removal'} || '^$';
 
 #Init String Containers
 my (
@@ -199,6 +202,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UnavailableDev{$Device}++;
    } elsif ( ($Device) = ($ThisLine =~ /Device (.*): SATA disks accessed via libata are supported by Linux kernel versions 2.6.15-rc1 and above/) ) {
       $SataDisk{"$Device"}++;
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), reconnected / )) {
+      $Reconnected{$Device}++ if $Device !~ /$IgnoreRemoval/;
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), removed / )) {
+      $Removed{$Device}++ if $Device !~ /$IgnoreRemoval/;
    } elsif ($ThisLine =~ /Unable to monitor any SMART enabled devices\. Try debug \(-d\) option\. Exiting/) {
       $UnableToMonitor++;
    } elsif ( ($Device) = ($ThisLine =~ /Device: ([^,]+), FAILED SMART self-check/) ) {
@@ -373,6 +380,22 @@ if (%SataDisk) {
    print "\nSATA disk(s) supported by Linux kernel >= 2.6.15-rc1:\n";
    foreach my $Device (sort keys %SataDisk) {
       print "  " .$Device .": Try adding '-d ata' or '-d sat' to the smartd.conf config file line\n";
+   }
+   print "\n";
+}
+
+if (%Removed) {
+   print "\Devices removed:\n";
+   foreach my $Device (sort keys %Removed) {
+      print "  " .$Device .": Removed " . $Removed{$Device} . " Time(s)\n";
+   }
+   print "\n";
+}
+
+if (%Reconnected) {
+   print "\Devices reconnected:\n";
+   foreach my $Device (sort keys %Reconnected) {
+      print "  " .$Device .": Reconnected " . $Reconnected{$Device} . " Time(s)\n";
    }
    print "\n";
 }
