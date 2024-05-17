@@ -53,6 +53,8 @@ my %DeviceInfo = ();
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $IgnoreUnmatched = $ENV{'smartd_ignore_unmatched'} || 0;
+my $IgnoreCapabilities = $ENV{'smartd_ignore_capabilities'} || 0;
+my $IgnorePower = $ENV{'smartd_ignore_power'} || 0;
 
 #Init String Containers
 my (
@@ -138,6 +140,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/)
       || ($ThisLine =~ /System clock time adjusted to the past/) )
    {
+       # ignore
+   } elsif ( $ThisLine =~ /--capabilites is set/ and $IgnoreCapabilities ) {
+       # ignore
+   } elsif ( $ThisLine =~ /no ATA CHECK POWER STATUS support, ignoring -n Directive/ and $IgnorePower ) {
        # ignore
 
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), is SMART capable. Adding to "monitor" list./ )) {
