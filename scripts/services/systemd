@@ -133,6 +133,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /Service Restart.* expired, scheduling restart\./ or
        $ThisLine =~ /Scheduled restart job, restart counter is at .*\./ or
        $ThisLine =~ /: Watchdog timeout/ or
+       $ThisLine =~ /Watchdog running with a timeout of/ or
        $ThisLine =~ /^Dependency failed for / or
        # This is preceeded by a more descriptive message
        $ThisLine =~ / Triggering OnFailure= dependencies\./ or
