@@ -2131,6 +2131,9 @@ while (<>) {
         or ($p1 =~ /^SpamControl/)
         or ($p1 =~ /^Perl/)
         or ($p1 =~ /^ESMTP/)
+        or ($p1 =~ /^UTF8SMTP/)
+        or ($p1 =~ /^LMTP /)
+        or ($p1 =~ /^UTF8LMTP /)
         or ($p1 =~ /^(?:\(!+\))?(\S+ )?(?:FWD|SEND) from /)            # log level 4
         or ($p1 =~ /^(?:\(!+\))?(\S+ )?(?:ESMTP|FWD|SEND) via /)       # log level 4
         or ($p1 =~ /^tempdir being removed/)
