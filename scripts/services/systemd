@@ -63,7 +63,7 @@ $session,   $target,    $user,
 
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   if ($ThisLine =~ /^(Activat|Deactivat|Mount|Unmount|Reload|Start|Stopp)ing / or
+   if ($ThisLine =~ /^(Activat|Deactivat|Expect|Mount|Unmount|Reload|Start|Stopp)ing / or
        $ThisLine =~ /^Finished / or
        # sssd users @ in usernames
        $ThisLine =~ /^Accepting user\/group name '.*\@.*', which does not match strict user\/group name rules\.$/ or
@@ -99,7 +99,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Mounted / or
        $ThisLine =~ /^Queued start job for default target / or
        $ThisLine =~ /^Queuing reload/ or
-       $ThisLine =~ /^Relabelled / or
+       $ThisLine =~ /^Relabell?ed / or
        $ThisLine =~ /^Reloading\.+$/ or         # Happens on each boot at switch root
        $ThisLine =~ /^RTC configured in / or
        $ThisLine =~ /^Running in init(?:ial RAM disk|rd)\.$/ or
