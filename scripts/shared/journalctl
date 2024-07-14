@@ -22,6 +22,14 @@
 # or when combining journals from multiple sources (additional
 # processing is needed in this case):
 #   *JournalCtl = "--merge --no-pager --unit=service_name.service"
+# 
+# In addition to the example above that uses --unit, additional
+# field values may be needed.  Both "man journalctl" and
+# "man systemd.journal-fields" describe additional options and
+# fields that may be required.  For example, --facility, --priority,
+# --identifier, and _TRANSPORT may need to be specified.  Both
+# "man journalctl" and "man systemd.journal-fields" describe
+# additional options and fields that may be required.
 #
 # In the example above, the arguments to the JournalCtl command are
 # passed to the journalctl system command.  It is advised to delimit
