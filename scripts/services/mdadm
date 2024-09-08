@@ -108,7 +108,9 @@ DEV: foreach my $dev (@devices) {
   } else {
     print "$dev : $mdhash{'state'}\n";
     print "\t  Raid Level : $mdhash{'level'}\n";
-    print "\tGood Devices : @{$mdhash{'good devices'}}\n";
+    if (defined($mdhash{'good devices'}) and @{$mdhash{'good devices'}}) {
+      print "\tGood Devices : @{$mdhash{'good devices'}}\n";
+    }
     if (defined ($mdhash{'middle devices'}) and @{$mdhash{'middle devices'}}) {
       if (defined($mdhash{'rebuild'}) and ($mdhash{'rebuild'} ne '')) {
         print "\tRebuilding status: $mdhash{'rebuild'}\n";
