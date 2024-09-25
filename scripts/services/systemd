@@ -34,6 +34,7 @@ my %Deactivated;
 my %LeftOver;
 my %NotStopped;
 my $Reexecuted = 0;
+my %ReexecutedRequested;
 my %Reloaded;
 my %Skipped;
 my %Slice;
@@ -133,7 +134,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /Service Restart.* expired, scheduling restart\./ or
        $ThisLine =~ /Scheduled restart job, restart counter is at .*\./ or
        $ThisLine =~ /: Watchdog timeout/ or
-       $ThisLine =~ /Watchdog running with a timeout of/ or
+       $ThisLine =~ /Watchdog running with a (?:hardware )?timeout of/ or
        $ThisLine =~ /^Dependency failed for / or
        # This is preceeded by a more descriptive message
        $ThisLine =~ / Triggering OnFailure= dependencies\./ or
@@ -240,6 +241,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Deactivated{$service}++;
    } elsif ($ThisLine eq "Reexecuting.") {
       $Reexecuted++ if $Detail;
+   } elsif ($ThisLine =~ "Reexecuting requested from client (.*)") {
+      $ReexecutedRequested{$1}++ if $Detail;
    } elsif ($ThisLine =~ /^Time has been changed$/) {
       $TimeChanged++;
    } elsif (my ($slice) = ($ThisLine =~ /^Created slice (.*)\.$/)) {
@@ -291,7 +294,15 @@ if (keys %Failed) {
 
 # Detail >= 1
 if ($Reexecuted) {
-   print "Reexecuted systemd: $Reexecuted Time(s)\n\n";
+   if (keys %ReexecutedRequested) {
+      print "Reexecuted sytemd requested by:\n";
+      foreach my $item (sort {$a cmp $b} keys %ReexecutedRequested) {
+         print "        $item: $ReexecutedRequested{$item} Time(s)\n";
+      }
+      print "\n";
+   } else {
+      print "Reexecuted systemd: $Reexecuted Time(s)\n\n";
+   }
 }
 
 if (keys %Skipped) {
