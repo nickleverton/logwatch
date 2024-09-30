@@ -30,6 +30,7 @@ DoLookup( ValueOrDefault($ENV{'named_ip_lookup'}, 0) );
 my $Debug = ValueOrDefault($ENV{'LOGWATCH_DEBUG'}, 0);
 my $Detail = ValueOrDefault($ENV{'LOGWATCH_DETAIL_LEVEL'}, 0);
 my $FailedZoneTransferThreshold = $ENV{'failed_zone_transfer_threshold'} || 0;
+my $IgnoreDeniedZoneTransfers = $ENV{'ignore_denied_zone_transfers'} || 0;
 
 #Init Counters
 my $DebugCounter=       my $StartNamed=         my $ReloadNamed=
@@ -271,7 +272,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ShutdownNamedFail++;
    } elsif ( (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?\s*zone transfer '(.+)' denied/ )) or
              (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?\s*bad zone transfer request: '(.+)':/ )) ) {
-      $DeniedZoneTransfers{$Host}{$Zone}++;
+      $DeniedZoneTransfers{$Host}{$Zone}++ unless $IgnoreDeniedZoneTransfers;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+) zone transfer deferred due to quota/ ) ) {
       $DeferredZoneTransfers{$Zone}++;
    } elsif ( ($Zone, $Host) = ( $ThisLine =~ /transfer of '(.+)' from ([^\#]+)#[^\:]+: (failed|(Transfer status|giving up): ((network|host) unreachable|timed out|connection refused|REFUSED))/ ) ) {
@@ -429,22 +430,22 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Hints{$Hint}++;
    } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit (.+) responses to (\S+)(?: for (.+) \()?/)) {
       $Zone = "None" unless defined($Zone);
-      $Limit{$Zone}{$Response}{$Net}++;
+      $Limit{$Zone}{$Response}{$Net}++ if $Detail;
    } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++;
+      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
    } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit slip (.+) response to (\S+)(?: for (\S+))?/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++;
+      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
    } elsif (($Net,$Zone,$Response) = ($ThisLine =~/limit responses to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
-      $Limit{$Zone}{$Response}{$Net}++;
+      $Limit{$Zone}{$Response}{$Net}++ if $Detail;
    } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit drop response to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++;
+      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
    } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit slip response to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++;
+      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
    } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): got insecure response; parent indicates it should be secure/)) {
       $DNSSECInsec{'__Total__'}++;
       $DNSSECInsec{$Zone}{$RR}++;
