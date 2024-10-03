@@ -142,6 +142,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /Processes still around after .*SIGKILL\./ or
        $ThisLine =~ /^Unmounted / or
        $ThisLine =~ /: Unit is bound to inactive unit / or
+       $ThisLine =~ /^Unnecessary job was removed for / or
        $ThisLine =~ /[Hh]ardware watchdog / or
        # This is now trapped as a Slow Start error
        #$ThisLine =~ /PID file .* not readable \(yet\?\) after start/ or
