@@ -128,6 +128,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /Unit (.* is )?not needed anymore\. Stopping\./ or
        $ThisLine =~ /[Ss]tart(-pre)? operation timed out\. Terminating\./ or
        $ThisLine =~ /Job .* timed out\./ or
+       $ThisLine =~ /[Ss]tate '.*' timed out\. Skipping SIGKILL\./ or
        $ThisLine =~ /[Ss]top.* timed out\. Killing\./ or
        $ThisLine =~ /hold-?off time over, scheduling restart\./ or
        $ThisLine =~ /has no hold-off time.*, scheduling restart\./ or
