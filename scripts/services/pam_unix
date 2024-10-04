@@ -91,7 +91,7 @@ while ($line = <STDIN>) {
    }
 
    # Service specific messages
-   if ( grep $_ eq $service, qw/ssh sshd login ftp vsftpd proftpd rsh remote rlogin rexec systemd-user/) {
+   if ( grep $_ eq $service, qw/ssh sshd login ftp vsftpd nx proftpd rsh remote rlogin rexec systemd-user/) {
       if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
 	 ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^session opened for user ([^ ]*) by ([^ ]*)\(uid=\d+\)/$1 by $2/) {
@@ -204,7 +204,7 @@ while ($line = <STDIN>) {
          $data{$service}{'Authentication Failures'}{$line}++;
       }
    } elsif ($service =~ /^(?:\/[\w\/]+\/|f)?crond?$/ ) {
-	   if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
+	   if ($line =~ s/^session opened for user (.+) by \S*\(uid=\d+\)/$1/) {
 		   ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
 	   } elsif ($line =~ /session closed for user/) {
 		   # ignore this line
