@@ -71,6 +71,10 @@ my %RemoteClosed;
 LINE:
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
+
+   # Handle stdout/stderr sent to journal which ends up with an extra prefix
+   $ThisLine =~ s/^rsyslogd: //;
+
    foreach $Message (keys %IgnoreMessages) {
       next LINE if $ThisLine =~ /$Message/i;
    }
