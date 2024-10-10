@@ -33,6 +33,10 @@ if (defined($ENV{'rsyslogd_ignore_actions'})) {
       $IgnoreActions{$action} = 1;
    }
 }
+my $IgnoreClosedErrorMessages = '^unexpected GnuTLS error -54$';
+if (defined($ENV{'rsyslogd_ignore_connection_closed_error_messages'})) {
+   $IgnoreClosedErrorMessages = $ENV{'rsyslogd_ignore_connection_closed_error_messages'};
+}
 my %IgnoreMessages;
 if (defined($ENV{'rsyslogd_ignore_messages'})) {
    foreach my $message (split(";",$ENV{'rsyslogd_ignore_messages'})) {
@@ -112,7 +116,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $LastError = $1;
    }
    elsif (($Host) = $ThisLine =~ /^netstream session \S+ from (\S+) will be closed due to error/) {
-      $ClosedError{$LastError}{"$Host"}++ if $LastError !~ /unexpected GnuTLS error -54/;
+      $ClosedError{$LastError}{"$Host"}++ if $LastError !~ /$IgnoreClosedErrorMessages/i;
    }
    elsif (($Host) = $ThisLine =~ /^omfwd: remote server at (.+) seems to have closed connection/) {
       $RemoteClosed{"$Host"}++;
