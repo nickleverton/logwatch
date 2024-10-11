@@ -65,6 +65,7 @@ my $Reason;
 my %ActionResumed;
 my %ActionSuspended;
 my %CannotConnect;
+my %CannotResolve;
 my %ClosedError;
 my %DaemonActions;
 my %InvalidCertificate;
@@ -103,6 +104,9 @@ while (defined(my $ThisLine = <STDIN>)) {
    }
    elsif (($Host, $Reason) = $ThisLine =~ /cannot connect to (.+): (.+) \[/) {
       $CannotConnect{"$Host ($Reason)"}++;
+   }
+   elsif (($Host, $Reason) = $ThisLine =~ /cannot resolve hostname '(.+)': (.+) \[/) {
+      $CannotResolve{"$Host ($Reason)"}++;
    }
    # These should also generate closed connection messages, but record so we can ignore normal events
    elsif(
@@ -170,6 +174,14 @@ if (keys %CannotConnect) {
     print "Cannot connect:\n";
     foreach my $Item (sort keys %CannotConnect) {
         print "   $Item: $CannotConnect{$Item} Times\n";
+    }
+    print "\n";
+}
+
+if (keys %CannotResolve) {
+    print "Cannot resolve hostname:\n";
+    foreach my $Item (sort keys %CannotResolve) {
+        print "   $Item: $CannotResolve{$Item} Times\n";
     }
     print "\n";
 }
