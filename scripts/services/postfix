@@ -4,21 +4,10 @@
 # Please file all bug reports, patches, and feature
 # requests under:
 #      https://sourceforge.net/p/logwatch/_list/tickets
-# and copy:
-#    Mike "MrC" Cappella <mike (at) cappella (dot) us>
 # Help requests and discusion can be filed under:
 #      https://sourceforge.net/p/logwatch/discussion/
 ########################################################
 
-##########################################################################
-# Postfix-logwatch: written and maintained by:
-#
-#    Mike "MrC" Cappella <mike (at) cappella (dot) us>
-#      http://logreporters.sourceforge.net/
-#
-# Please send all comments, suggestions, bug reports regarding this
-# program/module to the email address above.  I will respond as quickly
-# as possible. [MrC]
 #######################################################
 ### All work since Dec 12, 2006 (logwatch CVS revision 1.28)
 ### Copyright (c) 2006-2012  Mike Cappella
@@ -4405,6 +4394,7 @@ sub postfix_postscreen {
    }
    elsif ($line =~ /^DNSBL rank (\S+) for \[([^]]+)\](?::\d+)?$/) {
       $Counts{'postscreen'}{'dnsbl'}{$2}{$1}++      if $Collecting{'postscreen'};
+      $Counts{'dnsblranks'}{$1}{$2}++  if $Collecting{'postscreen'};
    }
 
    elsif ($line =~ /^(CONNECT|COMMAND (?:(?:TIME|COUNT|LENGTH) LIMIT|PIPELINING)|NON-SMTP COMMAND|BARE NEWLINE) from \[([^\]]+)\]:\d+/) {
@@ -5191,6 +5181,7 @@ sub build_sect_table() {
    add_section ($S, 'bouncefailed',                1, 'd', 'Bounce failure');
    add_section ($S, 'postscreen',                  1, 'd', 'Postscreen');
    add_section ($S, 'dnsblog',                     1, 'd', 'DNSBL log');
+   add_section ($S, 'dnsblranks',                  1, 'd', 'DNSBL ranks');
 
    add_section ($S, 'envelopesenders',             1, 'd', 'Envelope senders');
    add_section ($S, 'envelopesenderdomains',       1, 'd', 'Envelope sender domains');

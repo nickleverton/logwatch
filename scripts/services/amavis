@@ -4,22 +4,10 @@
 # Please file all bug reports, patches, and feature
 # requests under:
 #      https://sourceforge.net/p/logwatch/_list/tickets
-# and copy 
-#    Mike "MrC" Cappella <mike (at) cappella (dot) us>
 # Help requests and discusion can be filed under:
 #      https://sourceforge.net/p/logwatch/discussion/
 ########################################################
 
-
-##########################################################################
-# Amavis-logwatch: written and maintained by:
-#
-#    Mike "MrC" Cappella <mike (at) cappella (dot) us>
-#      http://logreporters.sourceforge.net/
-#
-# Please send all comments, suggestions, bug reports regarding this
-# program/module to the email address above.  I will respond as quickly
-# as possible. [MrC]
 #######################################################
 ### All work since Dec 12, 2006 (logwatch CVS revision 1.28)
 ### Copyright (c) 2006-2012  Mike Cappella
