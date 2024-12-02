@@ -119,6 +119,7 @@ my $MaxStartupsThrottling = 0;
 my $MaxStartupsDrops = 0;
 my $MaxStartupsTime = 0;
 my %MaxStartupsIPs = ();
+my %DroppedConnections = ();
 
 my $multiline = 0;
 
@@ -427,6 +428,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (($hr, $min, $sec, $conn) = ($ThisLine =~ /exited MaxStartups throttling after (\d\d):(\d\d):(\d\d), (\d+) connections dropped/)) {
       $MaxStartupsTime += (((($hr * 60) + $min) * 60) + $sec);
       $MaxStartupsDrops += $conn;
+   } elsif (($IP,$Reason) = ($ThisLine =~ /drop connection #\d+ from \[(\S+)\]:\d+ on \[\S+\]:\d+ penalty: (.*)/)) {
+      $DroppedConnections{$IP . " - " . $Reason}++;
    } else {
       # Report any unmatched entries...
       unless ($ThisLine =~ /fwd X11 connect/) {
@@ -798,6 +801,12 @@ if ($MaxStartupsThrottling) {
       foreach my $ThisOne (sort SortIP keys %MaxStartupsIPs) {
          print "      " . LookupIP($ThisOne) . " : " . timesplural($MaxStartupsIPs{$ThisOne});
       }
+   }
+}
+
+if (keys %DroppedConnections) {
+   foreach my $Dropped (sort keys %DroppedConnections) {
+      print "   $Dropped: " . timesplural($DroppedConnections{$Dropped});
    }
 }
 
