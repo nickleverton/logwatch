@@ -824,6 +824,9 @@ next unless $ThisLine;
    } elsif ($ThisLine =~ /rejecting commands from (.*) due to pre-greeting traffic/ ) {
       $PREGreeting{$1}++;
       $PREGreetingQueue{$QueueID}++;
+   } elsif ($ThisLine =~ /rejecting server EHLO from (.*) due to traffic before response/ ){
+      $PREGreeting{$1}++;
+      $PREGreetingQueue{$QueueID}++;
    # possible "(may be forged)" after IP address
    # file=srvrsmtp.c, LogLevel>5, LOG_INFO
    } elsif ( ($Temp)  = ($ThisLine =~ /^.*\[(.*?)\].*: Possible SMTP RCPT flood, throttling./) ) {
