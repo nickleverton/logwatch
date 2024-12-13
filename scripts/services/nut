@@ -95,6 +95,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^(?:nut-monitor|upsmon): Using power down flag file/
        # This is going away - https://bugzilla.redhat.com/show_bug.cgi?id=1608176
        or $ThisLine =~ /^(?:nut-monitor|upsmon): wall: cannot get tty name: Inappropriate ioctl for device/
+       or $ThisLine =~ /^(?:nut-monitor|nut-server): upsnotify: failed to notify about state 2: no notification tech defined, will not spam more about it/
        or $ThisLine =~ /^(?:nut-monitor|nut-server): upsnotify: logged the systemd watchdog situation once, will not spam more about it/
        or $ThisLine =~ /^upssched: (?:Cancelling|New) timer:/
        or $ThisLine =~ /^upssched: Timer daemon started/
