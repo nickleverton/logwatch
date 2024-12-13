@@ -114,6 +114,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Switching root\.$/ or
        $ThisLine =~ /: Succeeded\.$/ or
        $ThisLine =~ /^Successfully loaded SELinux policy in / or
+       $ThisLine =~ /^Successfully made .* read-only/ or
        $ThisLine =~ /already active, refusing\./ or
        $ThisLine =~ /^Failed to propagate agent release message:/ or
        $ThisLine =~ /: Supervising process .* which is not our child\. We'll most likely not notice when it exits\.$/ or
