@@ -170,8 +170,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Reloading rules/) or
       ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Finished loading, compiling and executing \d+ rules$/) or
       ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Collecting garbage unconditionally/) or
-      ( $ThisLine =~ /(gdm-session-worker|gdm-password|gnome-screensaver-dialog)\[\d+\]: gkr-pam: no password is available for user/) or
       ( $ThisLine =~ /gkr-pam: gnome-keyring-daemon started properly/) or
+      ( $ThisLine =~ /gkr-pam: no password is available for user/) or
       ( $ThisLine =~ /gkr-pam: stashed password to try later in open session/) or
       ( $ThisLine =~ /gkr-pam: the password for the login keyring was invalid/) or
       ( $ThisLine =~ /gkr-pam: unable to locate daemon control file/) or
