@@ -52,7 +52,7 @@ while (defined(my $ThisLine = <STDIN>)) {
          # Service erroneously detects absence on service startup
          next if ($Message =~ /^Battery sensor detected absence value/);
          next if (($Message =~ /IPMI status.*[Ii]nterface:/) and ($Detail < 10));
-         next if (($Message =~ /Administrator .* start.*/) and ($Detail < 10));
+         next if (($Message =~ /Administrator .* (?:start|stopped).*/) and ($Detail < 10));
          next if (($Message =~ /^Systems Management Data Manager (?:Started|Stopped)/) and ($Detail < 10));
       } elsif ($Service =~ "Storage") {
          next if (($Message =~ /^Controller.* event log: Battery (?:Present|charge complete|started charging|temperature is normal)/) and ($Detail < 5));
