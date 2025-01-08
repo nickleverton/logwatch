@@ -4094,8 +4094,21 @@ sub postfix_cleanup($) {
    #   See same code elsewhere "Note: Bounce" 
    #TDcQ to=<envto@example.com>,                  relay=none, delay=0.11, delays=0.11/0/0/0, dsn=5.7.1, status=bounced optional text...
    #TDcQ to=<envto@example.com>, orig_to=<envto>, relay=none, delay=0.13, delays=0.13/0/0/0, dsn=5.7.1, status=bounced optional text...
+
    if ($line =~ /^to=<(.*?)>,(?: orig_to=<(.*?)>,)? relay=([^,]*).*, ($re_DDD), status=([^ ]+) (.*)$/o) {
       # ($to,$origto,$relay,$DDD,$status,$reason) = ($1,$2,$3,$4,$5,$6);
+
+      ### deliverable messages reported by postfix/cleanup 
+      #TDcQ to=<envto@example.com>, relay=none, delay=0, delays=0.1/0/0/0, dsn=2.0.0, status=deliverable optional text...
+      #
+      if ($5 eq 'deliverable') {
+         my ($to,$origto,$relay,$DDD,$reason) = ($1,$2,$3,$4,$6);
+         my ($localpart,$domainpart,$dsn);
+         ($to,$origto,$localpart,$domainpart,$dsn,$reason) = process_delivery_attempt ($to,$origto,$DDD,$reason);
+         $Counts{'deliverable'}{$dsn}{$reason}{$origto ? "$to ($origto)" : $to}++;
+         return;
+      }
+
       if ($5 ne 'bounced' and $5 ne 'SOFTBOUNCE') {
          inc_unmatched('cleanupbounce');
          return;
