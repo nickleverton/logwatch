@@ -42,7 +42,7 @@ my $EnumerationRequested = 0;
 my $ignore_p11_child_error = 0;
 
 # Lines are of the form:
-# sssd[service]: 
+# sssd[service]:
 while (defined(my $ThisLine = <STDIN>)) {
    next unless $ThisLine =~ /^sssd/;
    chomp($ThisLine);
@@ -58,7 +58,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    if ($ThisLine =~ s/^sssd\[([^]]+)(?:\[\d+\])?\]: // or $ThisLine =~ s/^sssd_([^:[]+): //) {
      $Service = ($1 eq "be") ? "Backend[$Domain]" : $1;
    }
-    
+
    # Strip off and record the backend domain if any
    if ($ThisLine =~ s/^sssd\[be\[([^]]+)\](?:\[\d+\])?\]: //) {
      $Service = "Backend[$1]";
@@ -77,7 +77,7 @@ while (defined(my $ThisLine = <STDIN>)) {
 
    # Remove pids from debug messages if any
    $ThisLine =~ s/\[\d+\]//;
-   
+
    # Ignore debug messages
    my ($debuglevel) = ($ThisLine =~ /\s\((0x[0-9a-f]{4})\):\s/);
 

@@ -35,7 +35,7 @@ my @unknown;
 
 while(my $line=<STDIN>) {
    chomp $line;
-   if ( my ( $do, $pkg, $ver, $arch, $user, $repo, $hash) = 
+   if ( my ( $do, $pkg, $ver, $arch, $user, $repo, $hash) =
       ( $line =~ /^\S+ \S+\|(?:(install|remove) ?)\|([^\|\s]+)\|([^\|\s]+)\|([^\|\s]+)\|([^\|\s]+)?(?:\|([^\|\s]+)\|([^\|\s]+))?/ )) {
       if ($do eq "remove") {
          push @remove, "$pkg $ver";

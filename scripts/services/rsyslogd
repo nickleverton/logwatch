@@ -26,7 +26,7 @@
 use strict;
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
- 
+
 my %IgnoreActions;
 if (defined($ENV{'rsyslogd_ignore_actions'})) {
    foreach my $action (split(";",$ENV{'rsyslogd_ignore_actions'})) {

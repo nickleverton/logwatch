@@ -170,7 +170,7 @@ if ($OSname eq "Linux") {
 } elsif ($OSname eq "SunOS") {
 	if ( ($release eq "5.10") || ($release eq "5.9") || ($release eq "5.11") ) {
 		$df_options = "-h";
-	} 
+	}
 	if ($local_disks_only) { $df_options .= " -l"; }
 } elsif ($OSname eq "AIX") {
 	$df_options = "-P";

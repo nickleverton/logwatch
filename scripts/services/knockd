@@ -46,7 +46,7 @@ while (defined(my $ThisLine = <STDIN>)) {
         $stages{$name}{$stage}{$ip}++;
         next;
     }
- 
+
     $unknown{$ThisLine}++;
 }
 

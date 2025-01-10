@@ -48,7 +48,7 @@ my (
 %Errors,            %BFMFile,       %WFO,
 %SELCONTErr,        %UserReloads,   %INCRONDSTCr,
 %INCRONDSTCh,       %INCRONDSTDe,   %INCRONDUTCr,
-%INCRONDUTCh,       %INCRONDUTDe,   %INCRONDErr, 
+%INCRONDUTCh,       %INCRONDUTDe,   %INCRONDErr,
 %CRONDErr,          %CHDIRErr,
 );
 

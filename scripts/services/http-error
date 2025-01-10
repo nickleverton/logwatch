@@ -92,7 +92,7 @@ if (keys %LogMessages) {
             }
             $Count += $LogMessages{$LogLevel}{$ErrorCode}{$Description};
          } # foreach $Description
-         if (($Detail >= 5) && ($Detail < 9)) { 
+         if (($Detail >= 5) && ($Detail < 9)) {
             printf(":  %5d Time(s)", $Count);
             $Count = 0;
             if ($Detail >=6) {
@@ -107,7 +107,7 @@ if (keys %LogMessages) {
             }
          }
       } # foreach $ErrorCode
-      if ($Detail < 5) { 
+      if ($Detail < 5) {
          printf("%s%5d%s", ":  ", $Count, " Time(s)");
          $Count = 0;
       }

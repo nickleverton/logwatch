@@ -41,7 +41,7 @@ my $Detail         = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Version        = "1.4-20130219";
 my $format = $ENV{'LOGWATCH_FORMAT_TYPE'} || 'other';
 
-# initialize logwatch variables 
+# initialize logwatch variables
 my $ThisLine        = "";
 my %OtherList       = ();
 
@@ -123,7 +123,7 @@ while (defined($ThisLine = <STDIN>)) {
    #TD syslog-ng[4833]: Syslog connection accepted; fd='52', client='AF_INET(192.168.1.1:40280)', local='AF_INET(192.168.1.10:625)'
    # syslog-ng v3.X
    #TD Syslog connection broken; fd='63', server='AF_INET(192.169.1.1:514)', time_reopen='60' : 44 Time(s)
-   #TD Syslog connection established; fd='48', server='AF_INET(192.168.1.1:514)', local='AF_INET(0.0.0.0:0)' 
+   #TD Syslog connection established; fd='48', server='AF_INET(192.168.1.1:514)', local='AF_INET(0.0.0.0:0)'
    elsif ($ThisLine =~ /^Syslog connection (\S+); fd='\d+', (server|client)='AF_INET\(([.\d]+):\d+\)', (?:local='AF_INET\(([.\d]+:\d+)\)'|time_reopen='\d+')?$/) {
       my $loc = defined($4) ? $4 : '0.0.0.0';
       $Connections{"$1 ($2)"}{$loc}{$3}++;
@@ -138,7 +138,7 @@ while (defined($ThisLine = <STDIN>)) {
    # syslog-ng v2.X
    #TD syslog-ng[4833]: Connection failed; error='Connection timed out (110)', time_reopen='60'
    #TD syslog-ng[4833]: Connection failed; error='Connection refused (111)', time_reopen='60'
-   #TD syslog-ng[4833]: Connection broken; time_reopen='60' 
+   #TD syslog-ng[4833]: Connection broken; time_reopen='60'
    elsif ($ThisLine =~ /^(Connection \w+); (?:error='([^\(']+) \(\d+\)', )?time_reopen='\d+'/ ) {
       $Conns{$1}{$2}++;
       $ConnsSum{$1}++;
@@ -146,15 +146,15 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD syslog-ng[4869]: io.c: do_write: write() failed (errno 111), Connection refused
    #TD syslog-ng[4869]: I/O error occurred while writing; fd='66', error='Connection refused (111)'
-   elsif ( ($ThisLine =~ /^io\.c: do_write: write\(\) failed \(errno ([\d]+)\)/) or 
-           ($ThisLine =~ /I\/O error occurred while writing; fd='\d+', error='[^'(]+ \((\d+)\)'/) 
+   elsif ( ($ThisLine =~ /^io\.c: do_write: write\(\) failed \(errno ([\d]+)\)/) or
+           ($ThisLine =~ /I\/O error occurred while writing; fd='\d+', error='[^'(]+ \((\d+)\)'/)
    ) {
       $WriteErrs{$1}++;
       $WriteErrsSum++;
-   } 
+   }
 
    # Log statistics from syslog-ng v2.X
-   #TD syslog-ng[4883]: Log statistics; dropped='program(/path/to/p)=12', 
+   #TD syslog-ng[4883]: Log statistics; dropped='program(/path/to/p)=12',
    #        processed='center(queued)=1717', processed='center(received)=916', ...
    #        suppressed='program(/path/to/p)=0'
    # Log statisctics from syslog-ng v3.X
@@ -162,19 +162,19 @@ while (defined($ThisLine = <STDIN>)) {
    #     processed='center(queued)=0', processed='src.internal(src#0)=7',
    #     stamp='src.internal(src#0)=1283808150', processed='global(msg_clones)=0', ...
    elsif ($ThisLine =~ /^Log statistics; /) {
-      my @processed = 
+      my @processed =
          $ThisLine =~ /processed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@processed; $i=$i+3)
       {
-         if ($processed[$i] eq "center") { 
-            $Stats_center{$processed[$i+1]} = 
-               $Stats_center{$processed[$i+1]} + $processed[$i+2]; 
+         if ($processed[$i] eq "center") {
+            $Stats_center{$processed[$i+1]} =
+               $Stats_center{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "destination") {
-            $Stats_dest{$processed[$i+1]} = 
+            $Stats_dest{$processed[$i+1]} =
                $Stats_dest{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "source" || $processed[$i] eq "src.internal" ||
                   $processed[$i] eq 'src.none' || $processed[$i] eq 'src.journald') {
-            $Stats_source{$processed[$i+1]} = 
+            $Stats_source{$processed[$i+1]} =
                $Stats_source{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "global") {
             $Stats_global{$processed[$i+1]} =
@@ -207,7 +207,7 @@ while (defined($ThisLine = <STDIN>)) {
                   $Stats_dropped_program{$dropped[$i+1]} + $dropped[$i+2];
             }
          } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
-      }   
+      }
       my @suppressed =
          $ThisLine =~ /suppressed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@suppressed; $i=$i+3)
@@ -229,7 +229,7 @@ while (defined($ThisLine = <STDIN>)) {
             }
          } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
       }
-      my @stored = 
+      my @stored =
           $ThisLine =~ /stored='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@stored; $i=$i+3)
       {
@@ -243,7 +243,7 @@ while (defined($ThisLine = <STDIN>)) {
    }
 
    # syslog-ng v2.X
-   #TD syslog-ng[1796]: Number of allowed concurrent connections exceeded; num='10', max='10'  
+   #TD syslog-ng[1796]: Number of allowed concurrent connections exceeded; num='10', max='10'
    elsif ($ThisLine =~ /^Number of allowed concurrent connections exceeded/) {
       $ExceedConns++;
    }
@@ -421,8 +421,8 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
 
    if ($Detail >= 6 and $format ne 'xml') { print "\nLog Statistics:"; }
    if ($lost_rcvd != 0 || $lost_dest != 0) {
-      if ($lost_rcvd != 0) { 
-         if ($Detail >= 5) { 
+      if ($lost_rcvd != 0) {
+         if ($Detail >= 5) {
             outCount("\n- Failed to receive $lost_rcvd message(s)!",$lost_rcvd,'Log Statistics','Failed to receive messages');
          }
       }
@@ -456,14 +456,14 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
       if (keys %Stats_net) {
          print "\nNetwork:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_net) {
-            (my $short_source) = ($source =~ /,?([^,]*)/); 
+            (my $short_source) = ($source =~ /,?([^,]*)/);
             outCount(sprintf("\n\t%-34s %12i", $short_source, $Stats_net{$source}),$Stats_net{$source},"Network",$short_source);
          }
       }
       if (keys %Stats_program) {
          print "\nProgram:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_program) {
-            (my $short_source) = ($source =~ /,?([^,]*)/); 
+            (my $short_source) = ($source =~ /,?([^,]*)/);
             outCount(sprintf("\n\t%-34s %12i", $short_source, $Stats_program{$source}),$Stats_program{$source},"Program",$short_source);
          }
       }
@@ -488,7 +488,7 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
       if (keys %Stats_stored) {
          print "\nStored:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_stored) {
-            (my $short_source) = ($source =~ /,?([^,]*)/); 
+            (my $short_source) = ($source =~ /,?([^,]*)/);
             outCount(sprintf("\n\t%-34s %12i", $short_source, $Stats_stored{$source}),$Stats_stored{$source},"Stored",$short_source);
          }
       }
@@ -517,7 +517,7 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
          outCount(sprintf("\n\t%-34s %12i", $source, $Stats_dropped_program{$source}),$Stats_dropped_program{$source},'Dropped(program)',$source);
       }
    }
-   if (keys %Stats_center or keys %Stats_dropped or keys %Stats_dropped_net or 
+   if (keys %Stats_center or keys %Stats_dropped or keys %Stats_dropped_net or
        keys %Stats_dropped_program) {
       print "\n";
    }

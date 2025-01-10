@@ -11,7 +11,7 @@
 #######################################################
 ### All work since Dec 12, 2006 (logwatch CVS revision 1.28)
 ### Copyright (c) 2006-2012  Mike Cappella
-### 
+###
 ### Covered under the included MIT/X-Consortium License:
 ###    http://www.opensource.org/licenses/mit-license.php
 ### All modifications and contributions by other persons to
@@ -161,7 +161,7 @@ sub get_usable_sectvars(\@ $) {
 }
 
 # Print program and version info, preceeded by an optional string, and exit.
-# 
+#
 sub get_version() {
 
    print STDOUT "@_\n"  if ($_[0]);
@@ -230,7 +230,7 @@ sub get_num_scores($) {
 
 # scoretab
 #
-#  (score1, n1), (score2, n2), ... (scoreN, nN) 
+#  (score1, n1), (score2, n2), ... (scoreN, nN)
 #     $i   $i+1
 #
 # scores are 0 based (0 = 1st score)
@@ -300,7 +300,7 @@ sub get_percentiles2(\@ @) {
 #
 # Arg1 is an array ref to the sorted series
 # Arg2 is a list of frequency buckets to use
-sub get_frequencies(\@ @) { 
+sub get_frequencies(\@ @) {
    my ($aref,@blist) = @_;
 
    my @vals = ( 0 ) x (@blist);
@@ -669,7 +669,7 @@ sub init_getopts_table_common(@) {
    add_option ('help',                       sub { print STDOUT Logreporters::usage(undef); exit 0 });
    add_option ('gen_test_log=s',             sub { Logreporters::Utils::gen_test_log($_[1]); exit 0; });
    add_option ('detail=i');
-   add_option ('nodetail',                   sub { 
+   add_option ('nodetail',                   sub {
       # __none__ will set all limiters to 0 in process_limiters
       # since they are not known (Sections table is not yet built).
       push @Limiters, '__none__';
@@ -709,7 +709,7 @@ sub init_getopts_table_common(@) {
          exit 2;
       }
       foreach my $val (split(/(?:\s+|\s*,\s*)/, $lspec)) {
-         if ($val !~ /^\d+$/ and 
+         if ($val !~ /^\d+$/ and
              $val !~ /^(\d*)\.(\d+)$/ and
              $val !~ /^::(\d+)$/ and
              $val !~ /^:(\d+):(\d+)?$/ and
@@ -872,7 +872,7 @@ sub process_limiters(\@) {
 
    # Set the default value of 10 for each section if no limiter exists.
    # This allows output for each section should there be no configuration
-   # file or missing limiter within the configuration file. 
+   # file or missing limiter within the configuration file.
    foreach (@l) {
       $Opts{$_} = 10 unless exists $Opts{$_};
    }
@@ -1206,7 +1206,7 @@ sub print_unmatched_report() {
 
 =pod
    ****** Summary ********************************************************
-          2   Miscellaneous warnings 
+          2   Miscellaneous warnings
 
       20621   Total messages scanned ----------------  100.00%
     662.993M  Total bytes scanned                  695,198,092
@@ -1224,13 +1224,13 @@ sub print_unmatched_report() {
          15     Malware blocked                          0.07%
 
 
-       1978   SpamAssassin bypassed 
-         18   Released from quarantine 
-       1982   Whitelisted           
-          3   Blacklisted           
-         12   MIME error            
-         51   Bad header (debug supplemental) 
-         28   Extra code modules loaded at runtime 
+       1978   SpamAssassin bypassed
+         18   Released from quarantine
+       1982   Whitelisted
+          3   Blacklisted
+         12   MIME error
+         51   Bad header (debug supplemental)
+         28   Extra code modules loaded at runtime
 =cut
 # Prints the Summary report section
 #
@@ -1323,7 +1323,7 @@ sub print_summary_report (\@) {
                   $desc = @$desc[0] . ' ' . @$desc[1] x (42 - 2 - length(@$desc[0]));
                }
 
-               push @{$lines[$cur_level]}, 
+               push @{$lines[$cur_level]},
                   sprintf "$fmt  %-42s %6.2f%%\n", $total, $desc,
                      $$divisor == $Totals{$keyname} ? 100.00 : $Totals{$keyname} * 100 / $$divisor;
             }
@@ -1346,8 +1346,8 @@ sub print_summary_report (\@) {
 }
 
 # Prints the Detail report section
-# 
-# Note: side affect; deletes each key in Totals/Counts 
+#
+# Note: side affect; deletes each key in Totals/Counts
 # after printout.  Only the first instance of a key in
 # the Section table will result in Detail output.
 sub print_detail_report (\@) {
@@ -1383,7 +1383,7 @@ sub print_detail_report (\@) {
       # at detail 5, print level 1, detail 6: level 2, ...
 
 #print STDERR "building: $keyname\n";
-      my ($count, $treeref) = 
+      my ($count, $treeref) =
             buildTree (%{$Counts{$keyname}}, defined ($max_level) ? $max_level : 11,
                        \@levelspecs, $Opts{'detail'} - 4, 0, $Opts{'debug'} & D_TREE);
 
@@ -1435,8 +1435,8 @@ Print out a standard percentiles report
    -------------------------------------------------------------------------------------------
    Postgrey       727.00    727.00    727.00    727.00    727.00    727.00    727.00    727.00
    ===========================================================================================
- 
- tableref: 
+
+ tableref:
    data table: ref to array of arrays, first cell is label, subsequent cells are data
  title:
    table's title
@@ -1452,7 +1452,7 @@ sub print_percentiles_report2($$$) {
    my $myfw2 = $fw2 - 1;
    my @percents = split /[ ,]/, $percentiles_str;
 
-   # Calc y label width from the hash's keys. Each key is padded with the 
+   # Calc y label width from the hash's keys. Each key is padded with the
    # string "#: ", # where # is a single-digit sort index.
    my $y_label_max_width = 0;
    for (@$tableref) {
@@ -1547,7 +1547,7 @@ sub create_level_specs($ $ $) {
          # force top N at level 1 (zero based)
          push @specsP1, { level => 0, topn => $2, threshold => 0 };
       }
-      # newer level specs 
+      # newer level specs
       elsif ($sp =~ /^::(\d+)$/) {
          push @specsP3, { level => undef, topn => 0, threshold => $1 };
       }
@@ -1569,7 +1569,7 @@ sub create_level_specs($ $ $) {
    my ($min, $max);
    foreach my $sp ( @specsP3, @specsP2, @specsP1) {
       ($min, $max) = (0, $max_level);
-      
+
       if (defined $sp->{level}) {
          $min = $max = $sp->{level};
       }
@@ -1614,14 +1614,14 @@ use File::Basename;
 our $progname        =  fileparse($0);
 
 # the list of supplemental reports available in the Detail section
-#p0f 
+#p0f
 my @supplemental_reports = qw(
    autolearn score_percentiles score_frequencies sarules timings sa_timings startinfo
 );
 
 # Default values for various options, used if no config file exists,
 # or some option is not set.
-# 
+#
 # These are used to reset default values after an option has been
 # disabled (via undef'ing its value).  This allows a report to be
 # disabled via config file or --nodetail, but reenabled via subsequent
@@ -1783,7 +1783,7 @@ my (%Timings, %TimingsSA, @TimingsTotals, @TimingsSATotals);
 my (%SaveLine, %StartInfo);
 my (%SpamScores, %spamtags, %p0ftags);
 
-# Priority: VIRUS BANNED UNCHECKED SPAM SPAMMY BADH OVERSIZED MTA CLEAN 
+# Priority: VIRUS BANNED UNCHECKED SPAM SPAMMY BADH OVERSIZED MTA CLEAN
 my %ccatmajor_to_sectkey = (
    'INFECTED'    => 'malware',
    'BANNED'      => 'bannedname',
@@ -1812,7 +1812,7 @@ my %ccatmajor_to_priority = (
    'OTHER'       => 0,
 );
 
-# for reports 
+# for reports
 my %ccatmajor_to_spamham = (
    'INFECTED'    => 'malware',
    'BANNED'      => 'bannedname',
@@ -1829,14 +1829,14 @@ my %ccatmajor_to_spamham = (
 
 my $logline_maxlen = 980;
 
-# Create the list of REs against which log lines are matched.                                                                                         
-# Lines that match any of the patterns in this list are ignored.                                                                                      
-#                                                                                                                                                     
-# Note: This table is created at runtime, due to a Perl bug which                                                                                     
-# I reported as perl bug #56202:                                                                                                                      
-#                                                                                                                                                     
-#    http://rt.perl.org/rt3/Public/Bug/Display.html?id=56202                                                                                          
-#                                                                                                                                                     
+# Create the list of REs against which log lines are matched.
+# Lines that match any of the patterns in this list are ignored.
+#
+# Note: This table is created at runtime, due to a Perl bug which
+# I reported as perl bug #56202:
+#
+#    http://rt.perl.org/rt3/Public/Bug/Display.html?id=56202
+#
 
 sub create_ignore_list() {
    push @ignore_list_final, qr/^lookup_ip_acl/;
@@ -2112,7 +2112,7 @@ while (<>) {
         # Place REs here that should ignore log lines otherwise caught below.
         # Some are located here historically, and need to be checked for candidates
         # to be relocated to ignore_list_final.
-           ($p1 =~ /^do_ascii/) 
+           ($p1 =~ /^do_ascii/)
         or ($p1 =~ /^Checking/)
         or ($p1 =~ /^header_edits_for_quar: /)
         or ($p1 =~ /^Not-Delivered/)
@@ -2180,7 +2180,7 @@ while (<>) {
       #TD SPAM-TAG, <from@example.com> -> <to@sample.net>, No, score=-1.294 required=8.15 tests=[BAYES_00=-2.599, FROM_LOCAL_HEX=1.305]
       # pre 2.3.3
       #TD SPAM-TAG, <from@example.com> -> <to@sample.net>, Yes, hits=6.159 tagged_above=-999 required=3.4 tests=BAYES_99=3.5, FUZZY_CPILL=0.518, HTML_MESSAGE=0.001, URIBL_WS_SURBL=2.14
-      #TD SPAM, <from@example.com> -> <to@sample.net>, Yes, hits=8.1 tag1=-999.0 tag2=7.0 kill=7.0 tests=MANGLED_TAKE, UPPERCASE_25_50, quarantine spam-14156-09 (maia-spam-quarantine) 
+      #TD SPAM, <from@example.com> -> <to@sample.net>, Yes, hits=8.1 tag1=-999.0 tag2=7.0 kill=7.0 tests=MANGLED_TAKE, UPPERCASE_25_50, quarantine spam-14156-09 (maia-spam-quarantine)
 
       $Totals{'tagged'}++   if uc($tagtype) eq 'SPAM-TAG';
 
@@ -2204,7 +2204,7 @@ while (<>) {
          }
          $spamtags{$pid} = $tagstr;
 
-         #for (split /=[^,]+(?:, +|$)/, $tests) 
+         #for (split /=[^,]+(?:, +|$)/, $tests)
          # amavis < 2.6.2 would double list AV names when using
          # @virus_name_to_spam_score_maps.
          my @unique_tests = unique_list (split /, +/, $tests);
@@ -2239,7 +2239,7 @@ while (<>) {
 
       # amavis 20030616p10-5
       #TD Passed, <from@example.com> -> <to@sample.net>, Message-ID: <652.44494541@example.com>, Hits: 4.377
-      #TD Passed, <from@example.com> -> <to@sample.net>, Message-ID: <B5C@example.com>, Hits: - 
+      #TD Passed, <from@example.com> -> <to@sample.net>, Message-ID: <B5C@example.com>, Hits: -
       #TD Passed, <from@example.com> -> <to@sample.net>, quarantine IJHkgliCm2Ia, Message-ID: <20080307140552.16E127641E@example.com>, Hits: 0.633
 
       #TD Passed CLEAN, [10.0.0.1] [10.0.0.1] <from@example.com> -> <to@sample.net>, Message-ID: <2qxz191@example.com>, mail_id: w4DHD8, Hits: -2.599, size: 3045, queued_as: 2056, 2664 ms
@@ -2270,9 +2270,9 @@ while (<>) {
       #TD Blocked TEMPFAIL, [10.0.0.2] [10.0.0.1] <user@example.com> -> <to@sample.net>, Message-ID: <200703302301.9f1899470@example.com>, mail_id: bgf52ZCNbPo, Hits: -2.586, 3908 ms
 
       #2.3.1
-      #<>,<info@example.com>,Passed,Hits=-3.3,Message-ID=<200506440.1.sample.net>,Size=51458 
+      #<>,<info@example.com>,Passed,Hits=-3.3,Message-ID=<200506440.1.sample.net>,Size=51458
       #20030616p10-5
-      #Not-Delivered, <from@example.com> -> <to@localhost>, quarantine spam-ea32770-03, Message-ID: <BAA618FE2CB585@localhost>, Hits: 9.687 
+      #Not-Delivered, <from@example.com> -> <to@localhost>, quarantine spam-ea32770-03, Message-ID: <BAA618FE2CB585@localhost>, Hits: 9.687
 
       # malwarepassed, malwareblocked
       # xxx very old
@@ -2312,7 +2312,7 @@ while (<>) {
             #  2. contains banned name or type: mail is considered banned;
             #  3. spam level is above kill level for at least one recipient, or a sender is blacklisted: mail is considered spam;
             #  4. bad (invalid) headers: mail is considered as having a bad header.
-            # Priority: VIRUS BANNED UNCHECKED SPAM SPAMMY BADH OVERSIZED MTA CLEAN 
+            # Priority: VIRUS BANNED UNCHECKED SPAM SPAMMY BADH OVERSIZED MTA CLEAN
             $Totals{'sabypassed'}++;
          }
       } else {
@@ -2379,12 +2379,12 @@ while (<>) {
       }
 
       # old...
-      #XXX elsif (($action, $item, $ip, $from, $to) = ( $p1 =~ /^(?:(Blocked|Passed) )?BANNED (?:name\/type )?\((.+)\),[^[]*(?: \[($re_IP)\])?(?: \[$re_IP\])* [<(]([^>)]*)[>)] -> [(<]([^(<]+)[(>]/o)) 
+      #XXX elsif (($action, $item, $ip, $from, $to) = ( $p1 =~ /^(?:(Blocked|Passed) )?BANNED (?:name\/type )?\((.+)\),[^[]*(?: \[($re_IP)\])?(?: \[$re_IP\])* [<(]([^>)]*)[>)] -> [(<]([^(<]+)[(>]/o))
       #XXXX  elsif (($action, $ip, $from, $to) = ( $p1 =~ /^(?:(Passed|Blocked) )?UNCHECKED,[^[]*(?: \[($re_IP)\])?(?: \[$re_IP\])* [<(]([^>)]*)[>)] -> [(<]([^>)]*)[)>]/o ))
       #XXX elsif (($action, $ip, $from, $to) = ( $p1 =~ /^(?:(Passed|Blocked) )?TEMPFAIL,[^[]*(?: \[($re_IP)\])?(?: \[$re_IP\])* [<(]([^>)]*)[>)] -> [(<]([^>)]*)[)>]/o ))
       #XXX elsif (($action, $ip, $from, $to) = ( $p1 =~ /^(?:(Blocked|Passed) )?BAD-HEADER,[^[]*(?: \[($re_IP)\])?(?: \[$re_IP\])* [(<]([^>)]*)[)>](?: -> [(<]([^>)]+)[)>])[^:]*/o ))
       # amavis 2.3.1
-      #BAD-HEADER, <> -> <info@example.com>, Message-ID: <200506440.1.sample.net>, Hits=-3.3 tag1=3.0 tag2=7.5 kill=7.5, tests=ALL_TRUSTED=-3.3, [10.0.0.1] 
+      #BAD-HEADER, <> -> <info@example.com>, Message-ID: <200506440.1.sample.net>, Hits=-3.3 tag1=3.0 tag2=7.5 kill=7.5, tests=ALL_TRUSTED=-3.3, [10.0.0.1]
    } # end Passed or Blocked
 
    # MAIA
@@ -2398,8 +2398,8 @@ while (<>) {
       my ($ts, $name) = ($1, $2);
       #TD p006 1 Content-Type: multipart/mixed
       #TD p008 1/1 Content-Type: multipart/signed
-      #TD p001 1/1/1 Content-Type: text/plain, size: 460 B, name: 
-      #TD p002 1/1/2 Content-Type: application/pgp-signature, size: 189 B, name: 
+      #TD p001 1/1/1 Content-Type: text/plain, size: 460 B, name:
+      #TD p002 1/1/2 Content-Type: application/pgp-signature, size: 189 B, name:
       #TD p002 1/2 Content-Type: application/octet-stream, size: 3045836 B, name: abc.pdf
       next unless ($Collecting{'contenttype'});
       my ($type, $subtype) = $ts !~ '""' ? split /\//, $ts : ('unspecified', 'unspecified');
@@ -2445,9 +2445,9 @@ while (<>) {
 
       # amavisd < 2.4.0, log_level >= 1
       #TD BAD HEADER from <bogus@example.com>: Improper use of control character (char 0D hex) in message header 'Received': Received: example.com[10.0.0.1\r]
-      #TD BAD HEADER from <bogus@example.com>: Non-encoded 8-bit data (char F7 hex) in message header 'Subject': Subject: \367\345\370\361 \344\351\351\362\345\365\n    
+      #TD BAD HEADER from <bogus@example.com>: Non-encoded 8-bit data (char F7 hex) in message header 'Subject': Subject: \367\345\370\361 \344\351\351\362\345\365\n
       #TD BAD HEADER from <bogus@example.com>: MIME error: error: part did not end with expected boundary
-      #TD BAD HEADER from (bulk ) <bogus@bounces@lists.example.com>: Non-encoded 8-bit data (char E6 hex) in message header 'Subject': Subject: spam\\346ham\\n 
+      #TD BAD HEADER from (bulk ) <bogus@bounces@lists.example.com>: Non-encoded 8-bit data (char E6 hex) in message header 'Subject': Subject: spam\\346ham\\n
       #TD BAD HEADER from (list) <bogus@bounces@lists.example.com>: MIME error: error: part did not end with expected boundary
       #  amavisd >= 2.4.3, log_level >= 2
       #TD check_header: 2, Non-encoded 8-bit data (char AE hex): Subject: RegionsNet\\256 Online Banking\\n
@@ -2539,7 +2539,7 @@ while (<>) {
          $Counts{'dsnsuppressed'}{'DSN cutoff exceeded'}++;
       }
       elsif ($1 =~ /^Not sending DSN to believed-to-be-faked sender/) {
-         #TD NOTICE: Not sending DSN to believed-to-be-faked sender <user@example.com>, mail containing VIRUS intentionally dropped 
+         #TD NOTICE: Not sending DSN to believed-to-be-faked sender <user@example.com>, mail containing VIRUS intentionally dropped
          $Totals{'dsnsuppressed'}++;
          $Counts{'dsnsuppressed'}{'Sender likely faked'}++;
       }
@@ -2634,7 +2634,7 @@ while (<>) {
       $Counts{'smtpresponse'}{'Negative response'}{$stage}{$reason}++;
    }
    elsif ( ($stage,$reason) = ($p1 =~ /^smtp resp to ([^:]+): *(.*)$/)) {
-      #TD smtp resp to NOOP (idle 4799.4 s): 421 4.4.2 nops.overtops.org Error: timeout exceeded 
+      #TD smtp resp to NOOP (idle 4799.4 s): 421 4.4.2 nops.overtops.org Error: timeout exceeded
       #TD smtp resp to MAIL (pip): 250 2.1.0 Ok
       $Totals{'smtpresponse'}++;       next unless ($Collecting{'smtpresponse'});
       $stage =~ s/ [\d.]+ s//;
@@ -2701,7 +2701,7 @@ while (<>) {
    }
    elsif ($p1 =~ /^DEFANGING MAIL: (.+)$/) {
       # log_level 1
-      #TD DEFANGING MAIL: WARNING: possible mail bomb, NOT CHECKED FOR VIRUSES:\n  Exceeded storage quota 5961070 bytes by d... 
+      #TD DEFANGING MAIL: WARNING: possible mail bomb, NOT CHECKED FOR VIRUSES:\n  Exceeded storage quota 5961070 bytes by d...
       #TD DEFANGING MAIL: WARNING: bad headers - Improper use of control character (char 0D hex): To: <to@example.com\\r>,\\n\\t<to@example.com>
       # could use instead...
       #do_log(1,"mangling by %s (%s) done, new size: %d, orig %d bytes", $actual_mail_mangle, $mail_mangle, $repl_size, $msginfo->msg_size);
@@ -2715,7 +2715,7 @@ while (<>) {
    }
 
    # I don't know how many variants of time outs there are... I suppose we'll fix as we go
-   elsif (($p1 =~ /^\(!+\)([^ ]*) is taking longer than \d+ s and will be killed/) or 
+   elsif (($p1 =~ /^\(!+\)([^ ]*) is taking longer than \d+ s and will be killed/) or
           ($p1 =~ /^\(!+\)(.*) av-scanner FAILED: timed out/) or
           ($p1 =~ /^(?:\(!+\))?(.*): timed out/))
    {
@@ -2815,8 +2815,8 @@ while (<>) {
       #TD TROUBLE: recipient not done: <to@example.com> smtp response ...
       #TD (!!)TROUBLE in process_request: Can't create file /var/amavis/tmp/amavis-98/email.txt: File exists at /usr/local/sbin/amavisd line 4774, <GEN12> line 4.
       #TD TROUBLE: lookup table is an unknown object: object ...
-      #TD (!) policy protocol: INVALID ATTRIBUTE LINE: /var/spool/courier/tmp/114528/D967099\n 
-      #TD (!) policy protocol: INVALID AM.PDP ATTRIBUTE LINE: /var/spool/courier/tmp/114528/D967099\n 
+      #TD (!) policy protocol: INVALID ATTRIBUTE LINE: /var/spool/courier/tmp/114528/D967099\n
+      #TD (!) policy protocol: INVALID AM.PDP ATTRIBUTE LINE: /var/spool/courier/tmp/114528/D967099\n
       #TD _WARN: bayes: cannot open bayes databases /var/spool/amavis/.spamassassin/bayes_* R/W: lock failed: Interrupted system call\n
 
       $p1 =~ s/^\(!+\)s*//;
@@ -3116,7 +3116,7 @@ while (<>) {
    # Decoders
    elsif (my ($suffix, $info) = ( $p1 =~ /^Internal decoder for (\.\S*)\s*(?:\(([^)]*)\))?$/)) {
       #TD Internal decoder for .gz   (backup, not used)
-      #TD Internal decoder for .zip 
+      #TD Internal decoder for .zip
       next unless ($Opts{'startinfo'});
       $StartInfo{'Decoders'}{'Internal'}{$suffix} = $info;
    }
@@ -3211,7 +3211,7 @@ while (<>) {
       #TD BerkeleyDB-based Amavis::Cache not available, using memory-based local cache
       next unless ($Opts{'startinfo'});
       $StartInfo{'db'} = "BerkeleyDB\t(memory-based cache: Amavis::Cache unavailable)";
- 
+
    } elsif (my ($log) = ($p1 =~ /^logging initialized, log (level \d+, (?:STDERR|syslog: \S+))/)) {
       next unless ($Opts{'startinfo'});
       %StartInfo = ();        # first amavis log entry, clear out previous start info
@@ -3539,7 +3539,7 @@ sub printSARulesReport {
          print $sep1 x $maxlen, "\n";
       }
    }
-   
+
    my ($def_limit_spam, $def_limit_ham) = split /[\s,]+/, $Defaults{'sarules'};
    my ($limit_spam, $limit_ham)         = split /[\s,]+/, $Opts{'sarules'};
    $limit_spam = $def_limit_spam    if $limit_spam eq '';
@@ -3601,7 +3601,7 @@ sub printAutolearnReport {
       }
       return @report;
    }
-   
+
    my @report_spam = getAutolearnReport('Spam');
 
    if (scalar @report_spam) {
@@ -3624,7 +3624,7 @@ sub printAutolearnReport {
 }
 
 
-# Timings percentiles report, used for amavis message scanning and spamassassin timings 
+# Timings percentiles report, used for amavis message scanning and spamassassin timings
 =pod
    ========================================================================================================================
    Scan Timing Percentiles       % Time    Total (ms)        0%        5%       25%       50%       75%       95%      100%
@@ -3687,7 +3687,7 @@ sub printTimingsReport($$$$) {
       $max_rows = -$cutoff;
    }
    my $rows = 0;
-   # sort each timing key's values, required to compute the list of percentiles 
+   # sort each timing key's values, required to compute the list of percentiles
    for (sort { $perkey_totals{$b} <=> $perkey_totals{$a} } @tkeys) {
       last if (($max_rows and $rows >= $max_rows) or ($max_pcnt and $subtotal_pcnt >= $max_pcnt));
 
@@ -3817,7 +3817,7 @@ sub init_getopts_table() {
 #   6. A hash to a divisor used to calculate the percentage of a total for that key
 #
 # Use begin_section_group/end_section_group to create groupings around sections.
-# 
+#
 # Sections can be freely reordered if desired, but maintain proper group nesting.
 #
 sub build_sect_table() {
@@ -4005,8 +4005,8 @@ sub init_defaults() {
       }
       else {                              # detail 10 and up, full reports
          #$Opts{'p0f'}              = 'all all';
-         $Opts{'timings'}          = 100;    
-         $Opts{'sa_timings'}       = 100;    
+         $Opts{'timings'}          = 100;
+         $Opts{'sa_timings'}       = 100;
          $Opts{'sarules'}          = 'all all';
       }
    }

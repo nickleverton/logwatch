@@ -58,9 +58,9 @@ while(defined ($ThisLine = <STDIN>)) {
    # remove when filter script is done
    #$ThisLine =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d //;
 
- 
+
    if ( ($ThisLine =~ /^\w+ Could not establish a session with a TSM server or client agent/ ) ||
-        ($ThisLine =~ /^\w+ Communication with the  TSM server is lost/ ) 
+        ($ThisLine =~ /^\w+ Communication with the  TSM server is lost/ )
    ) {
       # ignore
    }

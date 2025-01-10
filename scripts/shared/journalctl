@@ -27,10 +27,10 @@
 # file (in directory conf/logfiles) rather than the service
 # configuration file (in directory conf/services), then the
 # following is needed in the logfile configuration file:
-#   LogFile = 
+#   LogFile =
 #   LogFile = /dev/null
 #   *JournalCtl = "--no-pager --unit=service_name.service"
-# 
+#
 # In addition to the examples above that use --unit, additional
 # field values may be needed.  Both "man journalctl" and
 # "man systemd.journal-fields" describe additional options and

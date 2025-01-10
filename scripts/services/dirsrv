@@ -49,7 +49,7 @@ my $PreviousLine = '';
 
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   
+
    if ($ThisLine =~ /^Listening for new connections again$/
        or $ThisLine =~ /^Beginning export of /
        or $ThisLine =~ /^Export finished/

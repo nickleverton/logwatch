@@ -103,7 +103,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /tpop3d startup  succeeded$/) or
       ($ThisLine =~ /^disconnected, user=/i) or
       ($ThisLine =~ /^timeout, user=/i) or
-      ($ThisLine =~ /^(connection|disconnected), ip=/io) 
+      ($ThisLine =~ /^(connection|disconnected), ip=/io)
    ) {
       # Don't care about these...
    } elsif (

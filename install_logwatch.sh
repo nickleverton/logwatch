@@ -2,9 +2,9 @@
 #
 #The MIT License
 #
-#Copyright (c) 2005-2006 Mike Tremaine <mgt /at/ stellarcore.net> 
+#Copyright (c) 2005-2006 Mike Tremaine <mgt /at/ stellarcore.net>
 #
-#Permission is hereby granted, free of charge, to any person obtaining 
+#Permission is hereby granted, free of charge, to any person obtaining
 #a copy of this software and associated documentation files (the "Software"),
 #to deal in the Software without restriction, including without limitation
 #the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -23,7 +23,7 @@
 #THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # __________________________________________________________________
 #
-# File: install_logwatch.sh 
+# File: install_logwatch.sh
 # Author: Mike Tremaine [mgt /at/ stellarcore.net]
 # Maintainer: Mike Tremaine [mgt /at/ stellarcore.net]
 # $Id$
@@ -144,7 +144,7 @@ read config
 if [ "$config" = "" ]; then
    printf "### Using $CONFIGDIR\n"
 else
-   CONFIGDIR="$config" 
+   CONFIGDIR="$config"
    munge_conf=1
    printf "### Using $CONFIGDIR [will modify logwatch.pl]\n"
 fi
@@ -342,7 +342,7 @@ if [ $systemd -eq 1 ]; then
 elif [ -d /etc/cron.daily ]; then
    rm -f /etc/cron.daily/0logwatch
    install -m 0755 scheduler/logwatch.cron /etc/cron.daily/0logwatch
-   printf "Created /etc/cron.daily/0logwatch \n" 
+   printf "Created /etc/cron.daily/0logwatch \n"
 else
    install -m 0744 scheduler/logwatch.cron $CONFIGDIR/logwatch.cron
    printf "################ README ####################.\n"

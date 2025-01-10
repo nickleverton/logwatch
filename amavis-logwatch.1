@@ -1,4 +1,4 @@
-.TH AMAVIS-LOGWATCH 1 
+.TH AMAVIS-LOGWATCH 1
 .ad
 .fi
 .SH NAME
@@ -47,7 +47,7 @@ The following segment from a sample Summary report illustrates:
 
 ****** Summary ********************************************
 
-       9   Miscellaneous warnings 
+       9   Miscellaneous warnings
 
    20313   Total messages scanned ----------------  100.00%
 1008.534M  Total bytes scanned                1,057,524,252
@@ -79,29 +79,29 @@ The following segment from a sample Summary report illustrates:
    19076     Clean passed                            93.91%
 ========   ================================================
 
-    1982   SpamAssassin bypassed 
-      32   Released from quarantine 
-       2   DSN notification (debug supplemental) 
-       2   Bounce unverifiable   
-    2369   Whitelisted           
-       2   Blacklisted           
-      12   MIME error            
-      58   Bad header (debug supplemental) 
-      40   Extra code modules loaded at runtime 
+    1982   SpamAssassin bypassed
+      32   Released from quarantine
+       2   DSN notification (debug supplemental)
+       2   Bounce unverifiable
+    2369   Whitelisted
+       2   Blacklisted
+      12   MIME error
+      58   Bad header (debug supplemental)
+      40   Extra code modules loaded at runtime
 
 .fi
 .RE 0
 The report indicates there were 9 general warnings, and
 \fBAmavis\fR scanned a total of 20313 messages
 for a total of 1008.53 megabytes or 1,057,524,252 bytes.
-The next summary groups shows the Blocked / Passed overview, 
+The next summary groups shows the Blocked / Passed overview,
 with 1190 Blocked messages (broken down as 18 messages blocked as malware,
 4 messages with banned names, 416 spam messages, and 752 discarded
 messages), and 19123 Passed messages (47 messages with bad headers
 and 19076 clean messages).
 
-The next (optional) summary grouping shows message disposition by contents category.  
-There were 18 malware messages and 4 banned file messages (all blocked), 
+The next (optional) summary grouping shows message disposition by contents category.
+There were 18 malware messages and 4 banned file messages (all blocked),
 1168 Spam messages, of which 416 were blocked (quarantined) and 752 discarded.
 Finally, there were 19123 messages considered to be Ham (i.e. not spam), 47
 of which contained bad headers.
@@ -193,7 +193,7 @@ additional report sections are candidates for output.
 Each incremental increase in \fIlevel\fR generates one additional
 hierarchical sub-level of output in the \fBDetailed\fR section of the report.
 At \fIlevel\fR 10, all levels are output.
-Lines that exceed the maximum report width (specified with 
+Lines that exceed the maximum report width (specified with
 \fBmax_report_width\fR) will be cut.
 Setting \fIlevel\fR to 11 will prevent lines in the report from being cut (see also \fB--line_style\fR).
 .IP "\fB--[no]first_recip_only\fR"
@@ -216,9 +216,9 @@ Sets the level limiter \fIlimiter\fR with the specification \fIlevelspec\fR.
 .IP "\fB--line_style \fIstyle\fR"
 Specifies how to handle long report lines.
 Three styles are available: \fBfull\fR, \fBtruncate\fR, and \fBwrap\fR.
-Setting \fIstyle\fR to \fBfull\fR will prevent cutting lines to \fBmax_report_width\fR; 
+Setting \fIstyle\fR to \fBfull\fR will prevent cutting lines to \fBmax_report_width\fR;
 this is what occurs when \fBdetail\fR is 11 or higher.
-When \fIstyle\fR is \fBtruncate\fR (the default), 
+When \fIstyle\fR is \fBtruncate\fR (the default),
 long lines will be truncated according to \fBmax_report_width\fR.
 Setting \fIstyle\fR to \fBwrap\fR will wrap lines longer than \fBmax_report_width\fR such that
 left column hit counts are not obscured.
@@ -512,7 +512,7 @@ Messages that were (soft-)whitelisted.  See also Blacklisted above.
 .fi
 The \fBDetailed\fR section of the report consists of a number of sub-sections,
 each of which is controlled both globally and independently.
-Two settings influence the output provided in the \fBDetailed\fR report: 
+Two settings influence the output provided in the \fBDetailed\fR report:
 a global detail level (specified with \fB--detail\fR) which has final (big hammer)
 output-limiting control over the \fBDetailed\fR section,
 and sub-section specific detail settings (small hammer), which allow further limiting
@@ -604,33 +604,33 @@ Because \fBamavis-logwatch\fR can run either standalone or within Logwatch,
 to minimize confusion, \fBamavis-logwatch\fR inherits Logwatch's configuration
 file syntax requirements and conventions.
 These are:
-.IP \(bu 4'. 
+.IP \(bu 4'.
 White space lines are ignored.
-.IP \(bu 4'. 
+.IP \(bu 4'.
 Lines beginning with \fB#\fR are ignored
-.IP \(bu 4'. 
+.IP \(bu 4'.
 Settings are of the form:
 .nf
 
         \fIoption\fB = \fIvalue\fR
 
 .fi
-.IP \(bu 4'. 
+.IP \(bu 4'.
 Spaces or tabs on either side of the \fB=\fR character are ignored.
-.IP \(bu 4'. 
+.IP \(bu 4'.
 Any \fIvalue\fR protected in double quotes will be case-preserved.
-.IP \(bu 4'. 
+.IP \(bu 4'.
 All other content is reduced to lowercase (non-preserving, case insensitive).
-.IP \(bu 4'. 
+.IP \(bu 4'.
 All \fBamavis-logwatch\fR configuration settings must be prefixed with "\fB$amavis_\fR" or
 \fBamavis-logwatch\fR will ignore them.
-.IP \(bu 4'. 
+.IP \(bu 4'.
 When running under Logwatch, any values not prefixed with "\fB$amavis_\fR" are
 consumed by Logwatch; it only passes to \fBamavis-logwatch\fR (via environment variable)
 settings it considers valid.
-.IP \(bu 4'. 
+.IP \(bu 4'.
 The values \fBTrue\fR and \fBYes\fR are converted to 1, and \fBFalse\fR and \fBNo\fR are converted to 0.
-.IP \(bu 4'. 
+.IP \(bu 4'.
 Order of settings is not preserved within a configuration file (since settings are passed
 by Logwatch via environment variables, which have no defined order).
 .PP
@@ -818,7 +818,7 @@ Same as above, but leaves long lines uncropped:
 .RE 0
 .SS "Amavis Log Level"
 .PP
-Amavis provides additional log information when the variable 
+Amavis provides additional log information when the variable
 \fB$log_level\fR is increased above the default 0 value.
 This information is used by the \fBamavis-logwatch\fR utility to provide additional reports,
 not available with the default \fB$log_level\fR=0 value.

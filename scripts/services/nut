@@ -165,7 +165,7 @@ if (keys %BatteryReplace) {
    }
    print "\n";
 }
-   
+
 if (keys %CannotConnect) {
    my $first = 1;
    foreach my $ups (sort {$a cmp $b} keys %CannotConnect) {
@@ -218,7 +218,7 @@ if (keys %BatteryLow) {
    }
    print "\n";
 }
-   
+
 if (keys %OnBattery) {
    print "UPS on battery:\n";
    foreach my $ups (sort {$a cmp $b} keys %OnBattery) {
@@ -226,7 +226,7 @@ if (keys %OnBattery) {
    }
    print "\n";
 }
-   
+
 # TODO - Alert if too many disconnects?
 my $CommunicationLostCurrent = 0;
 foreach my $ups (keys %CommunicationLost) {

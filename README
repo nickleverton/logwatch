@@ -63,7 +63,7 @@ How do I use it?
 
 Well, it should pretty much work on its own, sending you an
 email every night.  For more configuration options, run
-'logwatch --help' or edit  /usr/share/logwatch/default.conf/logwatch.conf 
+'logwatch --help' or edit  /usr/share/logwatch/default.conf/logwatch.conf
 or /etc/logwatch/logwatch.conf.
 
 See the file HOWTO-Customize-LogWatch for more information.

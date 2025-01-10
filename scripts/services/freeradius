@@ -9,7 +9,7 @@
 
 ########################################################
 # freeradius logwatch filter
-#	written by Jonas Marczona 28.12.2011 
+#	written by Jonas Marczona 28.12.2011
 #
 ## Covered under the included MIT/X-Consortium License:
 ## http://www.opensource.org/licenses/mit-license.php
@@ -114,7 +114,7 @@ while (defined($ThisLine = <STDIN>)) {
    }
 
    # TD: Login incorrect: [user@example.com] (from client radius port 175143 cli cc08.e051.a240)
-   # TD: Login incorrect: [user@example.com] (from client radius1 port 0) 
+   # TD: Login incorrect: [user@example.com] (from client radius1 port 0)
    elsif ( my ($user, $client) = ($ThisLine =~ m/^(?:Auth: )?Login incorrect: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
       if (! $client) { $client = "*not named*"; }
       $wrongPassword{$client}{$user}++;
@@ -218,7 +218,7 @@ if ($Detail >= 8) {
       print "\nSum of failed logins per client (wrong password or user)\n";
       foreach my $client (sort compPerMacAddr keys %wrong_client) {
          printf "  %-40s : %5d time(s)\n", $client, $wrong_client{$client};
-      } 
+      }
    }
 }
 

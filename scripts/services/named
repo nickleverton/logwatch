@@ -34,7 +34,7 @@ my $IgnoreDeniedZoneTransfers = $ENV{'ignore_denied_zone_transfers'} || 0;
 
 #Init Counters
 my $DebugCounter=       my $StartNamed=         my $ReloadNamed=
-my $ShutdownNamed=      my $ShutdownNamedFail= 
+my $ShutdownNamed=      my $ShutdownNamedFail=
 0;
 #Init String Containers
 my (
@@ -367,7 +367,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: non-authoritative answer from master/)) {
       $NonAuthoritative{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: retry limit for master \S+ exceeded/) ) {
-      $RetryLimit{$Zone}++; 
+      $RetryLimit{$Zone}++;
    } elsif ( ($Rcode, $Zone, $Host) = ($ThisLine =~ /(?:error \()?unexpected RCODE\)? \(?(.*?)\)? resolving '(.*)': (.*)$/) ){
       # Remove port number, for proper IP sorting
       $Host =~ s/#.*//;

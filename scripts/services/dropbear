@@ -30,7 +30,7 @@ my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $IgnoreHost = $ENV{'ignore_host'} || "";
 my $IllegalUsersThreshold = $ENV{'illegal_users_threshold'} || 0;
-$main::DoLookup = $ENV{'sshd_ip_lookup'}; 
+$main::DoLookup = $ENV{'sshd_ip_lookup'};
 my $DebugCounter = 0;
 
 #Init String Containers
