@@ -28,6 +28,7 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my ($Hostname) = ($ENV{'HOSTNAME'} =~ /^([^.]+)/);
 my $CannotConnectThreshold = $ENV{'cannot_connect_threshold'} || 0;
 my %BatteryLow;
+my %BatteryReplace;
 my %CannotConnect;
 my %Commands;
 my %CommunicationLost;
@@ -108,6 +109,8 @@ while (defined(my $ThisLine = <STDIN>)) {
      # Ignore these
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS (\S+) battery is low/)) {
       $BatteryLow{$ups}++;
+   } elsif (($ups) = ($ThisLine =~ /^(?:nut-monitor|upsmon): UPS (\S+) battery needs to be replaced/)) {
+      $BatteryReplace{$ups}++;
    } elsif (($ups) = ($ThisLine =~ /^(?:nut-server|upsd): Can't connect to UPS \[(\S+)\]/)) {
       $CannotConnect{$ups}++;
    } elsif (($user, $command, $ups) = ($ThisLine =~ /^(?:nut-server|upsd): Instant command: (\S+) did (\S+) on (\S+)/)) {
@@ -155,6 +158,14 @@ while (defined(my $ThisLine = <STDIN>)) {
    }
 }
 
+if (keys %BatteryReplace) {
+   print "WARNING: UPS battery needs to be replaced:\n";
+   foreach my $ups (sort {$a cmp $b} keys %BatteryReplace) {
+      print "   $ups: $BatteryReplace{$ups} Time(s)\n";
+   }
+   print "\n";
+}
+   
 if (keys %CannotConnect) {
    my $first = 1;
    foreach my $ups (sort {$a cmp $b} keys %CannotConnect) {
