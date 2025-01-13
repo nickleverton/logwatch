@@ -34,7 +34,7 @@ my $IgnoreDeniedZoneTransfers = $ENV{'ignore_denied_zone_transfers'} || 0;
 
 #Init Counters
 my $DebugCounter=       my $StartNamed=         my $ReloadNamed=
-my $ShutdownNamed=      my $ShutdownNamedFail=
+my $ShutdownNamed=      my $ShutdownNamedFail=  my $TCPClientQuota=
 0;
 #Init String Containers
 my (
@@ -270,6 +270,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ShutdownNamed++;
    } elsif ( $ThisLine =~ /named shutdown failed/ ) {
       $ShutdownNamedFail++;
+   } elsif ( $ThisLine =~ /TCP client quota reached/ ) {
+      $TCPClientQuota++;
    } elsif ( (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?\s*zone transfer '(.+)' denied/ )) or
              (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?\s*bad zone transfer request: '(.+)':/ )) ) {
       $DeniedZoneTransfers{$Host}{$Zone}++ unless $IgnoreDeniedZoneTransfers;
@@ -428,7 +430,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $LoopDetected{$Entry}++;
    } elsif (($Hint) = ($ThisLine =~ /checkhints: (.*)/) ) {
       $Hints{$Hint}++;
-   } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit (.+) responses to (\S+)(?: for (.+) \()?/)) {
+   } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit(:?ing)? (.+) responses to (\S+)(?: for (.+) \()?/)) {
       $Zone = "None" unless defined($Zone);
       $Limit{$Zone}{$Response}{$Net}++ if $Detail;
    } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
@@ -588,6 +590,10 @@ if (keys %ErrOpenFiles) {
    foreach my $ThisOne (keys %ErrOpenFiles) {
       print "   " . $ThisOne . ": " . $ErrOpenFiles{$ThisOne} . " Time(s)\n";
    }
+}
+
+if ($TCPClientQuota) {
+   print "\nTCP Client Quota hit: $TCPClientQuota Time(s)\n";
 }
 
 if (keys %Limit) {
