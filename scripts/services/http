@@ -547,6 +547,7 @@ while (my $line = <STDIN>) {
 
    if ($field{lc_url} =~ /^\/robots.txt$/) {
       if (defined $field{agent}) {
+         if ($field{agent} eq "-") {$field{agent} = '(Unidentified agent)'};
          $robots{$field{agent}} +=1;
       }
    }
