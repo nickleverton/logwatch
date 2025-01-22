@@ -10,8 +10,8 @@ use strict;
 
 ########################################################
 # Specify version and build-date:
-my $Version = '7.11';
-my $VDate = '07/22/24';
+my $Version = '7.12';
+my $VDate = '01/22/25';
 
 #######################################################
 # Logwatch was originally written by:
