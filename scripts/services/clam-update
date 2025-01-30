@@ -155,13 +155,16 @@ elsif ($Ignore_No_Updates == 0) {
    print "ClamAV update process).  If the freshclam daemon is not running,\n";
    print "you may need to restart it.  (Or if run from a cron job, ensure\n";
    print "it is run periodically.)  Other options:\n\n";
-   print "A. If you no longer wish to run freshclam, deleting the log file\n";
-   print "   (configured is $ENV{'LOGWATCH_LOGFILE_LIST'}) will suppress this error message.\n\n";
-   print "B. If you use a different log file, update the appropriate\n";
+   if ($ENV{'LOGWATCH_LOGFILE_LIST'} ne ") {
+      print "-> If you no longer wish to run freshclam, deleting the log file\n";
+      print "   (configured is $ENV{'LOGWATCH_LOGFILE_LIST'}) " .
+                "will suppress this error message.\n\n";
+      }
+   print "-> If you use a different log file, update the appropriate\n";
    print "   configuration file.  For example:\n";
    print "      echo \"LogFile = log_file\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
    print "   where log_file is the filename of the freshclam log file.\n\n";
-   print "C. If you are logging using syslog, you need to indicate that your\n";
+   print "-> If you are logging using syslog, you need to indicate that your\n";
    print "   log file uses the syslog format.  For example:\n";
    print "      echo \"*OnlyService = freshclam\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
    print "      echo \"*RemoveHeaders\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
