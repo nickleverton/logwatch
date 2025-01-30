@@ -61,7 +61,6 @@ my $PerlVersion = "$^X";
 # SET LIBS, GLOBALS, and DEFAULTS
 use Getopt::Long;
 use POSIX qw(uname strftime);
-use HTML::Entities qw(encode_entities);
 use File::Temp qw/ tempdir /;
 use Cwd;
 
@@ -1249,8 +1248,8 @@ sub initprint {
       &output( $index_par, "LOGWATCH Summary" . (($Config{'hostformat'} ne "none") ? ": $Config{'hostname'}" : ""), "start");
       &output( $index_par, "       Logwatch Version: $Version ($VDate)\n", "line");
    } elsif ( $Config{'format'} eq "xml" ) {
-      &output( $index_par, "<LOGWATCH xmlns='http://sourceforge.net/projects/logwatch/7.7.20221001' Version='".encode_entities($Version)."' VDate='".encode_entities($VDate)."' "
-         . (($Config{'hostformat'} ne "none") ? "hostname='".encode_entities($Config{'hostname'})."'" : "").">\n", "line");
+      &output( $index_par, "<LOGWATCH xmlns='http://sourceforge.net/projects/logwatch/7.7.20221001' Version=\'${Version}\' VDate=\'${VDate}\' "
+         . (($Config{'hostformat'} ne "none") ? "hostname=\'$Config{'hostname'}\'" : "").">\n", "line");
    }       else {
       &output( $index_par, "\n ################### Logwatch $Version ($VDate) #################### \n", "line");
    }
@@ -1258,16 +1257,16 @@ sub initprint {
    if ( $Config{'format'} eq "xml" ) {
       &output( $index_par, "<ReportMetaData ", "line");
       &output( $index_par, "processingInitiated='" . strftime("%Y-%m-%dT%H:%M:%S%z",localtime(time)) . "' ", "line");
-      &output( $index_par, "configRange='" . encode_entities($Config{'range'}) . "' ", "line");
-      &output( $index_par, "printRange='" . encode_entities($print_range) . "' ", "line")
+      &output( $index_par, "configRange=\'$Config{'range'}\' ", "line");
+      &output( $index_par, "printRange=\'${print_range}\' ", "line")
          if ($Config{'range'} ne 'all');
-      &output( $index_par, "period='" . encode_entities(&GetPeriod()) . "' ", "line")
+      &output( $index_par, "period=\'" . &GetPeriod(). "\' ", "line")
          if ($Config{'range'} ne 'all');
-      &output( $index_par, "configDetail='" . encode_entities($Config{'detail'}) . "' ", "line");
-      &output( $index_par, "configOutput='" . encode_entities($Config{'output'}) . "' ", "line");
-      &output( $index_par, "configFormat='" . $Config{'format'} . "' ", "line");
-      &output( $index_par, "configHostname='" . encode_entities($Config{'hostname'}) . "' ", "line");
-      &output( $index_par, "configHostlimit='" . encode_entities($Config{'hostlimit'}) . "' ", "line")
+      &output( $index_par, "configDetail=\'$Config{'detail'}\' ", "line");
+      &output( $index_par, "configOutput=\'$Config{'output'}\' ", "line");
+      &output( $index_par, "configFormat=\'$Config{'format'}\' ", "line");
+      &output( $index_par, "configHostname=\'$Config{'hostname'}\' ", "line");
+      &output( $index_par, "configHostlimit=\'$Config{'hostlimit'}\' ", "line")
          if ( $Config{'hostlimit'} );
    } else {
       &output( $index_par, "       Processing Initiated: " . localtime(time) . "\n", "line");
@@ -1472,8 +1471,8 @@ sub parselogs {
                #BODY <!-- SERVICE START -->
                    #&output( $index_par, "\n <h2>$ServiceData{$Service}{'title'}</h2>\n", "header");
                } elsif ( $Config{'format'} eq "xml" ) {
-                   &output( $index_par, "\n<ServiceData title='". encode_entities($ServiceData{$Service}{'title'}) . "'"
-                      . ($ENV{'LOGWATCH_GLOBAL_DETAIL'} == $ENV{'LOGWATCH_DETAIL_LEVEL'} ? "" : " detail='" . encode_entities($ENV{'LOGWATCH_DETAIL_LEVEL'}) . "'")
+                   &output( $index_par, "\n<ServiceData title=\'$ServiceData{$Service}{'title'}\'"
+                      . ($ENV{'LOGWATCH_GLOBAL_DETAIL'} == $ENV{'LOGWATCH_DETAIL_LEVEL'} ? "" : " detail=\'$ENV{'LOGWATCH_DETAIL_LEVEL'}\'")
                       . ">\n", "line");
                    if ($ThisLine =~ /^<\?xml\s.*\?>\s*$/) {
                       $serviceKnowsXML = 1;

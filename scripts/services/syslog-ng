@@ -35,7 +35,6 @@
 
 #use warnings;
 use strict;
-use HTML::Entities qw(encode_entities);
 
 my $Detail         = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Version        = "1.4-20130219";
@@ -299,10 +298,9 @@ sub outCount {
       print $msg;
    } else {
       print "<syslog-ng:Count";
-      print " count='$count'";
-      #print " msg='", encode_entities($msg),"'" if $msg;
-      print " cat='", encode_entities($category),"'" if $category;
-      print " subcat='", encode_entities($subcat),"'" if $subcat;
+      print " count='${count}'";
+      print " cat=\'${category}\'" if $category;
+      print " subcat=\'${subcat}\'" if $subcat;
       print "/>\n";
    }
 }
@@ -365,7 +363,7 @@ if ($FileOpenErrors) {
 if (keys %Conns) {
     print "<syslog-ng:Connections>\n" if $format eq 'xml';
     foreach my $cat (keys %Conns) {
-        print "<syslog-ng:Connection cat='", encode_entities($cat), "'>\n" if $format eq 'xml';
+        print "<syslog-ng:Connection cat=\'${cat}\'>\n" if $format eq 'xml';
         if ($Detail >= 5) {
             print "\n$cat:" unless $format eq 'xml';
             foreach my $IP (keys %{$Conns{$cat}}) {
@@ -530,11 +528,11 @@ if (keys %Connections) {
    print "syslog-ng:" unless $format eq 'xml';
    foreach my $state (sort {$a cmp $b} keys %Connections) {
       my $sum = 0;
-      print "<syslog-ng:ConnectionState state='",encode_entities($state),"'>" if $format eq 'xml';
+      print "<syslog-ng:ConnectionState state=\'${state}\'>" if $format eq 'xml';
       print "\nConnections $state: " unless $format eq 'xml';
       print "\n" if $Detail > 2;
       foreach my $localip (sort {$a cmp $b} keys %{$Connections{$state}}) {
-         print "<syslog-ng:interface addr='",encode_entities($localip),"'>" if $Detail > 2 and $format eq 'xml';
+         print "<syslog-ng:interface addr=\'${localip}\'>" if $Detail > 2 and $format eq 'xml';
          print "    $localip: " if $Detail > 2 and $format ne 'xml';
          print "\n" if $Detail > 5;
          my $sum_pro_ip = 0;
@@ -563,7 +561,7 @@ if (keys %IntErrors) {
    print "\nInternal Errors:" unless $format eq 'xml';
    foreach my $class (sort {$a cmp $b} keys %IntErrors) {
       print "\n    $class" unless $format eq 'xml';
-      print "<syslog-ng:InternalError class='",encode_entities($class),"'>" if $format eq 'xml';
+      print "<syslog-ng:InternalError class=\'${class}\'>" if $format eq 'xml';
       foreach my $error (sort {$a cmp $b} keys %{$IntErrors{$class}}) {
          outCount(sprintf("\n\t%-41s %5i Time(s)", "$error:", $IntErrors{$class}{$error}),$IntErrors{$class}{$error},'IntErrors',$class);
       }
