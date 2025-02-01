@@ -155,7 +155,7 @@ elsif ($Ignore_No_Updates == 0) {
    print "ClamAV update process).  If the freshclam daemon is not running,\n";
    print "you may need to restart it.  (Or if run from a cron job, ensure\n";
    print "it is run periodically.)  Other options:\n\n";
-   if ($ENV{'LOGWATCH_LOGFILE_LIST'} ne ") {
+   if ($ENV{'LOGWATCH_LOGFILE_LIST'} ne "") {
       print "-> If you no longer wish to run freshclam, deleting the log file\n";
       print "   (configured is $ENV{'LOGWATCH_LOGFILE_LIST'}) " .
                 "will suppress this error message.\n\n";
