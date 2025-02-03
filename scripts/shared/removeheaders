@@ -23,7 +23,7 @@ my $RemovePattern = $ARGV[0] || '^... .. ..:..:.. [^ ]* [^\[:]*(?:\[\d*\])?: (?:
 
 while (defined(my $ThisLine = <STDIN>)) {
     # remove verbose syslog-style <facility.severity> patterns (FreeBSD's syslogd -v -v)
-    # these <facility.severity> patterns need to become remove *before* all other tests!
+    # these <facility.severity> patterns need to be removed *before* all other tests!
     if ($ThisLine =~ m/^... .. ..:..:..[ ]* \<[a-z0-9]*\.[a-z]*\> /io) {
        $ThisLine =~ s/(\<[a-z0-9]*\.[a-z]*\>){1} //;
     }
