@@ -264,10 +264,11 @@ while (defined(my $ThisLine = <STDIN>)) {
    # <xxxx> are not reported at login attempts performed by postfix submission
    #
    # auth:
-   #   dovecot[123]: auth: passwd-file(user,1.2.3.4): unknown user: 1 Time(s)
+   #   dovecot[123]: auth: passwd-file(user,1.2.3.4): unknown user
    #   dovecot[123]: auth: passwd-file(user,1.2.3.4,<xxxx>): unknown user
    #
-   #   dovecot[123]: auth: passwd-file(user,1.2.3.4,<xxxx>): Password mismatch: 1 Time(s)
+	#   dovecot[123]: auth: passwd-file(user,1.2.3.4): Password mismatch
+   #   dovecot[123]: auth: passwd-file(user,1.2.3.4,<xxxx>): Password mismatch
    #
    # imap-login:
    #   dovecot[123]: imap-login: Disconnected: Connection closed (auth failed, 1 attempts in 7 secs): user=<user>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS: Connection closed, session=<xxxx>
@@ -277,7 +278,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    #
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): unknown user/ ) ) {
      $UnknownUsers{$User}{$IP}++;
-   } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\((.*),(.*),<[^>]+>\): Password mismatch/ ) ) {
+   } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): Password mismatch/ ) ) {
       $AuthFail{$User}{$IP}++;
    } elsif ( ($User, $IP) = ($ThisLine =~ /Disconnected: .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
       $AuthFail{$User}{$IP}++;
