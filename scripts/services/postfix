@@ -3508,6 +3508,53 @@ sys     0m3.005s
          $Totals{'tlsclientcertnottrusted'}++; next unless ($Collecting{'tlsclientcertnottrusted'});
          $Counts{'tlsclientcertnottrusted'}{formathost($hostip,$host)}++;
       }
+
+      # postfix >= 3.10: the following has to be covered under the $re_QID section
+      #
+      # < 3.10: 
+      # TDsd timeout after AUTH from unknown[1.2.3.4]
+      #
+      # >= 3.10:
+      # TDsd NOQUEUE: timeout after AUTH from unknown[1.2.3.4]
+      #
+      # as NOQUEUE is matched as part of $re_QID the following events have to be processed here as well (just a copy):
+      #
+      # 3.10 release notes:
+      #   The SMTP server now logs the queue ID (or "NOQUEUE") when a connection
+      #   ends abnormally (timeout, lost connection, or too many errors),
+      #   and the cleanup server now logs "queueid: canceled" when a message
+      #   transaction is started but not completed. These changes simplify
+      #   logfile analysis.
+      #
+      elsif ($p1 =~ /^(timeout|lost connection) (after [^ ]+)(?: \((?:approximately )?(\d+) bytes\))? from ([^[]*)\[([^]]+)\](?::\d+)?$/) {
+         my ($lort,$reason,$bytes,$host,$hostip) = ($1,$2,$3,$4,$5);
+         if ($lort eq 'timeout') {
+            # see also TimeoutInbound in $re_QID section
+            #TDsd timeout after RSET from example.com[192.168.0.1]
+            #TDsd timeout after DATA (6253 bytes) from example.com[10.0.0.1]
+
+            $Totals{'timeoutinbound'}++; next unless ($Collecting{'timeoutinbound'});
+            $Counts{'timeoutinbound'}{ucfirst($reason)}{formathost($hostip,$host)}{commify($bytes)}++;
+         } else {
+            #TDsd lost connection after CONNECT from mail.example.com[192.168.0.1]
+            # postfix 2.5:20071003
+            #TDsd lost connection after DATA (494133 bytes) from localhost[127.0.0.1]
+            # postfix 2.6:20080621
+            #TDsd lost connection after DATA (approximately 0 bytes) from example.com[10.0.0.1]
+
+            $Totals{'connectionlostinbound'}++; next unless ($Collecting{'connectionlostinbound'});
+            $Counts{'connectionlostinbound'}{ucfirst($reason)}{formathost($hostip,$host)}{commify($bytes)}++;
+         }
+      }
+      elsif ($p1 =~ /^(too many errors) (after [^ ]*)(?: \((?:approximately )?\d+ bytes\))? from ([^[]*)\[([^]]+)\](?::\d+)?$/) {
+         my ($error,$stage,$host,$hostip) = ($1,$2,$3,$4);
+         #TDsd too many errors after AUTH from sample.net[10.0.0.1]
+         #TDsd too many errors after DATA (0 bytes) from 1-0-0-10.example.com[10.0.0.1]
+         $Totals{'smtpprotocolviolation'}++; next unless ($Collecting{'smtpprotocolviolation'});
+         $Counts{'smtpprotocolviolation'}{ucfirst($error)}{ucfirst($stage)}{formathost($hostip,$host)}++;
+      }
+      # end of postfix >= 3.10 and $re_QID section
+
       else {
          # keep this as the last condition in this else clause
          inc_unmatched('unknownqid')  if  ! in_ignore_list ($p1);
@@ -3515,6 +3562,8 @@ sys     0m3.005s
    }
    # end of $re_QID section
 
+   # postfix < 3.10:
+   #
    elsif ($p1 =~ /^(timeout|lost connection) (after [^ ]+)(?: \((?:approximately )?(\d+) bytes\))? from ([^[]*)\[([^]]+)\](?::\d+)?$/) {
       my ($lort,$reason,$bytes,$host,$hostip) = ($1,$2,$3,$4,$5);
       if ($lort eq 'timeout') {
@@ -4150,6 +4199,13 @@ sub postfix_cleanup($) {
       # strip extraneous doubling of library path
       $line = "$1$2 $3" if ($line =~ /(unable to dlopen )([^:]+: )\2(.+)$/);
       postfix_warning($line);
+   }
+
+   # postfix >= 3.10
+   # line=removed (reason)
+   #
+   elsif ($line =~ /^removed/) {
+      $Totals{'removedfromqueue'}++;
    }
 
    else {
