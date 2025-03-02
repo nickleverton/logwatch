@@ -30,6 +30,7 @@ my @remove;
 my @rremove;
 my @radd;
 my %commands;
+my @patch;
 
 my @unknown;
 
@@ -53,6 +54,8 @@ while(my $line=<STDIN>) {
    } elsif ( my ( $do, $who, $cmd) = ( $line =~ /^\S+ \S+\|(?:(command)\|([^\|\s]+)\|([^\|]+)\|)/ )) {
       $cmd =~ tr/'//d;
       $commands{$who}{$cmd}++;
+   } elsif ( my ( $patch ) = ( $line =~ /^\S+ \S+\|patch  \|([^\|]*).*\|applied\|/ )) {
+      push @patch, "$patch";
    } else {
       push @unknown, $line;
    }
@@ -72,6 +75,7 @@ my @k = ( "Installed" , \@install,
           "Removed", \@remove,
           "Repository added", \@radd,
           "Repository removed", \@rremove,
+          "Patches applied", \@patch,  
           "Unknown lines", \@unknown);
 
 while (@k > 0) {
