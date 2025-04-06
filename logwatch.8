@@ -89,9 +89,11 @@ values of \-\-range, Logwatch will search the appropriate archived logs.
 .IP "\fB--debug\fR level"
 For debugging purposes.
 .I level
-can range from 0 to 100.  This will
-.I really
-clutter up your output.  You probably don't want to use this.
+typically ranges in value from 0 to 100.  This will
+clutter up your output, so you probably only want to use this when
+debugging.  Values of 100 or more will retain the temporary files
+(by default, created under /var/cache/logwatch, unless specified
+as tmpdir in the logwatch.conf file).
 .IP "\fB--filename\fR file-name"
 Save the output to
 .I file-name
