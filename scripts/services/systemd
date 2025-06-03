@@ -27,6 +27,7 @@ use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Ignore_failed = $ENV{'ignore_failed'} || "";
 my $Ignore_leftover = $ENV{'ignore_leftover'} || "";
+my $Ignore_messages = $ENV{'ignore_messages'} || '^$';
 my %ConfigError;
 my %Activated;
 my %Failed;
@@ -179,7 +180,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Failed to propagate agent release message: (?:Connection reset by peer|Transport endpoint is not connected)/ or
        $ThisLine =~ /^cgroup compatibility translation between legacy and unified hierarchy settings activated\. See cgroup-compat debug messages for details\.$/ or
        $ThisLine =~ /^\(This warning is only shown for the first unit using IP firewalling\.\)$/ or
-       $ThisLine =~ /^.*\.socket: Socket service .* already active/
+       $ThisLine =~ /^.*\.socket: Socket service .* already active/ or
+       # User specified ignore messages, lower cased
+       $ThisLine =~ /$Ignore_messages/i
    ) {
       # Ignore these
    } elsif (($service,$reason) = ($ThisLine =~ /^Configuration file ([^ ]*) is ([^.]*)\./)) {
