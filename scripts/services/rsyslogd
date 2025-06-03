@@ -118,6 +118,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $MessagesLost += $Num;
    }
    elsif (
+      # paired with rate-limiting count message above
+      $ThisLine =~ /begin to drop messages due to rate-limiting/ or
       # More detail for this in the invalid cert info line above
       $ThisLine =~ /^not permitted to talk to peer, certificate invalid:/ or
       $ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/ or
