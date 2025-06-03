@@ -51,6 +51,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       if ($Service eq "Instrumentation") {
          # Service erroneously detects absence on service startup
          next if ($Message =~ /^Battery sensor detected absence value/);
+         next if (($Message =~ /^Detected new peak power value/) and ($Detail < 5));
          next if (($Message =~ /IPMI status.*[Ii]nterface:/) and ($Detail < 10));
          next if (($Message =~ /Administrator .* (?:start|stopped).*/) and ($Detail < 10));
          next if (($Message =~ /^Systems Management Data Manager (?:Started|Stopped)/) and ($Detail < 10));
@@ -72,6 +73,7 @@ while (defined(my $ThisLine = <STDIN>)) {
          next if (($Message =~ /Disk .* is not supplied by an authorized hardware provider/) and ($IgnoreNonCertifiedDrives));
          next if (($Message =~ /Patrol Read .*(started|stopped|resumed|completed)/) and ($Detail < 5));
          next if (($Message =~ /SCSI sense data:? \(?Sense key:  5 Sense code: 24 Sense qualifier:  0/) and ($IgnoreNonCertifiedDrives));
+         next if (($Message =~ /Unexpected sense: PD .*, Sense: b\/00\/00/) and ($IgnoreNonCertifiedDrives));
          next if (($Message =~ /^The battery charge cycle is complete\./) and ($Detail < 5));
          next if (($Message =~ /^The controller battery Learn cycle will start in (?:\d+) days\./) and ($Detail < 5));
          next if (($Message =~ /^The Patrol Read has (started|stopped|resumed)/) and ($Detail < 5));
