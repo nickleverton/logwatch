@@ -92,7 +92,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $OOM{$1}++;
    } elsif ($ThisLine =~ /(EDAC (?:igen6 )?(?:MC|PCI)\d:.*)/) {
       # Standard boot messages
-      next if $ThisLine =~ /(?:Giving out device to |HANDLING IBECC MEMEORY )/;
+      next if $ThisLine =~ /(?:Giving out device to |HANDLING IBECC MEMORY |MC\d+: ADDR 0x[0-9a-f]* *$)/;
       $EDACs{$1}++;
    } elsif ($ThisLine =~ /(block drbd\d+): Online verify found (\d+) \d+k block out of sync/) {
       $DRBDErrors{$1}{"$2 block(s) out of sync"} = 1;
