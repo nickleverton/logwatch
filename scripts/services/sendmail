@@ -766,9 +766,6 @@ next unless $ThisLine;
       # And we write it like the incoming SMTP command, so we can later
       # check it against unmatched entries ($OtherList).
       $Temp1 = "<-- $Temp";
-      # It uses "..." to indicate shortened strings, so we ignore the
-      # rest of the line.
-      $Temp1 =~ s/\.\.\..*//;
       # We normalize tab, newline, and return to use their octal values,
       # as sendmail converts escaped octals.
       $Temp1 =~ s/\\t/\\011/g;
@@ -1147,6 +1144,20 @@ next unless $ThisLine;
          $ThisLine =~ s/\\r/\\015/g;
          # Remove non-printable space(s) at the end
          $ThisLine =~ s/\s*$//;
+      }
+      # MAXSHORTSTR defined as 203 in sendmail.  But escaped octal characters
+      # need to be counted as single character
+      (my $deoctal = $ThisLine) =~ s/\\\d\d\d/X/g;
+      if (length($deoctal) > 203) {
+         my $shortstring;
+         if ($ThisLine =~ /^<-- /) {
+           # We added the four characters '<-- ' so the resulting beginning of the
+           # string is 100+4 characters
+           $shortstring = 104; 
+         } else {
+           $shortstring = 100;
+         }
+         $ThisLine = substr($ThisLine, 0, $shortstring) . '...' . substr($ThisLine, -100);
       }
       $OtherList{$ThisLine}++;
       # Store last unmatched entry, in case it is needed later.  But note that some
