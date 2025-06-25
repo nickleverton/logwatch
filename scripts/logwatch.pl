@@ -204,7 +204,7 @@ my ($tmp_mailto, $tmp_savefile);
              "s|service=s@" => \@TempServiceList,
              "m|mailto=s"   => \$tmp_mailto,
              "filename=s"   => \$tmp_savefile,
-             "a|archives"   => \$Config{'archives'},
+             "a|archives!"  => \$Config{'archives'},
              "debug=s"      => \$Config{'debug'},
              "r|range=s"    => \$Config{'range'},
              "n|numeric"    => \$Config{'numeric'},
