@@ -1121,7 +1121,6 @@ next unless $ThisLine;
          # the same here.
          # First, we deal with the special case of a string containing
          # \200, as it becomes a null character, terminating the string.
-         #$ThisLine =~ s/(.*)\\200(.*)/$1\\0/g;
          $ThisLine =~ s/\\200(.*)//;
          $ThisLine =~ s/\\([23]\d{2})/
             # clear the most significant bit if set
