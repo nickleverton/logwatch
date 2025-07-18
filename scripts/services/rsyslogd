@@ -75,6 +75,9 @@ while (defined(my $ThisLine = <STDIN>)) {
    # Handle stdout/stderr sent to journal which ends up with an extra prefix
    $ThisLine =~ s/^rsyslogd: //;
 
+   # De-duplicate lines with time calculations
+   $ThisLine =~ s/ ?\(took .* seconds\)//;
+
    foreach $Message (keys %IgnoreMessages) {
       next LINE if $ThisLine =~ /$Message/i;
    }
