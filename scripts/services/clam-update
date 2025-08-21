@@ -167,7 +167,7 @@ elsif ($Ignore_No_Updates == 0) {
    print "-> If you are logging using syslog, you need to indicate that your\n";
    print "   log file uses the syslog format.  For example:\n";
    print "      echo \"*OnlyService = freshclam\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
-   print "      echo \"*RemoveHeaders\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
+   print "      echo \"*RemoveHeaders = \" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
 }
 
 if ($Status and (($Detail > 0) or (keys %Errors) or (keys %Warnings))) {
