@@ -265,10 +265,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       if ( $Debug >= 5 ) {
          print STDERR "DEBUG: Found -Signal 15 Terminating- line\n";
       }
-   } elsif ( $ThisLine =~ m/^(log: )?Server listening on( [^ ]+)? port \d+/ ) { #ssh/openssh
+   } elsif ( ($Port) =  ($ThisLine =~ m/^(log: )?Server listening on(( [^ ]+)? port \d+)/ ) ) { #ssh/openssh
       $Starts++;
       if ( $Debug >= 5 ) {
-         print STDERR "DEBUG: Found -Listening on port 22- line\n";
+         print STDERR "DEBUG: Found -Listening on ${Port}- line\n";
       }
    } elsif ( ($Port,$Address,$Reason) = ($ThisLine =~ /^error: Bind to port ([^ ]+) on ([^ ]+) failed: (.+).$/ )) {
       my $Temp = "$Address port $Port ($Reason)";
