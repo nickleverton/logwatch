@@ -1,0 +1,170 @@
+########################################################
+# Please file all bug reports, patches, and feature
+# requests under:
+#      https://sourceforge.net/p/logwatch/_list/tickets
+# Help requests and discusion can be filed under:
+#      https://sourceforge.net/p/logwatch/discussion/
+########################################################
+
+#######################################################
+## Copyright (c) 2025 Miroslav Lichvar
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use warnings;
+use strict;
+use Logwatch ':all';
+
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+
+my (
+$Error, $Source,
+);
+
+my $Exited = 0;
+my %SelectedSources = ();
+my %ReplacedSources = ();
+my %Falsetickers = ();
+my %FatalErrors = ();
+my %Errors = ();
+my %Warnings = ();
+my %OtherList = ();
+
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+
+   if (
+       ($ThisLine =~ /^Accumulated delta/) or
+       ($ThisLine =~ /^Activated time smoothing/) or
+       ($ThisLine =~ /^(Added|Removed) (pool|source)/) or
+       ($ThisLine =~ /^(Allowed|Denied) (all )?(NTP|command) access/) or
+       ($ThisLine =~ /^(Enabled|Disabled) (control|local|HW timestamping)/) or
+       ($ThisLine =~ /^Dropping sample around leap second/) or
+       ($ThisLine =~ /^Frequency .* read from/) or
+       ($ThisLine =~ /^Initial frequency/) or
+       ($ThisLine =~ /^Loaded (.* symmetric keys|dump file|server NTS keys)/) or
+       ($ThisLine =~ /^Loaded seccomp filter/) or
+       ($ThisLine =~ /^Making a (frequency change|slew)/) or
+       ($ThisLine =~ /^New (makestep|maxupdateskew|reselect)/) or
+       ($ThisLine =~ /^RTC wrong/) or
+       ($ThisLine =~ /^Received shutdown command/) or
+       ($ThisLine =~ /^Reset all sources/) or
+       ($ThisLine =~ /^Source [^ ]+ ([^ ]+ )?changed (port )?to/) or
+       ($ThisLine =~ /^Source [^ ]+ (new |offline|online)/) or
+       ($ThisLine =~ /^Source [^ ]+ selection options modified/) or
+       ($ThisLine =~ /^System clock (TAI|off|status|wrong) /) or
+       ($ThisLine =~ /^System time (restored|set) /) or
+       ($ThisLine =~ /^System's initial offset /) or
+       ($ThisLine =~ /^Using (leap second list|[^ ]+ timezone)/) or
+       ($ThisLine =~ /^chronyd version [^ ]+ starting/) or
+       ($ThisLine =~ /^chronyd exiting/) or
+       ($ThisLine =~ /^Could not load dump file/) or
+       ($ThisLine =~ /^System clock was stepped/) or
+       0 # This line prevents blame shifting as lines are added above
+   ) {
+      # Ignore these
+   } elsif ( ($Error) = ($ThisLine =~ /^Fatal error : (.*)/) ) {
+      $FatalErrors{$Error}++;
+   } elsif (
+      ($ThisLine =~ /^Adjusting system clock for leap second/) or
+      ($ThisLine =~ /^Adjustment of /) or
+      ($ThisLine =~ /^Assumed NTP time /) or
+      ($ThisLine =~ /^(Backward|Forward) time jump/) or
+      ($ThisLine =~ /^Can't synchronise:/) or
+      ($ThisLine =~ /^Could not read RTC LOCAL\/UTC/) or
+      ($ThisLine =~ /^Having write access to/) or
+      ($ThisLine =~ /^Ignoring leap second/) or
+      ($ThisLine =~ /^Jitter of [^ ]+ exceeds/) or
+      ($ThisLine =~ /^Key [^ ]+ is (missing|too short)/) or
+      ($ThisLine =~ /^No ntsdumpdir to save/) or
+      ($ThisLine =~ /^RTC time before/) or
+      ($ThisLine =~ /^Received KoD RATE/) or
+      ($ThisLine =~ /^Root distance of [^ ]+ exceeds/) or
+      ($ThisLine =~ /^Running with root privileges/) or
+      ($ThisLine =~ /^System clock interference detected/) or
+      ($ThisLine =~ /^World-readable permissions/) or
+      0
+   ) {
+      $Warnings{$ThisLine}++;
+   } elsif (
+      ($ThisLine =~ /^Could not /) or
+      ($ThisLine =~ /^Received invalid NTS-KE response/) or
+      ($ThisLine =~ /^TLS handshake with .* failed/) or
+      ($ThisLine =~ /^(TLS|NTS-KE) session with/) or
+      0
+   ) {
+      $Errors{$ThisLine}++;
+   } elsif ( ($Source) = ($ThisLine =~ /^Detected falseticker ([^ ]+)/) ) {
+      $Falsetickers{$Source}++;
+   } elsif ( ($Source) = ($ThisLine =~ /^Selected source ([^ ]+)/) ) {
+      $SelectedSources{$Source}++;
+   } elsif ( ($Source) = ($ThisLine =~ /^Source ([^ ]+) replaced with/) ) {
+      $ReplacedSources{$Source}++;
+   } else {
+      $OtherList{$ThisLine} += 1;
+   }
+}
+
+###########################################################
+
+sub timesplural {
+   my ($count) = @_;
+   my $plural = ($count > 1) ? "s" : "";
+   return "$count Time$plural\n";
+}
+
+if ($Detail >= 5 and keys %SelectedSources) {
+   print "\nSelected sources:\n";
+   print "   $_: " . timesplural($SelectedSources{$_}) foreach sort keys %SelectedSources;
+}
+
+if ($Detail >= 5 and keys %ReplacedSources) {
+   print "\nReplaced sources:\n";
+   print "   $_: " . timesplural($ReplacedSources{$_}) foreach sort keys %ReplacedSources;
+}
+
+if ($Detail >= 5 and keys %Falsetickers) {
+   print "\nDetected falsetickers:\n";
+   print "   $_: " . timesplural($Falsetickers{$_}) foreach sort keys %Falsetickers;
+}
+
+if (keys %FatalErrors) {
+   print "\nFatal Errors:\n";
+   print "   $_: " . timesplural($FatalErrors{$_}) foreach sort keys %FatalErrors;
+}
+
+if (keys %Errors) {
+   print "\nErrors:\n";
+   print "   $_: " . timesplural($Errors{$_}) foreach sort keys %Errors;
+}
+
+if (keys %Warnings) {
+   print "\nWarnings:\n";
+   print "   $_: " . timesplural($Warnings{$_}) foreach sort keys %Warnings;
+}
+
+if (keys %OtherList) {
+   print "\n**Unmatched Entries**\n";
+   print "   $_: " . timesplural($OtherList{$_}) foreach sort keys %OtherList;
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
