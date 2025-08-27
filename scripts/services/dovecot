@@ -243,7 +243,7 @@ while (defined(my $ThisLine = <STDIN>)) {
          $LoginIMAP{$User}++;
          $ConnectionIMAP{$Host}++;
          $Connection{$Host}++;
-	 if (defined($Session) and defined($MUASessionList{$Session})) {
+         if (defined($Session) and defined($MUASessionList{$Session})) {
              $MUAList{$MUASessionList{$Session}}{$User}++;
              delete $MUASessionList{$Session};
          }
@@ -267,7 +267,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    #   dovecot[123]: auth: passwd-file(user,1.2.3.4): unknown user
    #   dovecot[123]: auth: passwd-file(user,1.2.3.4,<xxxx>): unknown user
    #
-	#   dovecot[123]: auth: passwd-file(user,1.2.3.4): Password mismatch
+   #   dovecot[123]: auth: passwd-file(user,1.2.3.4): Password mismatch
    #   dovecot[123]: auth: passwd-file(user,1.2.3.4,<xxxx>): Password mismatch
    #
    # imap-login:
@@ -277,7 +277,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    #   dovecot[123]: imap-login: Disconnected: Aborted login by logging out (auth failed, 1 attempts in 2 secs): user=<info>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS, session=<xxxx>
    #
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): unknown user/ ) ) {
-     $UnknownUsers{$User}{$IP}++;
+      $UnknownUsers{$User}{$IP}++;
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): Password mismatch/ ) ) {
       $AuthFail{$User}{$IP}++;
    } elsif ( ($User, $IP) = ($ThisLine =~ /Disconnected: .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
