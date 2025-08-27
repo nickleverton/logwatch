@@ -59,7 +59,26 @@ use strict;
 use warnings;
 use Logwatch ':dates';
 
-my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+
+my $Detail;
+if (defined $ENV{'clam_update_detail'}) {
+   $Detail = $ENV{'clam_update_detail'};
+   if ($Debug) {
+      print ("Detail set to $Detail from conf/services/clam-update.conf\n");
+   }
+} elsif (defined $ENV{'LOGWATCH_DETAIL_LEVEL'}) {
+   $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+   if ($Debug) {
+      print ("Detail set to $Detail from conf/logwatch.conf\n");
+   }
+} else {
+   $Detail = 0;
+   if ($Debug) {
+      print ("Detail set to $Detail from conf/logwatch.conf\n");
+   }
+}
+
 my $Ignore_Outdated = $ENV{'ignore_outdated'} || 0;
 my $Ignore_No_Updates = $ENV{'ignore_no_updates'} || 0;
 my $Last_Run_Only = $ENV{'last_run_only'} || 0;
