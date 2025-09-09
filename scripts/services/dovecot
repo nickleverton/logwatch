@@ -232,6 +232,7 @@ while (defined(my $ThisLine = <STDIN>)) {
 # IMAP login
    } elsif (
       ( ($User, $Host, $Session) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: (?:Info: )?Login: user=\<(.*?)\>.*rip=(.*), lip=.*, session=<([^>]+)>/ ) ) or
+      ( ($User, $Host, $Session) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: Logged in: user=\<(.*?)\>.*rip=(.*), lip=.*, session=<([^>]+)>/ ) ) or
       # Session element was added in dovecot 2.1.6, so not available before
       # then.
       ( ($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: Login: user=\<(.*?)\>.*rip=(.*), lip=.*/ ) ) or
@@ -280,6 +281,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UnknownUsers{$User}{$IP}++;
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): Password mismatch/ ) ) {
       $AuthFail{$User}{$IP}++;
+   } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*no_auth_attemps.*rip=([^,]+).*/) ) {
+      $Host = hostName($Host);
+      $Aborted{$Host}++;
    } elsif ( ($User, $IP) = ($ThisLine =~ /Disconnected: .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
       $AuthFail{$User}{$IP}++;
         if ( ($Host) = ($ThisLine =~ /Aborted login.* rip=([0-9\.]+|[a-fA-F:0-9]+)/) ) {
@@ -420,6 +424,10 @@ while (defined(my $ThisLine = <STDIN>)) {
 
 # TLS initialization failed
    } elsif ( ($Reason, $Host) = ($ThisLine =~ /TLS initialization failed/) ) {
+      $TLSInitFail++;
+
+# TSL handshake not finished
+   } elsif ( ($Reason, $Host) = ($ThisLine =~ /(.*)tls_handshake_not_finished.*rip=([^,]+).*/) ) {
       $TLSInitFail++;
 
 # Aborted login
