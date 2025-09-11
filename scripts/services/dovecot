@@ -281,7 +281,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UnknownUsers{$User}{$IP}++;
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): Password mismatch/ ) ) {
       $AuthFail{$User}{$IP}++;
-   } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*no_auth_attemps.*rip=([^,]+).*/) ) {
+   } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*no_auth_attempts.*rip=([^,]+).*/) ) {
       $Host = hostName($Host);
       $Aborted{$Host}++;
    } elsif ( ($User, $IP) = ($ThisLine =~ /Disconnected: .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
@@ -426,7 +426,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Reason, $Host) = ($ThisLine =~ /TLS initialization failed/) ) {
       $TLSInitFail++;
 
-# TSL handshake not finished
+# TLS handshake not finished
    } elsif ( ($Reason, $Host) = ($ThisLine =~ /(.*)tls_handshake_not_finished.*rip=([^,]+).*/) ) {
       $TLSInitFail++;
 
