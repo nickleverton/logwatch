@@ -76,9 +76,9 @@ while (defined(my $ThisLine = <STDIN>)) {
          next;
       }
    } elsif ($Application eq "Application Hang") {
-      if (my ($exe, $exever, $msg) =
-          ($ExpandedString =~ /The program (.*) version (\S+) (.*) Process ID:/)) {
-         $Applications{$Application}->{"$Hostname: The program $exe version $exever $msg"}++;
+      if (my ($exe, $exever) =
+          ($ExpandedString =~ /The program (.*) version (\S+)/)) {
+         $Applications{$Application}->{"$Hostname: program $exe version $exever"}++;
          next;
       } else {
          print "Application Hang: Cannot parse $ExpandedString\n";
