@@ -58,7 +58,7 @@ if ( $version !~ "dnf5" ) {
 }
 
 if ( !$hasDM and $dnf5_uses_UTC and $Debug ) {
-   print STDERR "Date::Manip not found so cannot convert from UTC to localtime\n";
+   print STDERR "DEBUG: Date::Manip not found so cannot convert from UTC to localtime\n";
 }
 
 #Init Hashes
@@ -102,23 +102,23 @@ while ( my $ListLine = <LISTLINE> ) {
          }
 
          if ( $InfoLine =~ /(Groups|Environments) altered:/ ) {
-	    push(@InfoMessages, $InfoLine);
+            push(@InfoMessages, $InfoLine);
          }
 
          next if ( $InfoLine =~ /^\s*$/ or $InfoLine =~ /^[^\s]/ );
          my ($Action, $Package, $Reason, $Repository) = ($InfoLine =~ / *([^\s]+) +([^\s]+) +(.+) +([^\s]+)$/);
-	 if ( $Debug >= 5 ) {
-	    print STDERR "DEBUG($DebugCounter): $InfoLine";
-	    print STDERR "DEBUG($DebugCounter): Action = $Action, Package = $Package\n";
-	    $DebugCounter++;
-	 }
+          if ( $Debug >= 5 ) {
+             print STDERR "DEBUG($DebugCounter): $InfoLine";
+             print STDERR "DEBUG($DebugCounter): Action = $Action, Package = $Package\n";
+             $DebugCounter++;
+          }
 
-	 if ( $Action !~ "Action" ) {
-            my ($Name, $EVRA, $Arch) = ($Package =~ /([^\s]+)-(\d+:[^\s-]+-[^\s]+\.([^\s.]+))/);
-            if ( $Debug >= 5 ) {
-               my $DC = $DebugCounter - 1;
-               print STDERR "DEBUG($DC): Name = $Name, EVRA = $EVRA, Arch = $Arch\n";
-	    }
+          if ( $Action !~ "Action" ) {
+             my ($Name, $EVRA, $Arch) = ($Package =~ /([^\s]+)-(\d+:[^\s-]+-[^\s]+\.([^\s.]+))/);
+             if ( $Debug >= 5 ) {
+                my $DC = $DebugCounter - 1;
+                print STDERR "DEBUG($DC): Name = $Name, EVRA = $EVRA, Arch = $Arch\n";
+             }
 
             if ( !defined($Name) ) {
                push(@InfoMessages, $InfoLine);
@@ -163,10 +163,10 @@ if (keys %PackageUpgrade) {
          my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
          print "   " . $Name . ": " . $PackageReplaced{$ThisOne} . " -> " . $PackageUpgrade{$ThisOne} . "\n";
       } elsif ( !defined($PackageDowngrade{$ThisOne}) ) {
-	 if ( $Debug >= 5 ) {
-	    print STDERR "\nDEBUG($DebugCounter): Action = Updated->Removed, Package = $ThisOne\n";
-	    $DebugCounter++;
-	 }
+         if ( $Debug >= 5 ) {
+            print STDERR "\nDEBUG($DebugCounter): Action = Updated->Removed, Package = $ThisOne\n";
+            $DebugCounter++;
+         }
          $PackageRemove{$ThisOne} = $PackageReplaced{$ThisOne};
       }
    }
@@ -178,10 +178,10 @@ if (keys %PackageDowngrade) {
          my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
          print "   " . $Name . ": " . $PackageReplaced{$ThisOne} . " -> " . $PackageDowngrade{$ThisOne} . "\n";
       } elsif ( !defined($PackageUpgrade{$ThisOne}) ) {
-	 if ( $Debug >= 5 ) {
-	    print STDERR "\nDEBUG($DebugCounter): Action = Downgraded->Removed, Package = $ThisOne\n";
-	    $DebugCounter++;
-	 }
+         if ( $Debug >= 5 ) {
+            print STDERR "\nDEBUG($DebugCounter): Action = Downgraded->Removed, Package = $ThisOne\n";
+            $DebugCounter++;
+         }
          $PackageRemove{$ThisOne} = $PackageReplaced{$ThisOne};
       }
    }
