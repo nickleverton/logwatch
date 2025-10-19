@@ -30,6 +30,7 @@ use lib "/usr/share/logwatch/lib";
 use strict;
 use POSIX;
 use Logwatch ':dates';
+eval "use Date::Manip"; my $hasDM = $@ ? 0 : 1;
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 my $DebugCounter = 0;
@@ -37,11 +38,13 @@ my $DebugCounter = 0;
 my $SearchDate = TimeFilter($ARGV[0] || '%Y-%m-%d %H:%M:%S');
 
 my $pathto_dnf5 = $ENV{'pathto_dnf5'} || '/usr/bin/dnf';
+my $dnf5_uses_UTC = $ENV{'dnf5_uses_utc'} || 0;
 
 if ( $Debug >= 5 ) {
    print STDERR "\nDEBUG: Inside dnf5 Filter \n";
    print STDERR "DEBUG: Path to dnf: $pathto_dnf5\n";
    print STDERR "DEBUG: Looking For: " . $SearchDate . "\n";
+   print STDERR "DEBUG: dnf5_uses_UTC: " . $dnf5_uses_UTC . "\n";
    $DebugCounter = 1;
 }
 
@@ -52,6 +55,10 @@ if ( $version !~ "dnf5" ) {
       print STDERR "DEBUG: Version does not match dnf5: $version\n";
    }
    exit(1);
+}
+
+if ( !$hasDM and $dnf5_uses_UTC and $Debug ) {
+   print STDERR "Date::Manip not found so cannot convert from UTC to localtime\n";
 }
 
 #Init Hashes
@@ -72,6 +79,18 @@ while ( my $ListLine = <LISTLINE> ) {
    if ( $Debug >= 20 ) {
       print STDERR "DEBUG($DebugCounter): $ListLine";
       $DebugCounter++;
+   }
+
+   if ( $dnf5_uses_UTC and defined($Date) ) {
+      my $new_date = ParseDate($Date);
+      $new_date = Date_ConvTZ($new_date, "UTC") if $new_date;
+
+      if ( ! $new_date ) {
+         print STDERR "DEBUG($DebugCounter): Error converting date from UTC to localtime: $Date\n" if $Debug;
+      } else {
+         $Date = UnixDate( $new_date, $ARGV[0] || '%Y-%m-%d %H:%M:%S' );
+         print STDERR "DEBUG($DebugCounter): Local Date: $Date\n" if $Debug >= 20;
+      }
    }
 
    if ( $Date =~ /^$SearchDate/o ) {
