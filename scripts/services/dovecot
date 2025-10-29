@@ -96,6 +96,7 @@ my $DetailVacationResponse = defined $ENV{'dovecot_lda_vacation_response'} ?
 my $Restarts = 0;
 my $End = 0;
 my $TLSInitFail = 0;
+my $Output_Generated = 0;
 my %Aborted;
 my %AuthDisconnectedWithPending;
 my %AuthTimedOut;
@@ -529,6 +530,7 @@ if ( keys %Fatal ) {
    foreach my $Fatal ( sort keys %Fatal ) {
       print "   ${Fatal}: $Fatal{$Fatal} Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 # this is only set in dovecot 1.x section.
@@ -537,6 +539,7 @@ if ( keys %Error ) {
    foreach my $Error ( sort keys %Error ) {
       print "   ${Error}: $Error{$Error} Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 # this is only set in dovecot 1.x section.
@@ -545,6 +548,7 @@ if ( keys %ChildErr ) {
    foreach my $Error ( sort keys %ChildErr ) {
       print "   error number ". $Error . ": ". $ChildErr{$Error} ." Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 # this is only set in dovecot 1.x section.
@@ -553,14 +557,17 @@ if ( keys %DiskQuotaExceed ) {
    foreach my $Name ( sort keys %DiskQuotaExceed ) {
       print "   disk quota for user '". $Name . "' exceeded: ". $DiskQuotaExceed{$Name} ." Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 if ( $End ) {
    print "\nDovecot was killed, and not restarted afterwards.\n";
+   $Output_Generated++;
 }
 
 if ( $Restarts ) {
    print "\nDovecot restarted $Restarts time(s).\n";
+   $Output_Generated++;
 }
 
 if (keys %ConnectionClosed) {
@@ -568,6 +575,7 @@ if (keys %ConnectionClosed) {
    foreach my $Reason (sort keys %ConnectionClosed) {
       print "   $Reason: $ConnectionClosed{$Reason} Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 if (keys %ProxyDisconnected) {
@@ -575,6 +583,7 @@ if (keys %ProxyDisconnected) {
    foreach my $Reason (sort keys %ProxyDisconnected) {
       print "   $Reason: $ProxyDisconnected{$Reason} Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 if ( keys %LimitExceeded ) {
@@ -582,6 +591,7 @@ if ( keys %LimitExceeded ) {
    foreach my $Reason ( sort keys %LimitExceeded ) {
       print "   $Reason: $LimitExceeded{$Reason} Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 #----- all about connections and failures (shown at detail > 0) -----------------------------
@@ -616,6 +626,7 @@ if ( ( $DetailConnections >= 5 ) and ( keys %Connection ) ) {
    }
    print "\n" . "-" x 72;
    printf "\n%4s %4s %5s  %s", $POP3Count, $IMAPCount, $TotalCount, "Total";
+   $Output_Generated++;
 }
 
 if ( ( $DetailDisconnects >= 5) and ( keys %Disconnected ) ) {
@@ -629,6 +640,7 @@ if ( ( $DetailDisconnects >= 5) and ( keys %Disconnected ) ) {
                     keys %Disconnected ) {
       printf "\n  %4s %s", $Disconnected{$Reason}, $Reason;
    }
+   $Output_Generated++;
 }
 
 #----- all about logins and failures (shown at detail > 0) ----------------------------------
@@ -662,6 +674,7 @@ if ( ( $DetailSuccessfulLogins >= 5 ) and ( keys %Login ) ) {
             }
          }
       }
+      $Output_Generated++;
 }
 
 # This has to be explicitly enabled in dovecot config to log this,
@@ -679,6 +692,7 @@ if ( ( $DetailMUAList >= 5 ) and ( keys %MUAList ) ) {
          print ") $Total Time(s)";
       }
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailProxyLogin >= 5 ) and ( keys %ProxyLogin ) ) {
@@ -715,6 +729,7 @@ if ( ( $DetailProxyLogin >= 5 ) and ( keys %ProxyLogin ) ) {
       }
    }
    print "\nTotal: $LoginCount successful logins";
+   $Output_Generated++;
 }
 
 if ( ( $DetailSieveLogin >= 5 ) and ( keys %SieveLogin ) ) {
@@ -738,6 +753,7 @@ if ( ( $DetailSieveLogin >= 5 ) and ( keys %SieveLogin ) ) {
       }
    }
    print "\n\nTotal: $LoginCount successful ManageSieve logins";
+   $Output_Generated++;
 }
 
 if ( ( $DetailAuthFail >= 5 ) and ( keys %AuthFail ) ) {
@@ -760,6 +776,7 @@ if ( ( $DetailAuthFail >= 5 ) and ( keys %AuthFail ) ) {
          }
       }
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailUnknownUser >= 5 ) and ( keys %UnknownUsers ) ) {
@@ -782,6 +799,7 @@ if ( ( $DetailUnknownUser >= 5 ) and ( keys %UnknownUsers ) ) {
          }
       }
    }
+   $Output_Generated++;
 }
 
 # aborted logins
@@ -790,6 +808,7 @@ if ( ( $DetailAborted >= 5 ) and ( keys %Aborted ) ) {
    foreach my $Host ( sort keys %Aborted ) {
       print "\n   $Host: $Aborted{$Host} Time(s)";
    }
+   $Output_Generated++;
 }
 
 #----- all about authetication and failures (shown at detail > 0) ---------------------------
@@ -799,6 +818,7 @@ if ( ( $DetailAuthDisconnectedWithPending >= 5 ) and ( keys %AuthDisconnectedWit
    foreach my $Reason (sort keys %AuthDisconnectedWithPending) {
       print "\n   $Reason: $AuthDisconnectedWithPending{$Reason} Time(s)";
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailAuthTimedOut >= 5 ) and ( keys %AuthTimedOut ) ) {
@@ -812,6 +832,7 @@ if ( ( $DetailAuthTimedOut >= 5 ) and ( keys %AuthTimedOut ) ) {
       }
       print ") $Total Time(s)";
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailIndividualInput >= 5 ) and ( keys %AuthInvalidInput ) ) {
@@ -825,6 +846,7 @@ if ( ( $DetailIndividualInput >= 5 ) and ( keys %AuthInvalidInput ) ) {
       }
       print ") $Total Time(s)";
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailAuthUsernameChars >= 5 ) and ( keys %AuthUsernameChars ) ) {
@@ -832,10 +854,12 @@ if ( ( $DetailAuthUsernameChars >= 5 ) and ( keys %AuthUsernameChars ) ) {
    foreach my $IP ( sort keys %AuthUsernameChars ) {
       print "\n   $IP: $AuthUsernameChars{$IP} Time(s)";
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailTLSInit >= 5 ) and ( $TLSInitFail > 0 ) ) {
    print "\n\nTLS initialization failed $TLSInitFail Time(s)";
+   $Output_Generated++;
 }
 
 #----- all about deliveries and failures (shown at detail > 0) ------------------------------
@@ -860,6 +884,7 @@ if ( ($DetailDovecotDeliveries >= 5 ) and ( keys %Deliver ) ) {
          }
       }
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailLdaSieveForwards >= 5 ) and ( keys %Forwarded ) ) {
@@ -874,6 +899,7 @@ if ( ( $DetailLdaSieveForwards >= 5 ) and ( keys %Forwarded ) ) {
       }
    }
    print "\n\n  Total: $TotalForwarded Time(s)";
+   $Output_Generated++;
 }
 
 if ( ( $DetailVacationResponse >= 5 ) and ( keys %VacationResponse ) ) {
@@ -887,6 +913,7 @@ if ( ( $DetailVacationResponse >= 5 ) and ( keys %VacationResponse ) ) {
       }
    }
    print "\n\n  Total: $TotalVacResp Time(s)";
+   $Output_Generated++;
 }
 
 if ( ( $DetailVacationDup >= 5 ) and ( keys %VacationDup ) ) {
@@ -900,6 +927,7 @@ if ( ( $DetailVacationDup >= 5 ) and ( keys %VacationDup ) ) {
       }
    }
    print "\n\n  Total: $TotalVacDup Time(s)";
+   $Output_Generated++;
 }
 
 #----- all about mailbox manipulations (shown at detail > 0) --------------------------------
@@ -924,6 +952,7 @@ if ( ( $DetailMailboxCreated >= 5 ) and ( keys %MailboxCreated ) ) {
          }
       }
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailMailboxDeleted >= 5 ) and ( keys %MailboxDeleted ) ) {
@@ -946,6 +975,7 @@ if ( ( $DetailMailboxDeleted >= 5 ) and ( keys %MailboxDeleted ) ) {
          }
       }
    }
+   $Output_Generated++;
 }
 
 if ( ( $DetailMailboxRenamed >= 5 ) and ( keys %MailboxRenamed ) ) {
@@ -968,6 +998,7 @@ if ( ( $DetailMailboxRenamed >= 5 ) and ( keys %MailboxRenamed ) ) {
          }
       }
    }
+   $Output_Generated++;
 }
 
 if (keys %OtherList) {
@@ -975,10 +1006,11 @@ if (keys %OtherList) {
    foreach my $line (sort {$a cmp $b} keys %OtherList) {
       print "   $line: $OtherList{$line} Time(s)\n";
    }
+   $Output_Generated++;
 }
 
 # guarantees at least one empty line at the end
-print "\n";
+print "\n" if $Output_Generated;
 
 exit(0);
 
