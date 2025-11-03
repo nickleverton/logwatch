@@ -82,6 +82,8 @@ my $DetailProxyLogin = defined $ENV{'dovecot_proxy_logins'} ?
       $ENV{'dovecot_proxy_logins'} : $Detail;
 my $DetailSieveLogin = defined $ENV{'dovecot_sieve_logins'} ?
       $ENV{'dovecot_sieve_logins'} : $Detail;
+my $DetailSubmissionsRelayed = defined $ENV{'dovecot_submissions_relayed'} ?
+      $ENV{'dovecot_submissions_relayed'} : $Detail;
 my $DetailSuccessfulLogins = defined $ENV{'dovecot_successful_logins'} ?
       $ENV{'dovecot_successful_logins'} : $Detail;
 my $DetailTLSInit = defined $ENV{'dovecot_tls_init'} ?
@@ -109,6 +111,7 @@ my %ConnectionClosed;
 my %ConnectionIMAP;
 my %ConnectionPOP3;
 my %ConnectionSieve;
+my %ConnectionSubmission;
 my %Disconnected;
 my %DiskQuotaExceed;
 my %Deliver;
@@ -120,6 +123,7 @@ my %LimitExceeded;
 my %Login;
 my %LoginIMAP;
 my %LoginPOP3;
+my %LoginSubmission;
 my %MailboxCreated;
 my %MailboxDeleted;
 my %MailboxRenamed;
@@ -133,6 +137,7 @@ my %ProxyDisconnected;
 my %ProxyLogin;
 my %ProxyLoginIMAP;
 my %ProxyLoginPOP3;
+my %Senders;
 my %SieveLogin;
 my %UnknownUsers;
 my %VacationDup;
@@ -291,6 +296,12 @@ while (defined(my $ThisLine = <STDIN>)) {
           $Host = hostName($Host);
           $Aborted{$Host}++;
         }
+
+# submission
+# submission(zeus)<307183><Rhh94lMzwfXAqCoC>: Successfully relayed message: from=<zeus@ix.netcom.com.org>, size=1413, id=VaW1GXPwBmjvrwQAot0D+g, nrcpt=1, reply=`250 2.0.0 53M1RFgl307185 Message accepted for delivery': 1 Time(s)
+# submission(albert@hockney.org)<2636401><aXzTgPQzMNrAqCoC>: Successfully relayed message: from=<zeus@ix.netcom.com>, size=1006, id=tF8oGTB3EWhxOigAot0D+g, nrcpt=1, reply=`250 2.0.0 53U14mWn2636403 Message accepted for delivery': 1 Time(s
+   } elsif (($User) = ( $ThisLine =~ /^$dovecottag submission\([A-Za-z@.-]*\)(?:<[^>]+><[^>]+>)?: Successfully relayed message: from=<([^>]*)>.*/ )) {
+     	   $Senders{$User}++;
 
 # 'lda' for dovecot 2.0, 'deliver' for earlier versions
    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\)(?:<[^>]+><[^>]+>)?: msgid=.*: saved mail to (.*)/ ) ) {
@@ -479,20 +490,20 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Disconnected{"in APPEND"}++;
    } elsif (($ThisLine =~ /Disconnected$/) or
             ($ThisLine =~ /(IMAP|POP3)\(.+\): Disconnected (bytes|top|rip|user|method)=/) or
-            ($ThisLine =~ /(imap\-login|pop3\-login): Disconnected: (bytes|top|rip|user|method)=/) ) {
+            ($ThisLine =~ /(imap\-login|pop3\-login|submission\-login): Disconnected: (bytes|top|rip|user|method)=/) ) {
       $Disconnected{"No reason"}++;
    } elsif ( ( ($Reason) = ($ThisLine =~ /(?:IMAP|POP3).+: Disconnected: (.+) (bytes|top)=/i)) or
-          ( ($Reason) = ($ThisLine =~ /(?:imap\-login|pop3\-login): Disconnected: \(?(.+)\)?: /)) or
+          ( ($Reason) = ($ThisLine =~ /(?:imap\-login|pop3\-login|submission\-login): Disconnected: \(?(.+)\)?: /)) or
             #This one should go away also -mgt
           ( ($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/i)) ) {
       $Disconnected{$Reason}++;
-   } elsif ($ThisLine =~ /(IMAP|POP3).+: Connection closed (top|bytes)=/i) {
+   } elsif ($ThisLine =~ /(IMAP|POP3|Submission).+: Connection closed (top|bytes)=/i) {
         $ConnectionClosed{"No reason"}++;
    } elsif ( ($Reason) = ($ThisLine =~ /(?:IMAP|POP3).+: Connection closed: (.*) (?:bytes|method|top|rip|user)=/i) ) {
        $ConnectionClosed{$Reason}++;
    } elsif ($ThisLine =~ /(IMAP|POP3).+: (Connection closed.*)/) {
       $Disconnected{$2}++;
-   } elsif ( ($Host) = ($ThisLine =~ /(?:imap\-login|pop3\-login): Aborted login: .*rip=(?:::ffff:)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/) ) {
+   } elsif ( ($Host) = ($ThisLine =~ /(?:imap\-login|pop3\-login|submission\-login): Aborted login: .*rip=(?:::ffff:)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/) ) {
       $Aborted{$Host}++;
    } elsif ( ($Error) = ($ThisLine =~ /child \d* (?:\(login\) )?returned error (.*)/)) {
    # dovecot: child 23747 (login) returned error 89
@@ -514,13 +525,23 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Fatal{$Fatal}++;
    } elsif ( ($Error) = ($ThisLine =~ /^(?:$dovecottag )?(.* Error:.*)/)) {
       $Error{$Error}++;
+# Submission login
+   } elsif ( (($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?submission-login: Login: (.*?) \[(.*)\]/ ) ) or
+             (($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?submission-login: Login: user=\<(.*?)\>.*rip=(.*), lip=.*/ ) )  or
+             (($User, $Host, $Session) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: (?:Info: )?Login: user=\<(.*?)\>.*rip=(.*), lip=.*, session=<([^>]+)>/ ) ) ) {
+      if ($Host !~ /$IgnoreHost/) {
+         $Host = hostName($Host);
+         $Login{$User}{$Host}++;
+         $LoginSubmission{$User}++;
+         $ConnectionSubmission{$Host}++;
+         $Connection{$Host}++;
+      }
    } else {
       # Report any unmatched entries...
       chomp($ThisLine);
       $OtherList{$ThisLine}++;
    }
 }
-
 
 #----- important reports (shown at detail = 0) ----------------------------------------------
 #
@@ -597,37 +618,59 @@ if ( keys %LimitExceeded ) {
 #----- all about connections and failures (shown at detail > 0) -----------------------------
 #
 if ( ( $DetailConnections >= 5 ) and ( keys %Connection ) ) {
-   print     "\nDovecot IMAP and POP3 connections:".
-             "\n==================================".
-             "\nPOP3 IMAP Total  Host".
-             "\n" . "-" x 72;
+   print     "\n[Dovecot IMAP, POP3 and Submission] Connections:".
+             "\n================================================".
+             "\nPOP3 IMAP Submission Total  Host".
+             "\n" . "-" x 83;
 
    $TLSInitFail = 0;
    my $IMAPCount = 0;
    my $POP3Count = 0;
+   my $SubmissionCount = 0;
    my $TotalCount = 0;
    foreach my $Host ( sort { $Connection{$b} <=> $Connection{$a} }
                   keys %Connection ) {
       my $Total = $Connection{$Host};
       my $Conns = 0;
       my $IMAP = 0;
+      my $Submission = 0;
       if ( defined ( $ConnectionPOP3{$Host} ) ) {
          $Conns = $ConnectionPOP3{$Host};
       }
       if ( defined ( $ConnectionIMAP{$Host} ) ) {
          $IMAP = $ConnectionIMAP{$Host};
       }
+      if (defined ($ConnectionSubmission{$Host})) {
+         $Submission = $ConnectionSubmission{$Host};
+      }
       # Cleanly display IPv4 addresses
       $Host=~ s/::ffff://;
-      printf "\n%4s %4s %5s  %s", $Conns, $IMAP, $Total, $Host;
+      printf "\n%4s %4s %10s %5s  %s", $Conns, $IMAP, $Submission, $Total, $Host;
       $POP3Count += $Conns;
       $IMAPCount += $IMAP;
+      $SubmissionCount += $Submission;
       $TotalCount += $Total;
    }
-   print "\n" . "-" x 72;
-   printf "\n%4s %4s %5s  %s", $POP3Count, $IMAPCount, $TotalCount, "Total";
+   print "\n" . "-" x 83;
+   printf "\n%4s %4s %10s %5s  %s", $POP3Count, $IMAPCount, $SubmissionCount, $TotalCount, "Total";
    $Output_Generated++;
 }
+ 
+if ( ( $DetailSubmissionsRelayed >= 5) && (keys %Senders) ) {
+   my $Submissions = 0;
+   my %SubmissionsCount;
+   foreach my $Sender (keys %Senders) {
+      $SubmissionsCount{$Sender} += $Senders{$Sender};
+      $Submissions += $SubmissionsCount{$Sender};
+   }
+   printf "\n";
+   printf "\nDovecot Submissions Relayed: %s", $Submissions;
+   foreach my $Sender (sort { $SubmissionsCount{$b} <=> $SubmissionsCount{$a} }
+                     keys %SubmissionsCount) {
+      printf("\n  %4s %s", $SubmissionsCount{$Sender}, $Sender);
+   }
+}
+
 
 if ( ( $DetailDisconnects >= 5) and ( keys %Disconnected ) ) {
    my $Disconnects = 0;
@@ -655,8 +698,9 @@ if ( ( $DetailSuccessfulLogins >= 5 ) and ( keys %Login ) ) {
       $LoginCount += $LoginUserCount{$User};
       $LoginPOP3{$User} = 0 if ( not defined $LoginPOP3{$User} );
       $LoginIMAP{$User} = 0 if ( not defined $LoginIMAP{$User} );
+      $LoginSubmission{$User} = 0 if (not defined $LoginSubmission{$User});
    }
-   printf "\n\nDovecot IMAP and POP3 successful logins: %s", $LoginCount;
+   printf "\n\nDovecot IMAP, POP3 and Submission Successful Logins: %s", $LoginCount;
       foreach my $User ( sort { $LoginUserCount{$b} <=> $LoginUserCount{$a} }
                         keys %LoginUserCount ) {
          printf("\n  %4s %s", $LoginUserCount{$User}, $User);
@@ -665,7 +709,9 @@ if ( ( $DetailSuccessfulLogins >= 5 ) and ( keys %Login ) ) {
             if ( $LoginPOP3{$User} > 0 ) { print "$LoginPOP3{$User} POP3"; };
             if ( $LoginPOP3{$User} > 0 && $LoginIMAP{$User} > 0 ) { print ", "; };
             if ( $LoginIMAP{$User} > 0 ) { print "$LoginIMAP{$User} IMAP"; };
-            print ")";
+            if (($LoginPOP3{$User} > 0 || $LoginIMAP{$User} > 0) && $LoginSubmission{$User} > 0) { print ", "; };
+            if ($LoginSubmission{$User} > 0) { print "$LoginSubmission{$User} Submission"; };
+	    print ")";
             foreach my $Host ( sort { $Login{$User}{$b} <=> $Login{$User}{$a} }
                               keys %{$Login{$User}} ) {
                # Cleanly display IPv4 addresses
