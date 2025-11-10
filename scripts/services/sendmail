@@ -1495,7 +1495,7 @@ if ($Detail >= 10) {
             }
          }
    }
-   if (defined keys %StarttlsCipher) {
+   if (keys %StarttlsCipher) {
       eval "$PrintCond";
       print "\n\nSTARTTLS used the following encryption mechanisms";
       foreach $StarttlsCipherEntry (sort keys %StarttlsCipher) {
