@@ -73,7 +73,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $VirusList{$1}++;
    } elsif (my ($ChildLimit) = ($ThisLine =~ /hit max-children limit \((\d+ >= \d+)\): waiting for some to exit/)) {
       $MaxChildrenLimit{$ChildLimit}++;
-   } elsif (($ThisLine =~ /^Stopping/)) {
+   } elsif (($ThisLine =~ /^Stopping|ClamAV=terminating/)) {
       $DaemonStop++;
    } elsif (($ThisLine =~ /^(Starting|\+\+\+ Started)/)) {
       $DaemonStart++;
