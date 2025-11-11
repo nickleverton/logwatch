@@ -140,6 +140,8 @@ while (defined(my $ThisLine = <STDIN>)) {
          $NegotiationFailed{$Reason}{$Host}{$Offer}++;
       } elsif ( ($Host) = ($ThisLine =~ /^Connection reset by ([^ ]+)(?: port \d+)?/) ) {
          $NegotiationFailed{$Reason}{$Host}{$Offer}++;
+      } elsif ( ($Host) = ($ThisLine =~ /^Connection closed by authenticating user [^ ]+ ([^ ]+)(?: port \d+)?/) ) {
+         $NegotiationFailed{$Reason}{$Host}{$Offer}++;
       }
    }
 
@@ -160,7 +162,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ m/^Disconnecting: Command terminated on signal \d+/) or
        ($ThisLine =~ m/^Disconnecting: server_input_channel_req: unknown channel -?\d+/) or
        ($ThisLine =~ m/^connect from \d+\.\d+\.\d+\.\d+/) or
-       ($ThisLine =~ m/^fatal: Timeout before authentication/ ) or
+       ($ThisLine =~ m/^(fatal: )?Timeout before authentication/ ) or
        ($ThisLine =~ m/^fatal: no hostkey alg/) or
        ($ThisLine =~ m/Connection from .* port /) or
        ($ThisLine =~ m/Postponed (keyboard-interactive|publickey) for [^ ]+ from [^ ]+/) or
@@ -249,6 +251,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ m/^(?:error:.*|fatal:) Connection closed by remote host/ ) or
       ($ThisLine =~ m/^(|fatal: )Read error from remote host(| [^ ]+)(| port \d+): Connection reset by peer/ ) or
       ($ThisLine =~ m/^error: .*: read: Connection reset by peer/ ) or
+      ($ThisLine =~ m/^error: .*: write: Broken pipe/ ) or
       ($ThisLine =~ m/^Read error from remote host [^ ]+(| port \d+): (Connection timed out|No route to host)/ ) or
       ($ThisLine =~ m/^fatal: Read from socket failed: No route to host/) or
       ($ThisLine =~ m/^fatal: Write failed: Network is unreachable/ ) or
@@ -321,7 +324,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       $multiline++;
    } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^error: (kex_exchange_identification): (.*)$/) ) {
       $multiline++;
-   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^error: (kex protocol error): (.*)$/) ) {
+   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^error: (kex protocol error|key_protocol_error): (.*)$/) ) {
+      $multiline++;
+   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^(userauth_pubkey): (.*)( \[preaut\])?$/) ) {
       $multiline++;
    } elsif ( ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*)$/)) {
       # Reason 11 ({SSH,SSH2}_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
