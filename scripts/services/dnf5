@@ -48,7 +48,7 @@ if ( $Debug >= 5 ) {
    $DebugCounter = 1;
 }
 
-open(VERSION, '-|', $pathto_dnf5, '--version') || die "can't run $pathto_dnf5: $!";
+open(VERSION, '-|', $pathto_dnf5, '--version') || exit(0);
 my $version = <VERSION>;
 if ( $version !~ "dnf5" ) {
    if ( $Debug >= 5 ) {
