@@ -65,9 +65,9 @@ sub DirUsage {
     };
 	$Dir = $Dir . "/*"; # Add /* to the end of the directory name for globbing -mgt
 	if ($OSname eq "Linux") {
-		system("du -s --block-size=1048576 -h $Dir | sort -n -r -k 1");
+		system("du -s --block-size=1048576 -h $Dir | sort -h -r -k 1");
 	} elsif ($OSname eq "Darwin") {
-		system("du -s --block-size=1048576 -h $Dir | sort -n -r -k 1");
+		system("du -s --block-size=1048576 -h $Dir | sort -h -r -k 1");
 	} elsif ($OSname eq "SunOS") {
 		if ( ($release eq "5.10") || ($release eq "5.9") || ($release eq "5.11") ) {
 		   system("/usr/xpg4/bin/du -s -h $Dir | sort -n -r -k 1");
