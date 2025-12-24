@@ -669,6 +669,7 @@ if ( ( $DetailSubmissionsRelayed >= 5) && (keys %Senders) ) {
                      keys %SubmissionsCount) {
       printf("\n  %4s %s", $SubmissionsCount{$Sender}, $Sender);
    }
+   $Output_Generated++;
 }
 
 
