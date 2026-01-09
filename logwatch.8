@@ -13,7 +13,7 @@ logwatch \- system log analyzer and reporter
 .I service-name
 .B ] [--mailto
 .I address
-.B ] [--archives] [--range
+.B ] [--noarchives] [--range
 .I range
 .B ] [--debug
 .I level
@@ -80,12 +80,13 @@ and
 Additional options are listed when invoked with the
 .I Help
 parameter.
-.IP "\fB--archives\fR"
+.IP "\fB--noarchives\fR"
 Each log-file-group has basic logfiles (i.e. /var/log/messages) as
 well as archives (i.e. /var/log/messages.? or /var/log/messages.?.gz).
-When used with "\-\-range all", this option will make Logwatch search
-through the archives in addition to the regular logfiles.  For other
-values of \-\-range, Logwatch will search the appropriate archived logs.
+By default, Logwatch will search through the archives in addition to the
+regular logfiles.  For values of \-\-range other than "all", Logwatch will
+search the appropriate archived logs. If "\-\-noarchives" is specified,
+Logwatch will not search the archived logs for any value of "\-\-range"
 .IP "\fB--debug\fR level"
 For debugging purposes.
 .I level
@@ -151,7 +152,7 @@ the default configuration.  See \fBMORE INFORMATION\fR below for more
 information.
 .RE
 .SH EXAMPLES
-.B logwatch --service ftpd-xferlog --range all --detail high --archives
+.B logwatch --service ftpd-xferlog --range all --detail high
 .RS
 This will print out all FTP transfers that are stored in all current and archived
 xferlogs.
