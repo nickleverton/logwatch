@@ -672,7 +672,7 @@ if ($Detail >= $LvlProtocol) {
             $SmtpProblemHosts{$key}++;
             $SmtpConnection{$bb}++;
          }
-         elsif ( $ThisOne =~ /authenticator failed for (?:\S+ |)\([^)]*\) \[($IPAddress)\](?::\d+ |)(?:I=\[$IPAddress\]:\d+|): ([^(]*)/ ) {
+         elsif ( $ThisOne =~ /authenticator failed for (?:\S+ |H=|)\(?[^)]*\)? \[($IPAddress)\](?::\d+ |)(?:I=\[$IPAddress\]:\d+|): ([^(]*)/ ) {
             my $key = $1;
             $bb = $2;
             $bb =~ s/\s+$//;
