@@ -136,6 +136,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /has no hold-off time.*, scheduling restart\./ or
        $ThisLine =~ /Service Restart.* expired, scheduling restart\./ or
        $ThisLine =~ /Scheduled restart job, restart counter is at .*\./ or
+       # Harmless warning, hard to suppress - https://access.redhat.com/solutions/7041110
+       $ThisLine =~ /^sys-module-fuse\.device: Failed to enqueue SYSTEMD_WANTS= job, ignoring: Unit sys-fs-fuse-connections\.mount not found\.$/ or
        $ThisLine =~ /: Watchdog timeout/ or
        $ThisLine =~ /Watchdog running with a (?:hardware )?timeout of/ or
        $ThisLine =~ /^Dependency failed for / or
