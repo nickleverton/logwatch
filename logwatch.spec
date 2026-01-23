@@ -115,7 +115,7 @@ rm -rf %{buildroot}
 * Thu Jan 22 2026 Frank Crawford <frank@crawford.emu.id.au> 7.14
 - release 7.14
 
-* Tue Jun 22 2025 Bjorn <bjorn1@users.sourceforge.net> 7.13
+* Sun Jun 22 2025 Bjorn <bjorn1@users.sourceforge.net> 7.13
 
 * Wed Jan 22 2025 Bjorn <bjorn1@users.sourceforge.net> 7.12
 
