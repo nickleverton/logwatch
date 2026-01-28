@@ -72,26 +72,26 @@ while (defined(my $ThisLine = <STDIN>)) {
     if ( ($ThisLine =~ /..,... DEBUG: /) or
          ($ThisLine =~ /..,... \S*\s*: DEBUG /) or # syntax of 0.7.? fail2ban
          ($ThisLine =~ /..,... INFO: (Fail2Ban v.* is running|Exiting|Enabled sections:)/) or
-         ($ThisLine =~ /INFO\s+Log rotation detected for/) or
-         ($ThisLine =~ /INFO\s+Jail.+(?:stopped|started|uses )/) or
-         ($ThisLine =~ /INFO\s+Changed logging target to/) or
-         ($ThisLine =~ /INFO\s+Creating new jail/) or
-         ($ThisLine =~ /INFO\s+(Set |Socket|Gamin|Created|Added|Using|Connected to |rollover performed)/) or # syntax of 0.7.? fail2ban
+         ($ThisLine =~ /(?:INFO\s+)?Log rotation detected for/) or
+         ($ThisLine =~ /(?:INFO\s+)?Jail.+(?:stopped|started|uses )/) or
+         ($ThisLine =~ /(?:INFO\s+)?Changed logging target to/) or
+         ($ThisLine =~ /(?:INFO\s+)?Creating new jail/) or
+         ($ThisLine =~ /(?:INFO\s+)?(Set |Socket|Gamin|Created|Added|Using|Connected to |rollover performed)/) or # syntax of 0.7.? fail2ban
          ($ThisLine =~ /..,... WARNING: Verbose level is /) or
          ($ThisLine =~ /..,... WARNING: Restoring firewall rules/) or
-         ($ThisLine =~ /WARNING Determined IP using DNS Lookup/) or
-         ($ThisLine =~ /INFO\s+Initiated '.*' backend/) or
-         ($ThisLine =~ /INFO\s+(Added logfile = .*|Set maxRetry = \d+|Set findtime = \d+|Set banTime = \d+)/) or
+         ($ThisLine =~ /(?:WARNING )?Determined IP using DNS Lookup/) or
+         ($ThisLine =~ /(?:INFO\s+)?Initiated '.*' backend/) or
+         ($ThisLine =~ /(?:INFO\s+)?(Added logfile = .*|Set maxRetry = \d+|Set findtime = \d+|Set banTime = \d+)/) or
          ($ThisLine =~ /Unable to find a corresponding IP address for .*: \[Errno -2\] Name or service not known/)
        )
     {
         if ( $Debug >= 6 ) {
             print STDERR "DEBUG($DebugCounter): line ignored\n";
         }
-    } elsif ( ($Service,$Action,$Host) = ($ThisLine =~ m/NOTICE:?\s+\[?(.*?)[]:]?\s(Restore Ban)[^\.]* (\S+)/)) {
+    } elsif ( ($Service,$Action,$Host) = ($ThisLine =~ m/(?:NOTICE:?\s+)?\[?(.*?)[]:]?\s(Restore Ban)[^\.]* (\S+)/)) {
         $ServicesBans{$Service}{$Host}{'ReBan'}++;
         $ServicesBans{$Service}{"(all)"}{'ReBan'}++;
-    } elsif ( ($Service,$Increase,$Action,$Host) = ($ThisLine =~ m/(?:WARNING|NOTICE):?\s+\[?(.*?)[]:]?\s(Increase\s)?(Ban|Unban)[^\.]* (\S+)/)) {
+    } elsif ( ($Service,$Increase,$Action,$Host) = ($ThisLine =~ m/(?:WARNING:?\s+|NOTICE:?\s+)?\[?(.*?)[]:]?\s(Increase\s)?(Ban|Unban)[^\.]* (\S+)/)) {
         if ( $Increase ) {
             $Service .= " increase"
         }
@@ -109,32 +109,32 @@ while (defined(my $ThisLine = <STDIN>)) {
             $ServicesBans{$Service}{$Host}{$Action}++;
             $ServicesBans{$Service}{"(all)"}{$Action}++;
         }
-    } elsif ( ($Service,$Host,$NumFailures) = ($ThisLine =~ m/INFO: (\S+): (.+) has (\d+) login failure\(s\). Banned./)) {
+    } elsif ( ($Service,$Host,$NumFailures) = ($ThisLine =~ m/(?:INFO: )?(\S+): (.+) has (\d+) login failure\(s\). Banned./)) {
         if ($Debug >= 4) {
             print STDERR "DEBUG: Found host $Host trying to access $Service - failed $NumFailures times\n";
         }
         push @{$ServicesBans{$Service}{$Host}{'Failures'}}, $NumFailures;
-    } elsif ( ($Service,$Host) = ($ThisLine =~ m/ ERROR:\s(.*):\s(\S+)\salready in ban list/)) {
+    } elsif ( ($Service,$Host) = ($ThisLine =~ m/(?: ERROR:\s)?(.*):\s(\S+)\salready in ban list/)) {
         $ServicesBans{$Service}{$Host}{'AlreadyInTheList'}++;
-    } elsif ( ($Service,$Host) = ($ThisLine =~ m/(?:INFO|WARNING|NOTICE)\s*\[(.*)\]\s*(\S+)\s*already banned/)) {
+    } elsif ( ($Service,$Host) = ($ThisLine =~ m/(?:INFO|WARNING|NOTICE)?\s*\[(.*)\]\s*(\S+)\s*already banned/)) {
         $ServicesBans{$Service}{$Host}{'AlreadyInTheList'}++;
-    } elsif ( ($Service,$Message) = ($ThisLine =~ m/WARNING\s*\[(.*)\].* (latency problem|timing issue)/)) {
+    } elsif ( ($Service,$Message) = ($ThisLine =~ m/(?:WARNING\s*)?\[(.*)\].* (latency problem|timing issue)/)) {
         next if $Service =~ /$IgnoreLatency/;
         $LatencyIssues{$Service}++ if $Message eq "latency problem";
-    } elsif ( ($Service,$Host) = ($ThisLine =~ m/ WARNING:\s(.*):\sReBan (\S+)/)) {
+    } elsif ( ($Service,$Host) = ($ThisLine =~ m/(?: WARNING:\s)?(.*):\sReBan (\S+)/)) {
         $ServicesBans{$Service}{$Host}{'ReBan'}++;
-    } elsif ($ThisLine =~ / ERROR:?\s*(Execution of command )?\'?iptables/) {
+    } elsif ($ThisLine =~ /(?: ERROR:?\s*)?(Execution of command )?\'?iptables/) {
         push @IptablesErrors, "$ThisLine\n";
-    } elsif ($ThisLine =~ /ERROR.*returned \d+$/) {
+    } elsif ($ThisLine =~ /(?:ERROR)?.*returned \d+$/) {
         push @ActionErrors, "$ThisLine\n";
     } elsif (($ThisLine =~ /..,... WARNING: \#\S+ reinitialization of firewalls/) or
-             ($ThisLine =~ / ERROR\s*Invariant check failed. Trying to restore a sane environment/)) {
+             ($ThisLine =~ /(?: ERROR\s*)?Invariant check failed. Trying to restore a sane environment/)) {
         $ReInitializations++;
     } elsif ($ThisLine =~ /..,... WARNING:  is not a valid IP address/) {
         # just ignore - this will be fixed within fail2ban and is harmless warning
-    } elsif ( ($Service,$Host) = ($ThisLine =~ /INFO\s+\[(.*)\] Found (\S+)/)) {
+    } elsif ( ($Service,$Host) = ($ThisLine =~ /(?:INFO\s+)?\[(.*)\] Found (\S+)/)) {
         $ServicesFound{$Service}{$Host}++;
-    } elsif ( ($Service,$Host) = ($ThisLine =~ /INFO\s+\[(.*)\] Ignore (\S+)/)) {
+    } elsif ( ($Service,$Host) = ($ThisLine =~ /(?:INFO\s+)?\[(.*)\] Ignore (\S+)/)) {
         $ServicesIgnored{$Service}{$Host}++;
     # Generic messages
     } elsif ( ($Message) = ($ThisLine =~ / ERROR (.*)$/)) {
