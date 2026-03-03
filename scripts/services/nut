@@ -100,7 +100,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^upssched: (?:Cancelling|New) timer:/
        or $ThisLine =~ /^upssched: Timer daemon started/
        or $ThisLine =~ /^upssched: Timer queue empty/
-       or $ThisLine =~ /^snmp-ups: \[(\S+)\] snmp_ups_walk: data (:?resumed|stale)/
+       or $ThisLine =~ /^snmp-ups: \[(\S+)\] snmp_ups_walk: data (?:resumed|stale)/
        or $ThisLine =~ /^UPS: No longer on battery power/
        # Should get a particular ups on battery power message
        or $ThisLine =~ /^UPS: On battery power in response to an input power problem/

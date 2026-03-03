@@ -150,7 +150,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        #$ThisLine =~ /PID file .* not readable \(yet\?\) after start/ or
        $ThisLine =~ /Failed to (read|parse) PID from file / or
        # Units can depend on files that do not exist
-       $ThisLine =~ /Cannot add dependency job(:? for unit .*)?, ignoring: Unit (:?.* failed to load: No such file or directory|not found)\.$/ or
+       $ThisLine =~ /Cannot add dependency job(?: for unit .*)?, ignoring: Unit (?:.* failed to load: No such file or directory|not found)\.$/ or
        # https://bugs.freedesktop.org/show_bug.cgi?id=90386
        $ThisLine =~ /Dev(ice)? .* appeared twice with different sysfs paths .* and / or
        # Inactive units are sometimes reloaded
@@ -214,7 +214,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Skipped{$name}++ if $Detail;
    } elsif (($name) = ($ThisLine =~ /^(.*) was skipped because/)) {
       $Skipped{$name}++ if $Detail;
-   } elsif (($service) = ($ThisLine =~ /(\S+): Failed (:?to execute command|with result)/)) {
+   } elsif (($service) = ($ThisLine =~ /(\S+): Failed (?:to execute command|with result)/)) {
       $Failed{$service}++;
    } elsif (($service) = ($ThisLine =~ /(\S+) failed\.$/)) {
       $Failed{$service}++;

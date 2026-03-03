@@ -123,10 +123,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /recvfrom: No route to host/) or
       # Be sure to catch: transfer of 'zone' from IP#53: failed to connect: timed out
       # not exact just triggers a full transfer
-      ($ThisLine =~ /transfer of .*: (:?IXFR|AXFR(:?|-style IXFR) (:?started|ended)|connected using|failed while receiving responses: not exact)/) or
+      ($ThisLine =~ /transfer of .*: (?:IXFR|AXFR(?:|-style IXFR) (?:started|ended)|connected using|failed while receiving responses: not exact)/) or
       # This will generate another error that we will catch
       ($ThisLine =~ /transfer of .*: resetting/) or
-      ($ThisLine =~ /Transfer status: (:?success|up to date)/) or
+      ($ThisLine =~ /Transfer status: (?:success|up to date)/) or
       ($ThisLine =~ /using \d+ CPU/) or
       ($ThisLine =~ /loading configuration/) or
       ($ThisLine =~ /command channel listening/) or
@@ -434,7 +434,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $LoopDetected{$Entry}++;
    } elsif (($Hint) = ($ThisLine =~ /checkhints: (.*)/) ) {
       $Hints{$Hint}++;
-   } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit(:?ing)? (.+) responses to (\S+)(?: for (.+) \()?/)) {
+   } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit(?:ing)? (.+) responses to (\S+)(?: for (.+) \()?/)) {
       $Zone = "None" unless defined($Zone);
       $Limit{$Zone}{$Response}{$Net}++ if $Detail;
    } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
