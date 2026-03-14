@@ -815,12 +815,16 @@ foreach $LogFile (@LogFileList) {
 	 next;
       }
       if (! -r $ThisFile) {
-         print "File $ThisFile is not readable.  Check permissions.";
-         if ($> != 0) {
-            print "  You are not running as superuser.";
+         # check again to ensure we do not have access due to ACL or similar methods as -r by default only checks permission bits
+         use filetest 'access';
+         if (! -r $ThisFile) {
+            print "File $ThisFile is not readable.  Check permissions.";
+            if ($> != 0) {
+               print "  You are not running as superuser.";
             }
-         print "\n";
-         next;
+            print "\n";
+            next;
+         }
       }
       #FIXME - We have a bug report for filenames with spaces, can be caught here needs test -mgt
       $FileText .= ("'" . $ThisFile . "' ");
