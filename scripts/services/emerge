@@ -70,6 +70,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /terminating/) or
       ($ThisLine =~ /Compiling/) or
       ($ThisLine =~ /=== sync/) or
+      ($ThisLine =~ /Syncing repository/i) or
       ($ThisLine =~ /Starting rsync with/i) or
       ($ThisLine =~ /Merging/) or
       ($ThisLine =~ /Unmerging./) or
