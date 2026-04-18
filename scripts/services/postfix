@@ -5324,7 +5324,7 @@ sub build_sect_table() {
    end_section_group ($S, 'postfixstate');
 
    begin_section_group ($S, 'backwardscompatible', "\n");
-   add_section ($S, 'backwardscompatible',         1, 'd', 'Running in backwards compatibile mode');
+   add_section ($S, 'backwardscompatible',         1, 'd', 'Running in backwards compatible mode');
    end_section_group ($S, 'backwardscompatible');
 
    if ($Opts{'debug'} & Logreporters::D_SECT) {
