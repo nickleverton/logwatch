@@ -53,6 +53,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /WARNING: lvmetad is being updated, retrying/
        # This happens on shutdown
        or $ThisLine =~ /dmeventd detected break while being idle for 0 second\(s\), exiting/
+       or $ThisLine =~ /dmeventd detected exit on file .*, unregistering all monitored devices/
+       or $ThisLine =~ /dmeventd received break, scheduling exit/
        # This happens when dmeventd autostarted
        or $ThisLine =~ /dmeventd ready for processing\.$/
        or $ThisLine =~ /dmeventd shutting down\.$/
@@ -61,15 +63,15 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /Logical volume .* successfully resized/
       ) {
       # Ignore
-   } elsif ($ThisLine =~ /^(?:WARNING: )?Thin (\S+) is now (\d+(\.\d+)?)% full/) {
+   } elsif ($ThisLine =~ /^(?:WARNING: )?(\S+ pool \S+)(?: data)? is now (\d+(\.\d+)?)% full/) {
       $PoolUsed{$1} = $2 if $2 >= $PoolThreshold;
-   } elsif ($ThisLine =~ /^(?:WARNING: )?Thin metadata (\S+) is now (\d+(\.\d+)?)% full/) {
+   } elsif ($ThisLine =~ /^(?:WARNING: )?(\S+ metadata \S+) is now (\d+(\.\d+)?)% full/) {
       $PoolMetadataUsed{$1} = $2 if $2 >= $PoolMetadataThreshold;
-   } elsif ($ThisLine =~ /^Monitoring thin pool (\S+)\./) {
+   } elsif ($ThisLine =~ /^Monitoring (.* pool \S+)\./) {
       $MonitoringOn{$1}++;
    } elsif ($ThisLine =~ /^Monitoring snapshot (\S+)\./) {
       $MonitoringSnapshot{$1}++;
-   } elsif ($ThisLine =~ /^No longer monitoring thin pool (\S+)\./) {
+   } elsif ($ThisLine =~ /^No longer monitoring (\S+ pool \S+)\./) {
       $MonitoringOff{$1}++;
    } elsif ($ThisLine =~ /^No longer monitoring snapshot (\S+)\./) {
       $MonitoringSnapshotOff{$1}++;
@@ -89,7 +91,7 @@ while (defined(my $ThisLine = <STDIN>)) {
 }
 
 if (keys %PoolUsed) {
-   print "Thin Pool Usage:\n";
+   print "Pool Usage:\n";
    foreach my $Pool (sort {$a cmp $b} keys %PoolUsed) {
       print "    $Pool: $PoolUsed{$Pool}% full\n";
    }
@@ -97,7 +99,7 @@ if (keys %PoolUsed) {
 }
 
 if (keys %PoolMetadataUsed) {
-   print "Thin Pool Metadata Usage:\n";
+   print "Pool Metadata Usage:\n";
    foreach my $Pool (sort {$a cmp $b} keys %PoolMetadataUsed) {
       print "    $Pool: $PoolMetadataUsed{$Pool}% full\n";
    }
@@ -122,7 +124,7 @@ if (keys %Resize) {
 
 if (keys %Active and $Detail) {
    print "LVM active:\n";
-   foreach my $VG (sort {$a cmp $b} keys %MonitoringOn) {
+   foreach my $VG (sort {$a cmp $b} keys %Active) {
       print "    $VG: $Active{$VG} logical volume(s)\n";
    }
    print "\n";
