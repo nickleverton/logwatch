@@ -357,7 +357,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Rhost, $Ldom) = ($ThisLine =~ /client ([\d\.]+)#\d+: update forwarding '(.*)' denied/)) {
       $UpdateForwardingDenied{"$Rhost ($Ldom)"}++;
    } elsif ( ($Zone, $Master, $Reason) = ($ThisLine =~ /zone (.*): forwarded dynamic update: master (.*)#\d+ returned: (.*)/)) {
-      $UpdateForwardingDenied{"$Zone ($Master) $Reason"}++;
+      $UpdateForwardingDenied{"$Zone ($Master) $Reason"}++ if $Reason ne "NOERROR";
    } elsif ( ($Zone) = ($ThisLine =~ /zone '([0-9a-zA-Z.-]+)' allows updates by IP address, which is insecure/)) {
       $InsecUpdate{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([0-9a-zA-Z.\/-]+): journal rollforward failed: journal out of sync with zone/)) {
