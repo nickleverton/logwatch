@@ -155,7 +155,7 @@ while ($line = <STDIN>) {
          ($Detail >= 5) && $data{$service}{'Password changed'}{$line}++;
       }
    } elsif (grep $_ eq $service, qw/gdm gdm-password gdm-smartcard gdm-welcome gdm-launch-environment kde kdm kcheckpass xdm imap dovecot cups/) {
-      if ($line =~ s/^session opened for user (.+) by (?:\(unknown\)|\w+)?\(uid=\d+\)/$1/) {
+      if ($line =~ s/^session opened for user (.+) by \S*\(uid=\d+\)/$1/) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^User info message: (.*)/$1/) {
          ($Detail >= 8) && $data{$service}{'User Info Message'}{$line}++;
