@@ -119,8 +119,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       ) {
       $LastError = $1;
    }
-   elsif (($Host) = $ThisLine =~ /^netstream session \S+ from (\S+) will be closed due to error/) {
-      $ClosedError{$LastError}{"$Host"}++ if $LastError !~ /$IgnoreClosedErrorMessages/i;
+   elsif (($Host) = $ThisLine =~ /^netstream session \S+ from (\S+?)(?::\d+)? will be closed due to error/) {
+      $ClosedError{$LastError}{"$Host"}++ if $LastError and $LastError !~ /$IgnoreClosedErrorMessages/i;
    }
    elsif (($Host) = $ThisLine =~ /^omfwd: remote server at (.+) seems to have closed connection/) {
       $RemoteClosed{"$Host"}++;
@@ -133,8 +133,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ThisLine =~ /begin to drop messages due to rate-limiting/ or
       # paired with other errors
       $ThisLine =~ /^GnuTLS error: Error in the push function/ or
-      # More detail for this in the invalid cert info line above
-      $ThisLine =~ /^not permitted to talk to peer, certificate invalid:/ or
+      # More detail for this in the invalid cert info line below
+      $ThisLine =~ /^not permitted to talk to peer.*, certificate invalid:/ or
       $ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/ or
       $ThisLine =~ /^imjournal: journal files changed, reloading/ or
       $ThisLine =~ /^imjournal: journal reloaded/ or
