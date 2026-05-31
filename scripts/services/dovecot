@@ -191,7 +191,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /ssl-params: Generating SSL parameters/) or
       ($ThisLine =~ /auth-worker/) or
       ($ThisLine =~ /auth:.*: Connected to/) or
-      ($ThisLine =~ /Disconnected: Connection closed(?! \(auth failed)/) or
+      ($ThisLine =~ /(Disconnected|Login aborted): Connection closed(?! \(auth failed)/) or
       ($ThisLine =~ /Info: Connection closed/) or
       ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
       ($ThisLine =~ /IMAP.* failed with mbox file/) or
@@ -279,9 +279,11 @@ while (defined(my $ThisLine = <STDIN>)) {
    #
    # imap-login:
    #   dovecot[123]: imap-login: Disconnected: Connection closed (auth failed, 1 attempts in 7 secs): user=<user>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS: Connection closed, session=<xxxx>
+   #   dovecot[123]: imap-login: Login aborted: Connection closed (auth failed, 1 attempts in 7 secs): user=<user>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS: Connection closed, session=<xxxx>
    #
    # imap-login aborted:
    #   dovecot[123]: imap-login: Disconnected: Aborted login by logging out (auth failed, 1 attempts in 2 secs): user=<info>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS, session=<xxxx>
+   #   dovecot[123]: imap-login: Login aborted: Aborted login by logging out (auth failed, 1 attempts in 2 secs): user=<info>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS, session=<xxxx>
    #
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): unknown user/ ) ) {
       $UnknownUsers{$User}{$IP}++;
@@ -290,7 +292,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*no_auth_attempts.*rip=([^,]+).*/) ) {
       $Host = hostName($Host);
       $Aborted{$Host}++;
-   } elsif ( ($User, $IP) = ($ThisLine =~ /Disconnected: .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
+   } elsif ( ($User, $IP) = ($ThisLine =~ /(Disconnected|Login aborted): .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
       $AuthFail{$User}{$IP}++;
         if ( ($Host) = ($ThisLine =~ /Aborted login.* rip=([0-9\.]+|[a-fA-F:0-9]+)/) ) {
           $Host = hostName($Host);
