@@ -205,6 +205,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ConfigError{$reason}{$service}++;
    } elsif (($reason,$service) = ($ThisLine =~ /^(ConfigurationDirectory .*)\. \((.*)\)$/)) {
       $ConfigError{$reason}{$service}++;
+   } elsif (($reason,$service) = ($ThisLine =~ /^(System is tainted): (unmerged-bin)$/)) {
+      $ConfigError{$reason}{$service}++ if $Detail >= 10;
    } elsif (($reason,$service) = ($ThisLine =~ /^(System is tainted): (.*)$/)) {
       $ConfigError{$reason}{$service}++;
    # Skipped goes before failed to catch "was skipped because all trigger condition checks failed."
