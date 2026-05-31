@@ -328,7 +328,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $multiline++;
    } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^(userauth_pubkey): (.*)( \[preaut\])?$/) ) {
       $multiline++;
-   } elsif ( ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*)$/)) {
+   } elsif ( ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): ?(.*)$/)) {
       # Reason 11 ({SSH,SSH2}_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
       if (($Reason =~ /preauth/) || ($Code != 11) || ($Detail >= 30)) {
 	$DisconnectReceived{$Reason}{$Host}++;
