@@ -250,7 +250,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (
       ($ThisLine =~ m/^(?:error:.*|fatal:) Connection closed by remote host/ ) or
       ($ThisLine =~ m/^(|fatal: )Read error from remote host(| [^ ]+)(| port \d+): Connection reset by peer/ ) or
-      ($ThisLine =~ m/^error: .*: read: Connection reset by peer/ ) or
+      ($ThisLine =~ m/^error: .*: (read|write): Connection reset by peer/ ) or
       ($ThisLine =~ m/^error: .*: write: Broken pipe/ ) or
       ($ThisLine =~ m/^Read error from remote host [^ ]+(| port \d+): (Connection timed out|No route to host)/ ) or
       ($ThisLine =~ m/^fatal: Read from socket failed: No route to host/) or
