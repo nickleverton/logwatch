@@ -132,6 +132,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       # paired with rate-limiting count message above
       $ThisLine =~ /begin to drop messages due to rate-limiting/ or
       # paired with other errors
+      $ThisLine =~ /^epoll subsystem signaled EPOLLERR for stream / or
       $ThisLine =~ /^GnuTLS error: Error in the push function/ or
       # More detail for this in the invalid cert info line below
       $ThisLine =~ /^not permitted to talk to peer.*, certificate invalid:/ or
