@@ -81,6 +81,7 @@ while (defined($ThisLine = <STDIN>)) {
         ( $ThisLine =~ /^(?:Info: )?Received HUP signal/ ) ||
         ( $ThisLine =~ /^(?:Info: )? ?Module: Reloaded module/ )  ||
         ( $ThisLine =~ /^(?:Info: )?Signalled to terminate/ ) ||
+        ( $ThisLine =~ /^rlm_ldap: libldap vendor:/ ) ||
         # TD: # Skipping contents of 'if' as it is always 'false' -- /etc/raddb/sites-enabled/inner-tunnel
         # This is a standard config item
         ( $ThisLine =~ /^(?:Info: )? *# Skipping contents of 'if' as it is always 'false' -- .*inner-tunnel/ ) ||
