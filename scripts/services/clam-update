@@ -148,7 +148,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       if ((my $Text) = ($ThisLine =~ /^ERROR: (.*)/)) {
          $Errors{$Text}++;
       } elsif (($Text) = ($ThisLine =~ /^WARNING: (.*)/)) {
-         if (! (($Text =~ /OUTDATED|Local version/) &&
+         if (! (($Text =~ /OUTDATED|Local version|DNS record is older/) &&
                $Ignore_Outdated)) {
             $Warnings{$Text}++;
          }
