@@ -7,7 +7,7 @@ Group: Applications/System
 URL: https://sourceforge.net/projects/logwatch/
 BuildArch: noarch
 Source0: https://sourceforge.net/projects/logwatch/files/%{name}-%{version}/%{name}-%{version}.tar.gz
-Requires: perl,grep,crontabs,perl-HTML-Parser
+Requires: perl,grep,perl-HTML-Parser
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
 %description
@@ -68,12 +68,12 @@ install -m 0755 -d %{buildroot}%{_mandir}/man8
 install -m 0644 logwatch.8 %{buildroot}%{_mandir}/man8
 
 rm -f %{buildroot}%{_sysconfdir}/cron.daily/logwatch \
-   %{buildroot}%{_sbindir}/logwatch
+   %{buildroot}%{_bindir}/logwatch
 
 install -m 0755 -d %{buildroot}%{_sysconfdir}/cron.daily
 install -m 0755 scheduler/logwatch.cron %{buildroot}%{_sysconfdir}/cron.daily/0logwatch
-install -m 0755 -d %{buildroot}%{_sbindir}
-ln -s %{_datadir}/logwatch/scripts/logwatch.pl %{buildroot}%{_sbindir}/logwatch
+install -m 0755 -d %{buildroot}%{_bindir}
+ln -s %{_datadir}/logwatch/scripts/logwatch.pl %{buildroot}%{_bindir}/logwatch
 
 echo "###### REGULAR EXPRESSIONS IN THIS FILE WILL BE TRIMMED FROM REPORT OUTPUT #####" > %{buildroot}%{_sysconfdir}/logwatch/conf/ignore.conf
 echo "# Local configuration options go here (defaults are in %{_datadir}/logwatch/default.conf/logwatch.conf)" > %{buildroot}%{_sysconfdir}/logwatch/conf/logwatch.conf
@@ -103,7 +103,7 @@ rm -rf %{buildroot}
 %dir %{_sysconfdir}/logwatch
 %dir %{_sysconfdir}/logwatch/*
 %dir %{_sysconfdir}/logwatch/*/*
-%{_sbindir}/logwatch
+%{_bindir}/logwatch
 %{_datadir}/logwatch
 %doc %{_mandir}/man*/*
 %config(noreplace) %{_sysconfdir}/logwatch/conf/*.conf

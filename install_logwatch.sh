@@ -326,8 +326,8 @@ else
 fi
 
 #Symlink
-ln -f -s $BASEDIR/scripts/logwatch.pl /usr/sbin/logwatch
-printf "Created symlink for /usr/sbin/logwatch \n"
+ln -f -s $BASEDIR/scripts/logwatch.pl /usr/bin/logwatch
+printf "Created symlink for /usr/bin/logwatch \n"
 
 #Cron or Systemd timer
 if [ $systemd -eq 1 ]; then
