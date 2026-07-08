@@ -68,6 +68,8 @@ while (defined(my $ThisLine = <STDIN>)) {
         print STDERR "DEBUG($DebugCounter): $ThisLine";
         $DebugCounter++;
     }
+    $ThisLine =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,\d{3} fail2ban\.\w+\s+\[\d+\d\]://;
+
     chomp($ThisLine);
     if ( ($ThisLine =~ /..,... DEBUG: /) or
          ($ThisLine =~ /..,... \S*\s*: DEBUG /) or # syntax of 0.7.? fail2ban
