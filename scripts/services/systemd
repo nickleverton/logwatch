@@ -103,6 +103,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Queuing reload/ or
        $ThisLine =~ /^Relabell?ed / or
        $ThisLine =~ /^Reloading\.+$/ or         # Happens on each boot at switch root
+       $ThisLine =~ /^Reload requested from client.*systemctl/ or
        $ThisLine =~ /^RTC configured in / or
        $ThisLine =~ /^Running in init(?:ial RAM disk|rd)\.$/ or
        $ThisLine =~ /^selinux: avc: *received policyload notice/ or
