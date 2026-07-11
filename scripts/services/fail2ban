@@ -90,10 +90,10 @@ while (defined(my $ThisLine = <STDIN>)) {
         if ( $Debug >= 6 ) {
             print STDERR "DEBUG($DebugCounter): line ignored\n";
         }
-    } elsif ( ($Service,$Action,$Host) = ($ThisLine =~ m/(?:NOTICE:?\s+)?\[?(.*?)[]:]?\s(Restore Ban)[^\.]* (\S+)/)) {
+    } elsif ( ($Service,$Action,$Host) = ($ThisLine =~ m/(?:NOTICE:?\s+)?\[(.*?)[]:]\s(Restore Ban)[^\.]* (\S+)/)) {
         $ServicesBans{$Service}{$Host}{'ReBan'}++;
         $ServicesBans{$Service}{"(all)"}{'ReBan'}++;
-    } elsif ( ($Service,$Increase,$Action,$Host) = ($ThisLine =~ m/(?:WARNING:?\s+|NOTICE:?\s+)?\[?(.*?)[]:]?\s(Increase\s)?(Ban|Unban)[^\.]* (\S+)/)) {
+    } elsif ( ($Service,$Increase,$Action,$Host) = ($ThisLine =~ m/(?:WARNING:?\s+|NOTICE:?\s+)?\[(.*?)[]:]\s(Increase\s)?(Ban|Unban)[^\.]* (\S+)/)) {
         if ( $Increase ) {
             $Service .= " increase"
         }
