@@ -40,6 +40,11 @@ my $SearchDate = TimeFilter($ARGV[0] || '%Y-%m-%d %H:%M:%S');
 my $pathto_dnf5 = $ENV{'pathto_dnf5'} || '/usr/bin/dnf';
 my $dnf5_uses_UTC = $ENV{'dnf5_uses_utc'} || 0;
 
+if ( ! -f "$pathto_dnf5" ) {
+   print STDERR "\n\nDEBUG: Exiting DNF5 Filter - dnf5 not found at $pathto_dnf5\n" if $Debug >= 5;
+   exit(0);
+}
+
 if ( $Debug >= 5 ) {
    print STDERR "\nDEBUG: Inside dnf5 Filter \n";
    print STDERR "DEBUG: Path to dnf: $pathto_dnf5\n";
