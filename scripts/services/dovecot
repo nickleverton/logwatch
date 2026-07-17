@@ -191,7 +191,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /ssl-params: Generating SSL parameters/) or
       ($ThisLine =~ /auth-worker/) or
       ($ThisLine =~ /auth:.*: Connected to/) or
-      ($ThisLine =~ /(Disconnected|Login aborted): Connection closed(?! \(auth failed)/) or
+      ($ThisLine =~ /Disconnected: Connection closed(?! \(auth failed)/) or
       ($ThisLine =~ /Info: Connection closed/) or
       ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
       ($ThisLine =~ /IMAP.* failed with mbox file/) or
@@ -285,19 +285,30 @@ while (defined(my $ThisLine = <STDIN>)) {
    #   dovecot[123]: imap-login: Disconnected: Aborted login by logging out (auth failed, 1 attempts in 2 secs): user=<info>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS, session=<xxxx>
    #   dovecot[123]: imap-login: Login aborted: Aborted login by logging out (auth failed, 1 attempts in 2 secs): user=<info>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.9, TLS, session=<xxxx>
    #
+   # Post Dovecot 2.4 format changed.
+   # auth(user@example.com,000.000.000.000,sasl:login): passwd-file: Password mismatch
+   # auth(user@example.com,000.000.000.000,sasl:plain)<Praf3JlNkTIbffRG>: passwd-file:
+   # imap-login: Login aborted: Logged out (auth failed, 1 attempts in 4 secs) (auth_failed): user=<troublemaker@example.com>, method=PLAIN, rip=45.186.249.180, lip=000.000.000.000, TLS, session=<7ktqYcBNzGAtuvm0>
+   # imap-login: Login aborted: Connection closed (auth failed, 1 attempts in 2 secs) (auth_failed): user=<user@example.com>, method=PLAIN, rip=201.223.106.155, lip=000.000.000.000, TLS: Connection closed, session=<zEcJQMpNRIfJ32qb>
+   # imap-login: Login aborted: Inactivity (auth failed, 2 attempts in 178 secs) (auth_failed): user=<sallie_acklen@example.com>, method=PLAIN, rip=103.207.4.46, lip=000.000.000.000, TLS, session=<cAGahMpNTeNnzwQu>
+   #
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): unknown user/ ) ) {
       $UnknownUsers{$User}{$IP}++;
+   } elsif (($User,$IP) = ( $ThisLine =~ /auth\(([^,]+),([^,]+),.+\).+(?:pam|passwd-file): unknown user/ ) ) {
+      $UnknownUsers{$User}{$IP}++;
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): Password mismatch/ ) ) {
+      $AuthFail{$User}{$IP}++;
+   } elsif (($User,$IP) = ( $ThisLine =~ /auth\(([^,]+),([^,]+),.+\).+(?:pam|passwd-file): Password mismatch/ ) ) {
       $AuthFail{$User}{$IP}++;
    } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*no_auth_attempts.*rip=([^,]+).*/) ) {
       $Host = hostName($Host);
       $Aborted{$Host}++;
-   } elsif ( ($User, $IP) = ($ThisLine =~ /(Disconnected|Login aborted): .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
+   } elsif ( ($User, $IP) = ($ThisLine =~ /(?:Disconnected|Login aborted): .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
       $AuthFail{$User}{$IP}++;
-        if ( ($Host) = ($ThisLine =~ /Aborted login.* rip=([0-9\.]+|[a-fA-F:0-9]+)/) ) {
-          $Host = hostName($Host);
-          $Aborted{$Host}++;
-        }
+      if ( ($Host) = ($ThisLine =~ /(?:Aborted login|Connection closed|Logged out|Inactivity).* rip=([0-9\.]+|[a-fA-F:0-9]+)/) ) {
+         $Host = hostName($Host);
+         $Aborted{$Host}++;
+      }
 
 # submission
 # submission(zeus)<307183><Rhh94lMzwfXAqCoC>: Successfully relayed message: from=<zeus@ix.netcom.com.org>, size=1413, id=VaW1GXPwBmjvrwQAot0D+g, nrcpt=1, reply=`250 2.0.0 53M1RFgl307185 Message accepted for delivery': 1 Time(s)
