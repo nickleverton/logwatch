@@ -192,6 +192,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /auth-worker/) or
       ($ThisLine =~ /auth:.*: Connected to/) or
       ($ThisLine =~ /Disconnected: Connection closed(?! \(auth failed)/) or
+      ($ThisLine =~ /Authenticate LOGIN failed: Aborted/) or # is immediately followed by "Login aborted: Logged out" which is handled below
       ($ThisLine =~ /Info: Connection closed/) or
       ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
       ($ThisLine =~ /IMAP.* failed with mbox file/) or
@@ -225,8 +226,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        $End = 0;
 
 # POP3 login
-   } elsif ( (($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?pop3-login: Login: (.*?) \[(.*)\]/ ) ) or
-             (($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?pop3-login: (?:Info: )?Login: user=\<(.*?)\>.*rip=(.*), lip=/ ) ) ) {
+   } elsif ( (($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?pop3-login: (?:Login|Logged in): (.*?) \[(.*)\]/ ) ) or
+             (($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?pop3-login: (?:Info: )?(?:Login|Logged in): user=\<(.*?)\>.*rip=(.*), lip=/ ) ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Host = hostName($Host);
          $Login{$User}{$Host}++;
@@ -291,6 +292,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    # imap-login: Login aborted: Logged out (auth failed, 1 attempts in 4 secs) (auth_failed): user=<troublemaker@example.com>, method=PLAIN, rip=45.186.249.180, lip=000.000.000.000, TLS, session=<7ktqYcBNzGAtuvm0>
    # imap-login: Login aborted: Connection closed (auth failed, 1 attempts in 2 secs) (auth_failed): user=<user@example.com>, method=PLAIN, rip=201.223.106.155, lip=000.000.000.000, TLS: Connection closed, session=<zEcJQMpNRIfJ32qb>
    # imap-login: Login aborted: Inactivity (auth failed, 2 attempts in 178 secs) (auth_failed): user=<sallie_acklen@example.com>, method=PLAIN, rip=103.207.4.46, lip=000.000.000.000, TLS, session=<cAGahMpNTeNnzwQu>
+   #  dovecot[123]: imap-login: Login aborted: Inactivity during authentication (client didn't finish SASL auth, 2 attempts in 180 secs) (auth_waiting_client): user=<info>, method=LOGIN, rip=1.2.3.4, lip=1.2.3.9, TLS, session=<xxxx>
    #
    } elsif (($User,$IP) = ( $ThisLine =~ /auth: (?:pam|passwd-file)\(([^,]+),([^,\)]+).*\): unknown user/ ) ) {
       $UnknownUsers{$User}{$IP}++;
@@ -300,10 +302,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $AuthFail{$User}{$IP}++;
    } elsif (($User,$IP) = ( $ThisLine =~ /auth\(([^,]+),([^,]+),.+\).+(?:pam|passwd-file): Password mismatch/ ) ) {
       $AuthFail{$User}{$IP}++;
-   } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*no_auth_attempts.*rip=([^,]+).*/) ) {
+   } elsif ( ($Host) = ($ThisLine =~ /Login aborted:.*(?:no_auth_attempts|auth_aborted_by_client|auth_waiting_client).*rip=([^,]+).*/) ) {
       $Host = hostName($Host);
       $Aborted{$Host}++;
-   } elsif ( ($User, $IP) = ($ThisLine =~ /(?:Disconnected|Login aborted): .* \(auth failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
+   } elsif ( ($User, $IP) = ($ThisLine =~ /(?:Disconnected|Login aborted): .* \(auth[ _]failed, .*\): user=<([^>]+)>,.*rip=([^,]+).*/) ) {
       $AuthFail{$User}{$IP}++;
       if ( ($Host) = ($ThisLine =~ /(?:Aborted login|Connection closed|Logged out|Inactivity).* rip=([0-9\.]+|[a-fA-F:0-9]+)/) ) {
          $Host = hostName($Host);
@@ -469,7 +471,10 @@ while (defined(my $ThisLine = <STDIN>)) {
    # added 'plain' for auth: and modified to deal with IPv6 addresses as well:
    # auth: plain(?,1.2.3.4): Request timed out waiting for client to continue authentication (150 secs): 1 Time(s)
    # auth: plain(?,dead:beef::1): Request timed out waiting for client to continue authentication (150 secs): 1 Time(s)
-   } elsif ( ($User,$IP) = ($ThisLine =~ /auth: (?:LOGIN|login|plain)\((.*),(\d+\.\d+\.\d+\.\d+|[a-fA-F:0-9]+)\): Request timed out waiting for client to continue authentication/) ) {
+   # auth(?,1.2.3.4,sasl:login): Request timed out waiting for client to continue authentication (150 secs): 1 Time(s)
+   # auth(?,dead:beef::1,sasl:login)<xxxxxx>: Request timed out waiting for client to continue authentication (150 secs): 1 Time(s)
+   } elsif ( ($User,$IP) = ($ThisLine =~ /auth(?:: (?:LOGIN|login|plain))?\((.*),(\d+\.\d+\.\d+\.\d+|[a-fA-F:0-9]+)(?:,.*)?\)(?:<.*>)?: Request timed out waiting for client to continue authentication/) ) {
+
       $AuthTimedOut{$User}{$IP}++;
 
 # Invalid input at authentication
@@ -485,7 +490,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $AuthDisconnectedWithPending{$Reason}++;
 
 # Disallowed usernmae  characters
-   } elsif ( ($IP) = ($ThisLine =~ /auth: login\(.*,(\d+\.\d+\.\d+\.\d+)\): Username character disallowed by auth_username_chars: .* \(username: .*\)/) ) {
+   # auth(?,1.2.3.4,sasl:login): login: Username character disallowed by auth_username_chars: 0xec (username: <some random unicode character>)
+   } elsif ( ($IP) = ($ThisLine =~ /auth(?:: (?:LOGIN|login|plain))?\(.*,(\d+\.\d+\.\d+\.\d+|[a-fA-F:0-9]+)(?:,.*)?\): (?:(?:LOGIN|login|plain): )?Username character disallowed by auth_username_chars: .* \(username: .*\)/) ) {
       $AuthUsernameChars{$IP}++;
 
 # Maximum number of connections exceeded
