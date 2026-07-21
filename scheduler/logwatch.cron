@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #Set logwatch executable location
-LOGWATCH_SCRIPT="/usr/sbin/logwatch"
+LOGWATCH_SCRIPT="/usr/bin/logwatch"
 
 # Add options to the OPTIONS variable. Most options should be defined in
 # the file /etc/logwatch/conf/logwatch.conf, but some are only for the
