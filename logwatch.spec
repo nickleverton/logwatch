@@ -1,6 +1,6 @@
 Summary: Analyzes and Reports on system logs
 Name: logwatch
-Version: 7.14
+Version: 7.15
 Release: 1
 License: MIT
 Group: Applications/System
@@ -112,6 +112,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Jul 22 2026 Frank Crawford <frank@crawford.emu.id.au> 7.15
+- release 7.15
+
 * Thu Jan 22 2026 Frank Crawford <frank@crawford.emu.id.au> 7.14
 - release 7.14
 
