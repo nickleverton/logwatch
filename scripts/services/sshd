@@ -212,6 +212,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /Disconnecting( (authenticating|invalid) user .* port \d+)?: Change of username or service not allowed: .* \[preauth\]/ ) or
        ($ThisLine =~ /Failed to release session: Interrupted system call/) or
        ($ThisLine =~ /Close session: user /) or
+       # syslogin_perform_logout error because of use of deprecated logout logging
+       ($ThisLine =~ /syslogin_perform_logout: logout\(\) returned an error/) or
        #($ThisLine =~ /error: .*: banner line contains invalid characters/) or
        #($ThisLine =~ /past MaxStartups/) or
        #($ThisLine =~ /exited MaxStartups throttling/) or
@@ -317,6 +319,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Reason) = ($ThisLine =~ /^Authentication refused: (.*)$/ ) ) {
       $RefusedAuthentication{$Reason}++;
    } elsif ( (undef,$Host,$Port,$Reason,$Offer) = ($ThisLine =~ /^(fatal: )?Unable to negotiate with ([^ ]+)( port \d+)?: (.*)\. Their offer: (.*) \[preauth\]$/) ) {
+      $Offer =~ s/\@openssh.com//g;
       $NegotiationFailed{$Reason}{$Host}{$Offer}++;
    } elsif ( ($Reason,$Host,$Offer) = ($ThisLine =~ /^(Protocol major versions differ) for ([^ ]+)(?: port \d+)?: (.*)$/) ) {
       $NegotiationFailed{$Reason}{$Host}{$Offer}++;
