@@ -1253,7 +1253,7 @@ if ($DaemonThrottle > 0) {
 
 if (keys %TLSFileMissing) {
    eval "$PrintCond";
-   print "\n\nWarning: STARTTLS file errors:";
+   print "\n\nSTARTTLS file warnings:";
    foreach $TLSFile (sort keys %TLSFileMissing) {
       print "\n    $TLSFile";
    }
