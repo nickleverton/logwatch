@@ -243,11 +243,17 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UserSession{$user}->{$session}++;
    } elsif (($service) = ($ThisLine =~ /^Activated (.*)\.$/)) {
       $Activated{$service}++;
+   } elsif (($service) = ($ThisLine =~ /^Started (.*)\@\d+\.service\.$/)) {
+      $Started{$service}++;
    } elsif (($service) = ($ThisLine =~ /^Started (.*)\.$/)) {
       $Started{$service}++;
+   } elsif (($service) = ($ThisLine =~ /^Reloaded (.*)\@\d+\.service\.$/)) {
+      $Reloaded{$service}++;
    } elsif (($service) = ($ThisLine =~ /^Reloaded (.*)\.$/)) {
       $Reloaded{$service}++;
    } elsif (($service) = ($ThisLine =~ /^Deactivated (.*)\.$/)) {
+      $Deactivated{$service}++;
+   } elsif (($service) = ($ThisLine =~ /(.*)\@\d+\.service: Deactivated /)) {
       $Deactivated{$service}++;
    } elsif (($service) = ($ThisLine =~ /(.*): Deactivated /)) {
       $Deactivated{$service}++;
