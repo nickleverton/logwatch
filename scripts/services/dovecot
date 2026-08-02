@@ -238,8 +238,7 @@ while (defined(my $ThisLine = <STDIN>)) {
 
 # IMAP login
    } elsif (
-      ( ($User, $Host, $Session) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: (?:Info: )?Login: user=\<(.*?)\>.*rip=(.*), lip=.*, session=<([^>]+)>/ ) ) or
-      ( ($User, $Host, $Session) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: Logged in: user=\<(.*?)\>.*rip=(.*), lip=.*, session=<([^>]+)>/ ) ) or
+      ( ($User, $Host, $Session) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: (?:Info: )?(?:Login|Logged in): user=<(.*?)>.*rip=(.*), lip=.*, session=<([^>]+)>/ ) ) or
       # Session element was added in dovecot 2.1.6, so not available before
       # then.
       ( ($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: Login: user=\<(.*?)\>.*rip=(.*), lip=.*/ ) ) or
