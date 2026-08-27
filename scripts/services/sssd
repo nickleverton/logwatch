@@ -93,6 +93,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $BackendOffline{$Domain}++ if $BackendStatus{$Domain} eq "offline";
    } elsif ($ThisLine =~ /^Enumeration requested but not enabled/) {
       $EnumerationRequested++ unless $IgnoreEnumerationRequested;
+   } elsif ($Service eq "Daemon" && $ThisLine == "0") {
+      # Ignore - https://github.com/SSSD/sssd/issues/8928
    } elsif ($Service eq "Daemon" && $ThisLine =~ /exec_child_ex command:/) {
       # Ignore - https://github.com/SSSD/sssd/issues/7778
    } elsif ($Service eq "Daemon" && $ThisLine =~ /Keytab successfully retrieved and stored in:/) {
