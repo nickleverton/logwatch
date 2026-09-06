@@ -256,8 +256,12 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Proto{$ThisLine}++;
    }
    elsif ( $ThisLine =~ /TLS error on connection from/ ) {
-      # Various TLS errrors
-      $Proto{$ThisLine}++;
+      # openssl omits TLS close_notify
+      if (( $ThisLine !~ /The TLS connection was non-properly terminated/ ) ||
+          ($Detail > 50)) {
+         # Various TLS errrors
+         $Proto{$ThisLine}++;
+      }
    }
    elsif ( $ThisLine =~ /authenticator failed for/ ) {
       $Proto{$ThisLine}++;
@@ -693,8 +697,11 @@ if ($Detail >= $LvlProtocol) {
                   $key = "($hostLabel)" if ($hostLabel =~ /^[^.]+\Q$common\E$/);
                 }
             }
-            $TlsProblemHosts{$key}++;
-            $TlsProblemClasses{"$action: $message"}++;
+            # openssl omits TLS close_notify
+            if (($Detail > 50) || ($message ne "The TLS connection was non-properly terminated")) {
+               $TlsProblemHosts{$key}++;
+               $TlsProblemClasses{"$action: $message"}++;
+            }
          }
          elsif ( $ThisOne =~ /SMTP connection from/ ) {
             if ( $ThisOne =~ /lost while reading message data/ ) {
