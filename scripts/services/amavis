@@ -3198,7 +3198,7 @@ while (<>) {
       $StartInfo{'Code'}{'Not found'}{$code} = $location;
 
 
-   } elsif ( $p1 =~ /^starting\.\s+(.+) at \S+ (?:amavisd-new-|Maia Mailguard )([^,]+),/) {
+   } elsif ( $p1 =~ /^starting\.\s+(.+) at \S+ (?:amavis(?:d-new)?-|Maia Mailguard )([^,]+),/) {
       #TD starting.  /usr/local/sbin/amavisd at mailhost.example.com amavisd-new-2.5.0 (20070423), Unicode aware, LANG="C"
       #TD starting.  /usr/sbin/amavisd-maia at vwsw02.eon.no Maia Mailguard 1.0.2, Unicode aware, LANG=en_US.UTF-8
       next unless ($Opts{'startinfo'});
