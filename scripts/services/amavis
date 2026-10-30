@@ -2028,7 +2028,7 @@ sub create_ignore_list() {
    push @ignore_list_final, qr/^address modified \(/;
    push @ignore_list_final, qr/^Request: AM\.PDP /;
    push @ignore_list_final, qr/^DSPAM result: /;
-   push @ignore_list_final, qr/^bind to \//;
+   push @ignore_list_final, qr/^(will )?bind to [\/0-9]/;
    push @ignore_list_final, qr/^ZMQ enabled: /;
 
    push @ignore_list_final, qr/^Inserting header field: X-Amavis-Hold: /;
