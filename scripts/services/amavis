@@ -3221,7 +3221,7 @@ while (<>) {
       next unless ($Opts{'startinfo'});
       $StartInfo{'db'} = "BerkeleyDB\t(memory-based cache: Amavis::Cache unavailable)";
  
-   } elsif (my ($log) = ($p1 =~ /^logging initialized, log (level \d+, (?:STDERR|syslog: \S+))/)) {
+   } elsif (my ($log) = ($p1 =~ /^logging initialized, log (level \d+, (?:STDERR|(?:syslog|logfile): \S+))/)) {
       next unless ($Opts{'startinfo'});
       %StartInfo = ();        # first amavis log entry, clear out previous start info
       $StartInfo{'Logging'} = $log;
