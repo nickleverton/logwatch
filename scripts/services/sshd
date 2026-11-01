@@ -171,6 +171,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /pam_winbind\(sshd:account\): user .* OK/) or
        ($ThisLine =~ /pam_systemd\(sshd:session\): Moving/) or
        ($ThisLine =~ /pam_systemd\(sshd:session\): .*: Connection reset by peer/) or
+       ($ThisLine =~ /pam_env\(sshd:session\): deprecated reading of user environment enabled/) or
        ($ThisLine =~ /PAM \d+ more authentication failures?;/) or
        ($ThisLine =~ /^PAM service\(sshd\) ignoring max retries;/) or
        ($ThisLine =~ /^Failed keyboard-interactive for <invalid username> from/ ) or
@@ -233,6 +234,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ m/^Connection reset by/) or
       ($ThisLine =~ m/^channel \d+: open failed: (?:connect failed: Channel open failed\.|administratively prohibited: open failed)/) or
       ($ThisLine =~ m/^session_input_channel_req: no session \d+ req window-change/) or
+      ($ThisLine =~ m/^Timeout, client not responding/) or
       ($ThisLine =~ m/^error: chan_shutdown_read failed for .+/)
    ) {
       $NetworkErrors++;
