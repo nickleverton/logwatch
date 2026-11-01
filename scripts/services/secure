@@ -196,6 +196,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ( $ThisLine =~ /sshguard\[\d+\]: Received EOF from stdin/) or
       ( $ThisLine =~ /sshguard\[\d+\]: .*has already been blocked/) or
       ( $ThisLine =~ /gnome-keyring-daemon\[\d+\]: asked to register item.*already registered/) or
+      ( $ThisLine =~ /PackageKit: uid \d+ (is trying to obtain|obtained auth for) \S+/) or
       0 # This line prevents blame shifting as lines are added above
    ) {
       # Ignore these entries
