@@ -1,0 +1,23 @@
+From d7d9f8a05089e332388e098c5936997b35182803 Mon Sep 17 00:00:00 2001
+From: Nick Leverton <nick@leverton.org>
+Date: Sun, 1 Nov 2026 14:53:39 +0000
+Subject: [PATCH 5/8] cron: accept "session opened" tagged from cron as well as
+ crond.
+
+---
+ scripts/services/cron | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: logwatch.gbp/scripts/services/cron
+===================================================================
+--- logwatch.gbp.orig/scripts/services/cron
++++ logwatch.gbp/scripts/services/cron
+@@ -70,7 +70,7 @@ while (defined(my $ThisLine = <STDIN>))
+       ($ThisLine =~ /loading table .*/) or
+       ($ThisLine =~ /void Inotify::Remove\(InotifyWatch\*\): removing watch failed/) or
+       ($ThisLine =~ /error: \(22\) Invalid argument/) or
+-      ($ThisLine =~ /pam_unix\(crond:session\): session (?:opened|closed) for user/) or
++      ($ThisLine =~ /pam_unix\(crond?:session\): session (?:opened|closed) for user/) or
+       # This is paired with PAM ERROR handled below
+       ($ThisLine =~ /FAILED to authorize user with PAM/) or
+       ($ThisLine =~ /PAM pam_end: NULL pam handle passed/) or
