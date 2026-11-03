@@ -1,0 +1,21 @@
+From 8f383e8140c2e2803efd1fa9ec39188f1c3e8fce Mon Sep 17 00:00:00 2001
+From: Nick Leverton <nick@leverton.org>
+Date: Sun, 1 Nov 2026 22:22:15 +0000
+Subject: [PATCH 8/8] secure: ignore PackageKit auth lines
+
+---
+ scripts/services/secure | 1 +
+ 1 file changed, 1 insertion(+)
+
+Index: logwatch.gbp/scripts/services/secure
+===================================================================
+--- logwatch.gbp.orig/scripts/services/secure
++++ logwatch.gbp/scripts/services/secure
+@@ -201,6 +201,7 @@ while (defined(my $ThisLine = <STDIN>))
+       ( $ThisLine =~ /sshguard\[\d+\]: .*has already been blocked/) or
+       ( $ThisLine =~ /gnome-keyring-daemon\[\d+\]: asked to register item.*already registered/) or
+       ( $ThisLine =~ /cannot determine display-device/) or
++      ( $ThisLine =~ /PackageKit: uid \d+ (is trying to obtain|obtained auth for) \S+/) or
+       0 # This line prevents blame shifting as lines are added above
+    ) {
+       # Ignore these entries

@@ -1,3 +1,16 @@
+logwatch (7.15-1~njl12+1) bookworm; urgency=medium
+
+  * Rebuild for bookworm.
+  * New patches updating for current software (bookworm/trixie):
+    9001-amavis-update-for-2.11.patch
+    9005-cron-accept-session-opened-tagged-from-cron-as-well-.patch
+    9006-sshd-ignore-reading-user-env-warning-count-Timeout-u.patch
+    9007-secure-include-PID-in-match-for-su-entries.patch
+    9007-secure-include-PID-in-match-for-su-entries.patch~
+    9008-secure-ignore-PackageKit-auth-lines.patch
+
+ -- Nick Leverton <nick@leverton.org>  Tue, 03 Nov 2026 16:49:37 +0000
+
 logwatch (7.15-1) unstable; urgency=medium
 
   * New upstream release
