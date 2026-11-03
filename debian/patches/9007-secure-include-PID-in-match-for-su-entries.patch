@@ -1,0 +1,57 @@
+From cbc7fc07b8729fa5a1b4b2276fc915c5a2c55951 Mon Sep 17 00:00:00 2001
+From: Nick Leverton <nick@leverton.org>
+Date: Sun, 1 Nov 2026 16:32:31 +0000
+Subject: [PATCH 7/8] secure: include "[PID]" in match for su: entries.
+
+Also all other "su:" log entries that haven't already been updated.
+e.g. Unmatched entry "su[14448]: (to leveret) root on none"
+---
+ scripts/services/secure | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+Index: logwatch.gbp/scripts/services/secure
+===================================================================
+--- logwatch.gbp.orig/scripts/services/secure
++++ logwatch.gbp/scripts/services/secure
+@@ -105,7 +105,7 @@ while (defined(my $ThisLine = <STDIN>))
+       ( $ThisLine =~ /^passwd: gkr-pam: .*/) or
+       ( $ThisLine =~ /^reboot:/) or
+       ( $ThisLine =~ /^(?:\/usr\/bin\/)?sudo(?:\[\d+\])?:/) or
+-      ( $ThisLine =~ /^su: pam_unix2: session (started|finished) for user [^ ]+, service [^ ]+/) or
++      ( $ThisLine =~ /^su\[\d+\]: pam_unix2: session (started|finished) for user [^ ]+, service [^ ]+/) or
+       ( $ThisLine =~ /^xinetd\[\d+\]: USERID: ([^ ]+) (.+)$/ ) or
+       ( $ThisLine =~ /warning: can.t get client address: Connection refused/) or
+       ( $ThisLine =~ /Showing Login Window/) or
+@@ -157,8 +157,8 @@ while (defined(my $ThisLine = <STDIN>))
+       ( $ThisLine =~ /sshd.*: Accepted \S+ for \S+ from [\d\.:a-f]+ port \d+/) or # ssh script reads this log
+       ( $ThisLine =~ /userhelper.*: running (.*) with context (.*)/) or
+       ( $ThisLine =~ /userhelper.*: pam_thinkfinger(.*): conversation failed/) or
+-      ( $ThisLine =~ /su: PAM [0-9] more authentication failure; .*/) or
+-      ( $ThisLine =~ /su: No passwd entry for user '(.*)'/) or
++      ( $ThisLine =~ /su\[\d+\]: PAM [0-9] more authentication failure; .*/) or
++      ( $ThisLine =~ /su\[\d+\]: No passwd entry for user '(.*)'/) or
+       ( $ThisLine =~ /polkit-grant-helper\[\d+\]: granted authorization for [^ ]* to uid [0-9]* \[auth=.*\]/) or
+       ( $ThisLine =~ /polkit-grant-helper\[\d+\]: granted authorization for [^ ]* to session .* \[uid=[0-9]*\]/) or
+       ( $ThisLine =~ /polkit-grant-helper-pam\[\d+\]: pam_thinkfinger\(polkit:auth\): conversation failed/) or
+@@ -181,7 +181,7 @@ while (defined(my $ThisLine = <STDIN>))
+       ( $ThisLine =~ /gdm-session-worker\[\d+\]: pam_namespace\(gdm:session\): Unmount of [^ ]* failed, Device or resource busy/) or
+       ( $ThisLine =~ /pkexec: pam_systemd(.*): /) or
+       ( $ThisLine =~ /pkexec(?:\[\d+\])?: \S+: Executing command /) or
+-      ( $ThisLine =~ /su: pam_systemd(.*): Failed to parse message: /) or
++      ( $ThisLine =~ /su\[\d+\]: pam_systemd(.*): Failed to parse message: /) or
+       ( $ThisLine =~ /pam_systemd\(su:session\): Cannot create session: Already (running in|occupied by) a session/) or
+       ( $ThisLine =~ /pam_systemd\(su.*:session\): Failed to release session:/) or
+       ( $ThisLine =~ /elogind-daemon\[\d+\]: (New|Removed) session/) or
+@@ -399,9 +399,10 @@ while (defined(my $ThisLine = <STDIN>))
+       $UnknownUser{$User}++;
+    } elsif ($ThisLine =~ /^pam_pwdfile\[\d+\]: password too short or NULL/) {
+       $pwd_file_too_short++;
+-   } elsif ( ($User,$Su) = ($ThisLine =~ /^su: ([^ ]+) to ([^ ]+) on \/dev\/ttyp([0-9a-z]+)/) ) {
++   } elsif ( ($User,$Su) = ($ThisLine =~ /^su\[\d+\]: ([^ ]+) to ([^ ]+) on \/dev\/ttyp([0-9a-z]+)/) ) {
+       #$Su_User{$User}{$Su}++; #disabled for debian: reported in pam_unix
+-   } elsif ( ($Su,$User) = ($ThisLine =~ /^su: \(to ([^ ]+)\) ([^ ]+) on (?:none|(\/dev\/)?(pts\/|ttyp)([0-9]+))/) ) {
++   elsif ( ($Su,$User) = ($ThisLine =~ /^su: \(to ([^ ]+)\) ([^ ]+) on (?:none|(\/dev\/)?(pts\/|ttyp)([0-9]+))/) ) {
++   } elsif ( ($Su,$User) = ($ThisLine =~ /^su\[\d+\]: \(to ([^ ]+)\) ([^ ]+) on (?:none|(\/dev\/)?(pts\/|ttyp)([0-9]+))/) ) {
+       #$Su_User{$User}{$Su}++; #  -|-
+    } elsif ( ($Su,$User) = ($ThisLine =~ /^su\[\d+\]: Successful su for (\S+) by (\S+)/) ) {
+       #$Su_User{$User}{$Su}++; #  -|-

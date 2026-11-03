@@ -1,0 +1,41 @@
+From: Nick Leverton <nick@leverton.org>
+Date: Fri, 30 Oct 2026 21:59:38 +0000
+Subject: updates for recent versions of Amavis
+ * Cater for rename from amavisd-new to amavis in startup msg.
+ * Update "logging initialized" to include "logfile" log target.
+ * Allow binding to numeric $inet_socket_ as well as $unix_socket.
+ * Not interested in systemd unit progress updates.
+
+Index: logwatch.gbp/scripts/services/amavis
+===================================================================
+--- logwatch.gbp.orig/scripts/services/amavis
++++ logwatch.gbp/scripts/services/amavis
+@@ -2016,8 +2016,9 @@ sub create_ignore_list() {
+    push @ignore_list_final, qr/^address modified \(/;
+    push @ignore_list_final, qr/^Request: AM\.PDP /;
+    push @ignore_list_final, qr/^DSPAM result: /;
+-   push @ignore_list_final, qr/^bind to \//;
++   push @ignore_list_final, qr/^(will )?bind to [\/0-9]/;
+    push @ignore_list_final, qr/^ZMQ enabled: /;
++   push @ignore_list_final, qr/^sd_notify /;
+ 
+    push @ignore_list_final, qr/^Inserting header field: X-Amavis-Hold: /;
+    push @ignore_list_final, qr/^Decoding of .* failed, leaving it unpacked: /;
+@@ -3189,7 +3190,7 @@ while (<>) {
+       $StartInfo{'Code'}{'Not found'}{$code} = $location;
+ 
+ 
+-   } elsif ( $p1 =~ /^starting\.\s+(.+) at \S+ (?:amavisd-new-|Maia Mailguard )([^,]+),/) {
++   } elsif ( $p1 =~ /^starting\.\s+(.+) at \S+ (?:amavis(?:d-new)?-|Maia Mailguard )([^,]+),/) {
+       #TD starting.  /usr/local/sbin/amavisd at mailhost.example.com amavisd-new-2.5.0 (20070423), Unicode aware, LANG="C"
+       #TD starting.  /usr/sbin/amavisd-maia at vwsw02.eon.no Maia Mailguard 1.0.2, Unicode aware, LANG=en_US.UTF-8
+       next unless ($Opts{'startinfo'});
+@@ -3212,7 +3213,7 @@ while (<>) {
+       next unless ($Opts{'startinfo'});
+       $StartInfo{'db'} = "BerkeleyDB\t(memory-based cache: Amavis::Cache unavailable)";
+ 
+-   } elsif (my ($log) = ($p1 =~ /^logging initialized, log (level \d+, (?:STDERR|syslog: \S+))/)) {
++   } elsif (my ($log) = ($p1 =~ /^logging initialized, log (level \d+, (?:STDERR|(?:syslog|logfile): \S+))/)) {
+       next unless ($Opts{'startinfo'});
+       %StartInfo = ();        # first amavis log entry, clear out previous start info
+       $StartInfo{'Logging'} = $log;

@@ -1,0 +1,30 @@
+From 131432c309fb14fe87a8c3686f8c9035033c05c9 Mon Sep 17 00:00:00 2001
+From: Nick Leverton <nick@leverton.org>
+Date: Sun, 1 Nov 2026 16:01:54 +0000
+Subject: [PATCH 6/8] sshd: ignore "reading user env" warning; count "Timeout"
+ under NetworkErrors.
+
+---
+ scripts/services/sshd | 2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: logwatch.gbp/scripts/services/sshd
+===================================================================
+--- logwatch.gbp.orig/scripts/services/sshd
++++ logwatch.gbp/scripts/services/sshd
+@@ -193,6 +193,7 @@ while (defined(my $ThisLine = <STDIN>))
+        ($ThisLine =~ /pam_winbind\(sshd:account\): user .* OK/) or
+        ($ThisLine =~ /pam_systemd\(sshd:session\): Moving/) or
+        ($ThisLine =~ /pam_systemd\(sshd:session\): .*: Connection reset by peer/) or
++       ($ThisLine =~ /pam_env\(sshd:session\): deprecated reading of user environment enabled/) or
+        ($ThisLine =~ /userauth_finish: .*: Connection reset by peer/) or
+        ($ThisLine =~ /PAM \d+ more authentication failures?;/) or
+        ($ThisLine =~ /^PAM service\(sshd\) ignoring max retries;/) or
+@@ -260,6 +261,7 @@ while (defined(my $ThisLine = <STDIN>))
+       ($ThisLine =~ m/^Connection reset by/) or
+       ($ThisLine =~ m/^channel \d+: open failed: (?:connect failed: Channel open failed\.|administratively prohibited: open failed)/) or
+       ($ThisLine =~ m/^session_input_channel_req: no session \d+ req window-change/) or
++      ($ThisLine =~ m/^Timeout, client not responding/) or
+       ($ThisLine =~ m/^error: chan_shutdown_read failed for .+/)
+    ) {
+       $NetworkErrors++;
