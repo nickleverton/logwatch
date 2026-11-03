@@ -130,7 +130,7 @@ print "Total volumes:     $counts{'volume'}\n";
 if (!$detail_only) {
    my $pool_format = "%2s%-15s  %-10s  %-10s  %-10s  %-10s  %s\n";
    print "\n------------------- ZFS Pool Summary -------------------\n\n";
-   printf $pool_format, '', 'Pool Name', 'Size (MiB)', 'Used (MiB)', 'Free (MiB)', 'Dedup', '';
+   printf $pool_format, '', 'Pool Name', 'Size (MiB)', 'Used (MiB)', 'Free (MiB)', 'Dedup', 'Cap';
    foreach my $poolref (@pools) {
       my ($name, $size, $used, $avail, $dedup, $cap, $health) = @{$poolref};
       my $badflag = ($health eq 'ONLINE') ? '' : '!!';

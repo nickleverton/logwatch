@@ -155,7 +155,7 @@ if ($Detail > 8) {
          print "\t$IP:$BoundToPort{$IP}\t\t\t$BoundToIP{$IP} Time(s)\n";
       }
    }
-  
+
    if (keys %Limits) {
       print "\nLimits:\n";
       foreach my $Limit (sort { $a cmp $b} keys %Limits) {
@@ -168,7 +168,7 @@ if ($Detail > 8) {
       }
    }
 }
-   
+
 if (keys %lstatFail) {
    print "\nlstat() failed on:\n";
    foreach my $file (keys %lstatFail) {

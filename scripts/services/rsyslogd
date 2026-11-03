@@ -26,12 +26,16 @@
 use strict;
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
- 
+
 my %IgnoreActions;
 if (defined($ENV{'rsyslogd_ignore_actions'})) {
    foreach my $action (split(";",$ENV{'rsyslogd_ignore_actions'})) {
       $IgnoreActions{$action} = 1;
    }
+}
+my $IgnoreClosedErrorMessages = '^unexpected GnuTLS error -54$';
+if (defined($ENV{'rsyslogd_ignore_connection_closed_error_messages'})) {
+   $IgnoreClosedErrorMessages = $ENV{'rsyslogd_ignore_connection_closed_error_messages'};
 }
 my %IgnoreMessages;
 if (defined($ENV{'rsyslogd_ignore_messages'})) {
@@ -51,6 +55,7 @@ my $RemoteClosedThreshold = $ENV{'rsyslogd_remote_closed_threshold'} || 0;
 my $Action;
 my $Certificate;
 my $Host;
+my $LastError;
 my $Message;
 my $MessagesLost = 0;
 my $Module;
@@ -60,6 +65,8 @@ my $Reason;
 my %ActionResumed;
 my %ActionSuspended;
 my %CannotConnect;
+my %CannotResolve;
+my %ClosedError;
 my %DaemonActions;
 my %InvalidCertificate;
 my %InvalidCerts;
@@ -69,6 +76,13 @@ my %RemoteClosed;
 LINE:
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
+
+   # Handle stdout/stderr sent to journal which ends up with an extra prefix
+   $ThisLine =~ s/^rsyslogd: //;
+
+   # De-duplicate lines with time calculations
+   $ThisLine =~ s/ ?\(took .* seconds\)//;
+
    foreach $Message (keys %IgnoreMessages) {
       next LINE if $ThisLine =~ /$Message/i;
    }
@@ -91,6 +105,23 @@ while (defined(my $ThisLine = <STDIN>)) {
    elsif (($Host, $Reason) = $ThisLine =~ /cannot connect to (.+): (.+) \[/) {
       $CannotConnect{"$Host ($Reason)"}++;
    }
+   elsif (($Host, $Reason) = $ThisLine =~ /cannot resolve hostname '(.+)': (.+) \[/) {
+      $CannotResolve{"$Host ($Reason)"}++;
+   }
+   # These should also generate closed connection messages, but record so we can ignore normal events
+   elsif(
+      $ThisLine =~ /(TCPSendBuf error .*), destruct TCP Connection to/ or
+      $ThisLine =~ /(GnuTLS handshake retry returned error:[^.]*)/ or
+      # This proceeds unexpected GnuTLS error -54
+      $ThisLine =~ /(gnutls returned error on handshake:[^.]*)/ or
+      $ThisLine =~ /(peer did not provide a certificate[^[]*)/ or
+      $ThisLine =~ /(unexpected GnuTLS error -\d+)/
+      ) {
+      $LastError = $1;
+   }
+   elsif (($Host) = $ThisLine =~ /^netstream session \S+ from (\S+?)(?::\d+)? will be closed due to error/) {
+      $ClosedError{$LastError}{"$Host"}++ if $LastError and $LastError !~ /$IgnoreClosedErrorMessages/i;
+   }
    elsif (($Host) = $ThisLine =~ /^omfwd: remote server at (.+) seems to have closed connection/) {
       $RemoteClosed{"$Host"}++;
    }
@@ -98,17 +129,22 @@ while (defined(my $ThisLine = <STDIN>)) {
       $MessagesLost += $Num;
    }
    elsif (
-      # More detail for this in the invalid cert info line above
-      $ThisLine =~ /^not permitted to talk to peer, certificate invalid:/ or
+      # paired with rate-limiting count message above
+      $ThisLine =~ /begin to drop messages due to rate-limiting/ or
+      # paired with other errors
+      $ThisLine =~ /^epoll subsystem signaled EPOLLERR for stream / or
+      $ThisLine =~ /^GnuTLS error: Error in the push function/ or
+      # More detail for this in the invalid cert info line below
+      $ThisLine =~ /^not permitted to talk to peer.*, certificate invalid:/ or
       $ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/ or
       $ThisLine =~ /^imjournal: journal files changed, reloading/ or
       $ThisLine =~ /^imjournal: journal reloaded/ or
       $ThisLine =~ /^imuxsock: Acquired UNIX socket .* from systemd/ or
+      # These two are paired with other errors and action suspended messages
+      $ThisLine =~ /^omfwd: .* no working target servers in pool available/ or
+      $ThisLine =~ /^omfwd: .* target .* became unavailable during buffer flush/ or
       $ThisLine =~ /^message repeated \d+ times:/ or
       $ThisLine =~ m!^imuxsock: Acquired UNIX socket '/run/systemd/journal/syslog' \(fd 3\) from systemd! or
-      # These should also generate closed connection messages
-      $ThisLine =~ /TCPSendBuf error .*, destruct TCP Connection to/ or
-      $ThisLine =~ /unexpected GnuTLS error .* this could be caused by a broken connection/ or
       0 # This line prevents blame shifting as lines are added above
       ) {
       # Ignore these lines
@@ -143,6 +179,14 @@ if (keys %CannotConnect) {
     print "\n";
 }
 
+if (keys %CannotResolve) {
+    print "Cannot resolve hostname:\n";
+    foreach my $Item (sort keys %CannotResolve) {
+        print "   $Item: $CannotResolve{$Item} Times\n";
+    }
+    print "\n";
+}
+
 if (keys %InvalidCertificate) {
     print "Invalid certificates:\n";
     foreach my $Certificate (sort keys %InvalidCertificate) {
@@ -153,6 +197,17 @@ if (keys %InvalidCertificate) {
 
 if ($MessagesLost) {
     print "$MessagesLost Messages lost due to rate-limiting\n\n";
+}
+
+if (keys %ClosedError) {
+    print "Connection closed due to error:\n";
+    foreach my $Error (sort keys %ClosedError) {
+       print "   $Error:\n";
+       foreach my $Host (sort keys %{$ClosedError{$Error}}) {
+          print "      $Host: $ClosedError{$Error}{$Host} Times\n";
+       }
+    }
+    print "\n";
 }
 
 if (keys %RemoteClosed) {

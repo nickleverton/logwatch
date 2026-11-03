@@ -1,17 +1,20 @@
 Source: logwatch
 Section: admin
-Priority: optional
 Maintainer: Willi Mann <willi@debian.org>
-Build-Depends: debhelper (>> 11.0.0~)
-Standards-Version: 4.5.0
+Uploaders: Eric Dorland <eric@debian.org>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.4
 Homepage: https://sourceforge.net/projects/logwatch/
 Vcs-Browser: https://salsa.debian.org/debian/logwatch
 Vcs-Git: https://salsa.debian.org/debian/logwatch.git
 
 Package: logwatch
 Architecture: all
-Depends: ${perl:Depends}, ${misc:Depends}, default-mta | mail-transport-agent
-Recommends: libdate-manip-perl, libsys-cpu-perl, libsys-meminfo-perl
+Depends: default-mta | mail-transport-agent,
+         libhtml-parser-perl,
+         ${misc:Depends},
+         ${perl:Depends}
+Recommends: libdate-manip-perl
 Description: log analyser with nice output written in Perl
  Logwatch is a modular log analyser that runs every night
  and mails you the results. It can also be run from command line.
@@ -23,4 +26,3 @@ Description: log analyser with nice output written in Perl
  Logwatch generally ignores the time component in the output, that means,
  you will know that the reported event was logged in the requested range of
  time, but you will have to go to the raw log files to get the exact details.
-

@@ -59,9 +59,29 @@ use strict;
 use warnings;
 use Logwatch ':dates';
 
-my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+
+my $Detail;
+if (defined $ENV{'clam_update_detail'}) {
+   $Detail = $ENV{'clam_update_detail'};
+   if ($Debug) {
+      print ("Detail set to $Detail from conf/services/clam-update.conf\n");
+   }
+} elsif (defined $ENV{'LOGWATCH_DETAIL_LEVEL'}) {
+   $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+   if ($Debug) {
+      print ("Detail set to $Detail from conf/logwatch.conf\n");
+   }
+} else {
+   $Detail = 0;
+   if ($Debug) {
+      print ("Detail set to $Detail from conf/logwatch.conf\n");
+   }
+}
+
 my $Ignore_Outdated = $ENV{'ignore_outdated'} || 0;
 my $Ignore_No_Updates = $ENV{'ignore_no_updates'} || 0;
+my $Last_Run_Only = $ENV{'last_run_only'} || 0;
 
 my $time          = time;
 my $Date;
@@ -73,7 +93,6 @@ my $Version       = "";
 
 my %Starts;
 my %Errors;
-my %Outdated;
 my %Warnings;
 
 
@@ -114,10 +133,12 @@ while (defined(my $ThisLine = <STDIN>)) {
             # $Starts is only set if $Version was set just before the current update process
             $Starts{$Version}++;
          }
+         if ($Last_Run_Only) {
+            %Errors = ();
+            %Warnings = ();
+         }
       } else {
          $InRange = 0;
-         %Errors = ();
-         %Warnings = ();
       }
       # $Version was already logged if necessary, so now we clear it
       $Version = "";
@@ -127,10 +148,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       if ((my $Text) = ($ThisLine =~ /^ERROR: (.*)/)) {
          $Errors{$Text}++;
       } elsif (($Text) = ($ThisLine =~ /^WARNING: (.*)/)) {
-         if ($Text =~ /OUTDATED|Local version/) {
-            next if $Ignore_Outdated;
-            $Outdated{$Text}++;
-         } else {
+         if (! (($Text =~ /OUTDATED|Local version|DNS record is older/) &&
+               $Ignore_Outdated)) {
             $Warnings{$Text}++;
          }
       }
@@ -153,30 +172,27 @@ if ($UpdatedNum) {
 elsif ($Ignore_No_Updates == 0) {
    print "\nNo updates detected in the log for the freshclam daemon (the\n";
    print "ClamAV update process).  If the freshclam daemon is not running,\n";
-   print "you may need to restart it.  Other options:\n\n";
-   print "A. If you no longer wish to run freshclam, deleting the log file\n";
-   print "   (configured is $ENV{'LOGWATCH_LOGFILE_LIST'}) will suppress this error message.\n\n";
-   print "B. If you use a different log file, update the appropriate\n";
+   print "you may need to restart it.  (Or if run from a cron job, ensure\n";
+   print "it is run periodically.)  Other options:\n\n";
+   if ($ENV{'LOGWATCH_LOGFILE_LIST'} ne "") {
+      print "-> If you no longer wish to run freshclam, deleting the log file\n";
+      print "   (configured is $ENV{'LOGWATCH_LOGFILE_LIST'}) " .
+                "will suppress this error message.\n\n";
+      }
+   print "-> If you use a different log file, update the appropriate\n";
    print "   configuration file.  For example:\n";
    print "      echo \"LogFile = log_file\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
    print "   where log_file is the filename of the freshclam log file.\n\n";
-   print "C. If you are logging using syslog, you need to indicate that your\n";
+   print "-> If you are logging using syslog, you need to indicate that your\n";
    print "   log file uses the syslog format.  For example:\n";
    print "      echo \"*OnlyService = freshclam\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
-   print "      echo \"*RemoveHeaders\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
+   print "      echo \"*RemoveHeaders = \" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
 }
 
 if ($Status and (($Detail > 0) or (keys %Errors) or (keys %Warnings))) {
    print "\n" . $Status;
 };
 
-
-if (keys %Outdated) {
-   print "\n";
-   foreach my $Text (keys %Outdated) {
-      print "$Text\n";
-   }
-}
 
 if ($Detail >= 10) {
    if ((keys %Errors) or (keys %Warnings)) {

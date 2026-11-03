@@ -9,7 +9,7 @@
 
 ########################################################
 # freeradius logwatch filter
-#	written by Jonas Marczona 28.12.2011 
+#	written by Jonas Marczona 28.12.2011
 #
 ## Covered under the included MIT/X-Consortium License:
 ## http://www.opensource.org/licenses/mit-license.php
@@ -41,16 +41,21 @@ if ( $Debug >= 5 ) {
 my %OtherList = ();
 
 my %loginsOk = ();
+my %certificateExpired = ();
 my %wrongPassword = ();
 my %wrongUser = ();
-my %wrong_ip = ();
+my %wrong_client = ();
 my %invalidUser = ();
 my %discards = ();
 my %warnings = ();
 my %givingUps = ();
+my $crlExpired = 0;
 my $killedChilds = 0;
+my $reloaded = 0;
 my $requests = 0;
 my $requests_duration = 0;
+my $started = 0;
+my $stopped = 0;
 
 my $ThisLine;
 while (defined($ThisLine = <STDIN>)) {
@@ -60,23 +65,40 @@ while (defined($ThisLine = <STDIN>)) {
    }
    chomp($ThisLine);
 
+   # Strip leading session id
+   my ($SessionID) = ($ThisLine =~ s/^\((\d+)\) *//);
+
    if ( ( $ThisLine =~ /^(?:Info: )?F-TICKS/ ) ||
         ( $ThisLine =~ /^(?:Info: )?Access-Request from/ ) ||
         ( $ThisLine =~ /^(?:Info: )? \.\.\. (?:closing|adding new) socket/ ) ||
         ( $ThisLine =~ /^(?:Info: )?(?:SSL|TLS|rlm_(?:unix|eap|sql|radutmp)|    TLS_accept|  \[ldap\])/ ) ||
-        ( $ThisLine =~ /^(?:Info: )?Ready to process requests\.$/ ) ||
-        ( $ThisLine =~ /^(?:Info: )?Exiting normally\.$/ ) ||
+        ( $ThisLine =~ /^(?:Info: )?Ready to process requests/ ) ||
+        ( $ThisLine =~ /^(?:Info: )?Debugger not attached/ ) ||
+        ( $ThisLine =~ /^(?:Info: )?Exiting normally/ ) ||
         ( $ThisLine =~ /^(?:Info: )?Loaded virtual server/ ) ||
         ( $ThisLine =~ /^(?:Info: )?HUP - / ) ||
-        ( $ThisLine =~ /^(?:Info: )?Received HUP signal\.$/ ) ||
-        ( $ThisLine =~ /^(?:Info: )? ?Module: Reloaded module/ ) 
+        ( $ThisLine =~ /^(?:Info: )?Ignoring / ) ||
+        ( $ThisLine =~ /^(?:Info: )?Received HUP signal/ ) ||
+        ( $ThisLine =~ /^(?:Info: )? ?Module: Reloaded module/ )  ||
+        ( $ThisLine =~ /^(?:Info: )?Signalled to terminate/ ) ||
+        ( $ThisLine =~ /^rlm_ldap: libldap vendor:/ ) ||
+        # TD: # Skipping contents of 'if' as it is always 'false' -- /etc/raddb/sites-enabled/inner-tunnel
+        # This is a standard config item
+        ( $ThisLine =~ /^(?:Info: )? *# Skipping contents of 'if' as it is always 'false' -- .*inner-tunnel/ ) ||
+        # TD:      [/etc/raddb/mods-config/attr_filter/access_reject]:11 Check item "FreeRADIUS-Response-Delay-USec"    found in filter list for realm "DEFAULT".
+        # This is triggered by a standard config item and is harmless
+        ( $ThisLine =~ /access_reject\]:\d+ Check item "FreeRADIUS-Response-Delay(?:-USec)?"\s*found in filter list for realm/ ) ||
+        # These should precede Login incoreect messages
+        ( $ThisLine =~ /^eap_tls: *ERROR: \(TLS\) .*(?:certificate.*expired|Error in error)/ ) ||
+        # We count completed events below
+        ( $ThisLine =~ /^(?:Info: )?(?:Start|Stopp|Reload)ing FreeRADIUS/ )
       ) {
       # ignore
    }
 
    # TD: Login OK: [user@example.com] (from client radius port 0)
    # TD: Login OK: [user@example.com] (from client radius port 9 cli 00-11-22-33-44-AA;eduroam via TLS tunnel)
-   elsif ( my ($user) = ($ThisLine =~ m/^(?:Auth:|\(\d{1,10}\))? Login OK: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli [-0-9a-fA-F.:]+)?(?:;\w+)?(?: via TLS tunnel)?\)/) ) {
+   elsif ( my ($user) = ($ThisLine =~ m/^(?:Auth: )?Login OK: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli [-0-9a-fA-F.:]+)?(?:;\w+)?(?: via TLS tunnel)?\)/) ) {
       $loginsOk{$user}++;
 
    }
@@ -84,26 +106,33 @@ while (defined($ThisLine = <STDIN>)) {
    # TD: Login incorrect (  [ldap] User not found): [user@example.com] (from client radius port 13 cli 38-16-dd-aa-bb-cc via TLS tunnel)
    # TD: Login incorrect (mschap: External script says Logon failure (0xc000006d)): [user@example.com] (from client radius port 13 cli aa-bb-cc-11-22-33 via TLS tunnel)
    # TD: Login incorrect (TLS Alert write:fatal:handshake failure): [user@example.com] (from client radius port 13 cli aa-bb-cc-11-22-33)
-   # TD: 
-   elsif ( my ($user, $ip) = ( $ThisLine =~ m/^(?:Auth:|\(\d{1,10}\))? Login incorrect(?: \(.+\))?: \[(.*)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+)(?:;\w+)?)?(?: via TLS tunnel)?\)/) ) {
-      if (! $ip) { $ip = "*not named*"; }
-      $wrongUser{$ip}{$user}++;
-      $wrong_ip{$ip}++;
+   # TD: Login incorrect (No Auth-Type found: rejecting the user via Post-Auth-Type = Reject): [04d9f5bc5541] (from client nwra port 50104 cli 04-D9-F5-BC-55-41)
+   elsif ( my ($user, $client) = ( $ThisLine =~ m/^(?:Auth: )?Login incorrect(?: \([^)]+\))?: \[(.*)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+)(?:;\w+)?)?(?: via TLS tunnel)?\)/) ) {
+      if (! $client) { $client = "*not named*"; }
+      $wrongUser{$client}{$user}++;
+      $wrong_client{$client}++;
 
    }
 
    # TD: Login incorrect: [user@example.com] (from client radius port 175143 cli cc08.e051.a240)
-   # TD: Login incorrect: [user@example.com] (from client radius1 port 0) 
-   elsif ( my ($user, $ip) = ($ThisLine =~ m/^(?:Auth: )?Login incorrect: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
-      if (! $ip) { $ip = "*not named*"; }
-      $wrongPassword{$ip}{$user}++;
-      $wrong_ip{$ip}++;
+   # TD: Login incorrect: [user@example.com] (from client radius1 port 0)
+   elsif ( my ($user, $client) = ($ThisLine =~ m/^(?:Auth: )?Login incorrect: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
+      if (! $client) { $client = "*not named*"; }
+      $wrongPassword{$client}{$user}++;
+      $wrong_client{$client}++;
+   }
+
+   # TD: Login incorrect (eap_tls: (TLS) OpenSSL says error 10 : certificate has expired): [USERNAME] (from client CLIENTNAME port 50427 cli F8-E4-3B-F1-80-90)
+   elsif ( my ($user, $client) = ( $ThisLine =~ m/^(?:Auth: )?Login incorrect \(.*certificate has expired\): \[(.*)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+)(?:;\w+)?)?(?: via TLS tunnel)?\)/) ) {
+      if (! $client) { $client = "*not named*"; }
+      $certificateExpired{$client}{$user}++;
+      $wrong_client{$client}++;
    }
 
    # TD: Invalid user (  [ldap] Access Attribute denies access): [user@example.com] (from client radius port 13 cli aa-bb-cc-dd-ee-11 via TLS tunnel)
    # TD: Invalid user: [user@example.com] (from client <host> port 13 cli aa-bb-cc-dd-ee-11)
-   elsif ( my ($reason, $user, $ip) = ($ThisLine =~ m/^(?:Auth: )?Invalid user(?: \(\s*(.+)\))?: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
-      if (! $ip) { $ip = "*not named*"; }
+   elsif ( my ($reason, $user, $client) = ($ThisLine =~ m/^(?:Auth: )?Invalid user(?: \(\s*(.+)\))?: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
+      if (! $client) { $client = "*not named*"; }
       if (! $reason) { $reason = "*no reason*"; }
       $invalidUser{$reason}{$user}++;
    }
@@ -119,9 +148,30 @@ while (defined($ThisLine = <STDIN>)) {
       $givingUps{$client}++;
    }
 
+   # TD: eap_tls:   ERROR: SSL says error 12 : CRL has expired
+   elsif ( $ThisLine =~ m/CRL has expired/ ) {
+      $crlExpired++;
+   }
+
+
    # TD: Child PID 57436 is taking too much time: forcing failure and killing child.
    elsif ( $ThisLine =~ m/Child PID \d+ is taking too much time: forcing failure and killing child/ ) {
       $killedChilds++;
+   }
+
+   # TD: Started FreeRADIUS high performance RADIUS server..
+   elsif ( $ThisLine =~ /^Started FreeRADIUS/ ) {
+      $started++;
+   }
+
+   # TD: Stopping FreeRADIUS high performance RADIUS server..
+   elsif ( $ThisLine =~ /^Stopped FreeRADIUS/ ) {
+      $stopped++;
+   }
+
+   # TD: Reloading FreeRADIUS high performance RADIUS server
+   elsif ( $ThisLine =~ /^Reloaded FreeRADIUS/ ) {
+      $reloaded++;
    }
 
    # TD: Request 67678577 has been waiting in the processing queue for 378 seconds.  Check that all databases are running properly!
@@ -160,48 +210,56 @@ if ($requests > 0) {
 }
 
 
-sub compPerIp {
-  return $wrong_ip{$b} <=> $wrong_ip{$a};
-}
-
-if (keys %loginsOk) {
-   if ($Detail >= 10) {
-      print "\nSuccessful logins:\n";
-      foreach my $user (sort {$loginsOk{$b} <=> $loginsOk{$a}} keys %loginsOk) {
-        printf "  %-40s : %5d time(s)\n", $user, $loginsOk{$user};
-      }
-   } elsif ($Detail >= 6) {
-      my $loginsOkSum = 0;
-      foreach my $user (keys %loginsOk) {
-         $loginsOkSum += $loginsOk{$user};
-      }
-      printf "\n%-42s : %5d time(s)\n", "Successful logins", $loginsOkSum;
-   }
+sub compPerMacAddr {
+  return $wrong_client{$b} <=> $wrong_client{$a};
 }
 
 if ($Detail >= 8) {
-   if (keys %wrong_ip) {
-      print "\nSum of failed logins per ip (wrong password or user)\n";
-      foreach my $ip (sort compPerIp keys %wrong_ip) {
-         printf "  %-40s : %5d time(s)\n", $ip, $wrong_ip{$ip};
-      } 
+   if (keys %wrong_client) {
+      print "\nSum of failed logins per client (wrong password or user)\n";
+      foreach my $client (sort compPerMacAddr keys %wrong_client) {
+         printf "  %-40s : %5d time(s)\n", $client, $wrong_client{$client};
+      }
+   }
+}
+
+if (keys %certificateExpired) {
+   if ($Detail >= 3) {
+      print "\nFailed logins - certificate expired:\n";
+      foreach my $client (sort compPerMacAddr keys %certificateExpired) {
+         my $users = $certificateExpired{$client};
+         printf "  %-40s\n", $client ;
+         foreach my $user (sort {$users->{$b} <=> $users->{$a}} keys %$users) {
+            #print "    $user ", $users->{$user}, " time(s)\n";
+            printf "    %-38s : %5d time(s)\n", $user, $users->{$user};
+         }
+      }
+   } else {
+      my $certificateExpiredSum = 0;
+      foreach my $client (%certificateExpired) {
+         my $users = $certificateExpired{$client};
+         foreach my $user (keys %$users) {
+            $certificateExpiredSum += $users->{$user};
+         }
+      }
+      printf "\n%-42s : %5d time(s)\n", "Failed logins - certificate expired", $certificateExpiredSum;
    }
 }
 
 if (keys %wrongUser) {
-   if ($Detail >= 6) {
+   if ($Detail >= 3) {
       print "\nFailed logins - wrong user name:\n";
-      foreach my $ip (sort compPerIp keys %wrongUser) {
-         printf "  %-40s\n",  $ip;
-         my $users = $wrongUser{$ip};
+      foreach my $client (sort compPerMacAddr keys %wrongUser) {
+         printf "  %-40s\n",  $client;
+         my $users = $wrongUser{$client};
          foreach my $user (sort {$users->{$b} <=> $users->{$a}} keys %$users) {
             printf "    %-38s : %5d time(s)\n", $user, $users->{$user};
          }
       }
    } else {
       my $userSum = 0;
-      foreach my $ip (keys %wrongUser) {
-         my $users = $wrongUser{$ip};
+      foreach my $client (keys %wrongUser) {
+         my $users = $wrongUser{$client};
          foreach my $user (keys %$users) {
             $userSum += $users->{$user};
          }
@@ -213,9 +271,9 @@ if (keys %wrongUser) {
 if (keys %wrongPassword) {
    if ($Detail >= 6) {
       print "\nFailed logins - wrong password:\n";
-      foreach my $ip (sort compPerIp keys %wrongPassword) {
-         my $users = $wrongPassword{$ip};
-         printf "  %-40s\n", $ip ;
+      foreach my $client (sort compPerMacAddr keys %wrongPassword) {
+         my $users = $wrongPassword{$client};
+         printf "  %-40s\n", $client ;
          foreach my $user (sort {$users->{$b} <=> $users->{$a}} keys %$users) {
             #print "    $user ", $users->{$user}, " time(s)\n";
             printf "    %-38s : %5d time(s)\n", $user, $users->{$user};
@@ -223,8 +281,8 @@ if (keys %wrongPassword) {
       }
    } else {
       my $wrongPasswordSum = 0;
-      foreach my $ip (%wrongPassword) {
-         my $users = $wrongPassword{$ip};
+      foreach my $client (%wrongPassword) {
+         my $users = $wrongPassword{$client};
          foreach my $user (keys %$users) {
             $wrongPasswordSum += $users->{$user};
          }
@@ -273,6 +331,10 @@ if (keys %givingUps) {
   }
 }
 
+if ($crlExpired) {
+   printf "\nCRL Expired: %5d time(s)\n", $crlExpired;
+}
+
 if ($killedChilds) {
    printf "\n%-42s : %5d time(s)\n", "Killed Childs (taking too much time)", $killedChilds;
 }
@@ -286,6 +348,33 @@ if (%warnings) {
          printf "    %-38s : %5d time(s)\n", $component, $components->{$component};
       }
    }
+}
+
+if (keys %loginsOk) {
+   if ($Detail >= 10) {
+      print "\nSuccessful logins:\n";
+      foreach my $user (sort {$loginsOk{$b} <=> $loginsOk{$a}} keys %loginsOk) {
+        printf "  %-40s : %5d time(s)\n", $user, $loginsOk{$user};
+      }
+   } elsif ($Detail >= 6) {
+      my $loginsOkSum = 0;
+      foreach my $user (keys %loginsOk) {
+         $loginsOkSum += $loginsOk{$user};
+      }
+      printf "\n%-42s : %5d time(s)\n", "Successful logins", $loginsOkSum;
+   }
+}
+
+if ($Detail >= 5 && $started) {
+   printf "\nServer started: %5d time(s)\n", $started;
+}
+
+if ($Detail >= 5 && $stopped) {
+   printf "\nServer stopped: %5d time(s)\n", $stopped;
+}
+
+if ($Detail >= 5 && $reloaded) {
+   printf "\nServer reloaded: %5d time(s)\n", $reloaded;
 }
 
 if (keys %OtherList) {

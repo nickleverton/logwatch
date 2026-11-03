@@ -36,7 +36,7 @@ my $IgnoreUnmatched = $ENV{'qmail_ignore_unmatched'} || 0;
 my (
 $DeliveryResponse,  $EmailFrom,                     $Response,
 $ResponseCode,      $ServerResponseOverallTotal,    $ServerResponses,
-$ToLocal,           $ToRemote,                      
+$ToLocal,           $ToRemote,
 $percentage,        $threshold_reached,
 );
 #Init Hashes

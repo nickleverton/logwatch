@@ -1,0 +1,36 @@
+#!/bin/bash
+
+#############################
+### Check services output ###
+#############################
+
+set -eo pipefail
+
+check_package_report_present(){
+
+    local package="${1}"
+    local key="${2}"
+    local service="${3}"
+
+    if ! dpkg-query -s "${package}" >/dev/null 2>&1; then
+        echo "E: missing test package ${package}"
+        exit 1
+    fi 
+
+    PATTERN="- ${key}"
+    /usr/sbin/logwatch --detail High --range all --service "${service}" --output stdout > "${AUTOPKGTEST_ARTIFACTS}/service-${service}.txt"
+    section_exists="$(cat "${AUTOPKGTEST_ARTIFACTS}/service-${service}.txt" | awk -v var="${PATTERN}" '$1 ~ var && position{print NR-position-1} $0 ~ var {position=NR}')"
+    echo "Number of lines for the report: ${section_exists}"
+    if [ -z "${section_exists}" ]; then
+        exit 1
+    fi
+}
+
+packages=("openssh-server")
+keys=("SSHD") 
+service=("sshd")
+
+for((i=0;i<"${#packages[@]}";i++)); do
+    echo "Checking section ${keys[${i}]} exists in logwatch report for package ${packages[${i}]}"
+    check_package_report_present "${packages[${i}]}" "${keys[${i}]}" "${service[${i}]}"
+done

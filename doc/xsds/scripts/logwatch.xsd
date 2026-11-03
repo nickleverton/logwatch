@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema
+	targetNamespace="http://sourceforge.net/projects/logwatch/7.7.20221001"
+	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:lw="http://sourceforge.net/projects/logwatch/7.7.20221001">
+
+	<element name="LOGWATCH" type="lw:logwatchReport"></element>
+
+	<complexType name="logwatchReport">
+		<sequence>
+			<element name="ReportMetaData" type="lw:reportMetaDataType">
+			</element>
+			<element ref="lw:ServiceData" minOccurs="0"
+				maxOccurs="unbounded">
+			</element>
+			<element name="ReportEpilog" type="lw:reportEpilogType"
+				minOccurs="0" maxOccurs="1"></element>
+		</sequence>
+		<attribute name="Version" type="string"></attribute>
+		<attribute name="VDate" type="string"></attribute>
+		<attribute name="hostname" type="string"></attribute>
+	</complexType>
+
+	<complexType name="reportMetaDataType">
+		<attribute name="processingInitiated" type="dateTime"></attribute>
+		<attribute name="configRange" type="string" use="required"></attribute>
+		<attribute name="printRange" type="string" use="optional">
+		</attribute>
+		<attribute name="period" type="string" use="optional"></attribute>
+		<attribute name="configDetail" type="string"></attribute>
+		<attribute name="configOutput" type="string"></attribute>
+		<attribute name="configFormat" type="string"></attribute>
+		<attribute name="configHostname" type="string"></attribute>
+		<attribute name="configHostlimit" type="string"
+			use="optional"></attribute>
+	</complexType>
+
+
+	<element name="ServiceData" type="lw:serviceDataType"></element>
+
+	<complexType name="serviceDataType">
+		<sequence>
+			<!-- once logwatch has full buy in on XML use strict, until then use lax -->
+			<any minOccurs="1" maxOccurs="1" namespace="##other"
+				processContents="lax"></any>
+			<element name="IgnoredLines" minOccurs="0" maxOccurs="1">
+				<complexType>
+					<attribute name="count" type="int" use="required"></attribute>
+				</complexType>
+			</element>
+		</sequence>
+		<attribute name="title" type="string" use="required"></attribute>
+		<attribute name="detail" type="string" use="optional"></attribute>
+	</complexType>
+
+	<complexType name="reportEpilogType">
+		<attribute name="endTime" type="dateTime" use="required"></attribute>
+	</complexType>
+</schema>

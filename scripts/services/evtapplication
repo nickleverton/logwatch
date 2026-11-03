@@ -58,7 +58,10 @@ while (defined(my $ThisLine = <STDIN>)) {
    # Modify some items that prevent de-duplication
    if ($Detail < 10) {
       $ExpandedString =~ s/(NextScheduled\S+|PID) \d+/$1 XXX/;
-      $ExpandedString =~ s,\d{4}/\d\d/\d\d \d\d:\d\d:\d\d(?:\.\d+)?,TIMESTAMP,;
+      $ExpandedString =~ s,\d{4}/\d\d/\d\d \d\d:\d\d:\d\d(?:\.\d+)?,TIME,g;
+      $ExpandedString =~ s/(?:\w{3}, )?\d{2} \w{3} \d{4},? \d\d:\d\d(?::\d\d \w{3})?/TIME/g;
+      $ExpandedString =~ s/(SessionId|ThreadId):( ?0x)[0-9A-Fa-f]{2,16}(?::0x[0-9a-f]{5})?/$1:${2}XXXX/g;
+      $ExpandedString =~ s/Session-trace:.*$/Session-trace: XXXX/;
    }
 
    #print STDERR "ExpandedString = $ExpandedString\n";
@@ -73,9 +76,9 @@ while (defined(my $ThisLine = <STDIN>)) {
          next;
       }
    } elsif ($Application eq "Application Hang") {
-      if (my ($exe, $exever, $msg) =
-          ($ExpandedString =~ /The program (.*) version (\S+) (.*) Process ID:/)) {
-         $Applications{$Application}->{"$Hostname: The program $exe version $exever $msg"}++;
+      if (my ($exe, $exever) =
+          ($ExpandedString =~ /The program (.*) version (\S+)/)) {
+         $Applications{$Application}->{"$Hostname: program $exe version $exever"}++;
          next;
       } else {
          print "Application Hang: Cannot parse $ExpandedString\n";
@@ -133,6 +136,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       next if $ExpandedString =~ /Download of virus definition file from LiveUpdate server succeeded/;
       next if $ExpandedString =~ /Virus definitions are current/;
       next if $ExpandedString =~ /Could not scan \d+ files inside .* due to extraction errors encountered by the Decomposer Engines/;
+   } elsif ($Application eq "openvpnserv") {
+      next if $ExpandedString eq "The operation completed successfully.";
    } elsif ($Application =~ /cc.*Mgr/) {
       #Ignore these
       next if $ExpandedString =~ /service is starting/;

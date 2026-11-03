@@ -1,0 +1,34 @@
+#!/bin/bash
+
+############################################
+### Check main installation requirements ###
+############################################
+
+set -e
+
+SHAREDIR="/usr/share/logwatch"
+
+# Config file
+echo "Checking config file present"
+test -e "${SHAREDIR}"/dist.conf/logwatch.conf
+
+# Services
+echo "Checking service configs are installed"
+test -d "${SHAREDIR}"/dist.conf/services
+services_conf_files=("${SHAREDIR}"/dist.conf/services/*.conf)
+num_scf=${#services_conf_files[@]}
+echo "Service files are = ${num_scf}"
+test "${num_scf}" -gt "0"
+
+# Logfiles
+echo "Checking logs configs are installed"
+test -d "$SHAREDIR/dist.conf/logfiles"
+logfiles_conf_files=("${SHAREDIR}"/dist.conf/logfiles/*.conf)
+num_lcf=${#logfiles_conf_files[@]}
+echo "Logfiles are = ${num_lcf}"
+test "${num_lcf}" -gt "0"
+
+# Script
+echo "Checking binary is present and its usefulness"
+test -e /usr/sbin/logwatch
+/usr/sbin/logwatch --version

@@ -36,7 +36,7 @@ use strict;
 my $Detail      = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Version     = 0.1;
 
-# initialize logwatch variables 
+# initialize logwatch variables
 my $ThisLine    = "";
 my %OtherList   = ();
 
@@ -68,7 +68,7 @@ while (defined($ThisLine = <STDIN>)) {
      $mon_fatal{"$1"}{"$2"}++;
    } elsif ($ThisLine =~ /^FATAL ([^\:]+)(?:: ERROR: (.*))?/) {
      $fatal{"$1"}{"$2"}++;
-   } elsif ( (my ($srv, $host, $err, $msg) ) = 
+   } elsif ( (my ($srv, $host, $err, $msg) ) =
         ($ThisLine =~ /^ERROR Check '(\S+)' on '(\S+)' has (.*) Message: ERROR: ([^(]*)/) ) {
      $mon_error{"$host: $srv: $err $msg"}++;
    } elsif ($ThisLine =~ /^ERROR The (status of the (?:system|agent on host) '\S+' could not be determined)/) {

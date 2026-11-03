@@ -38,8 +38,9 @@ use strict;
 
 my $Detail         = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Version        = "1.4-20130219";
+my $format = $ENV{'LOGWATCH_FORMAT_TYPE'} || 'other';
 
-# initialize logwatch variables 
+# initialize logwatch variables
 my $ThisLine        = "";
 my %OtherList       = ();
 
@@ -65,6 +66,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD syslog-ng[2351]: New configuration initialized;
    if ( ($ThisLine =~ /^[Nn]ew configuration initialized/ ) ||
+        ($ThisLine =~ /^Configuration reload finished;/ ) ||
         ($ThisLine =~ /^EOF on control channel, closing connection;/ ) ||
         ($ThisLine =~ /^(?:POLLERR|EOF) occurred while idle;/ )
    ) {
@@ -120,7 +122,7 @@ while (defined($ThisLine = <STDIN>)) {
    #TD syslog-ng[4833]: Syslog connection accepted; fd='52', client='AF_INET(192.168.1.1:40280)', local='AF_INET(192.168.1.10:625)'
    # syslog-ng v3.X
    #TD Syslog connection broken; fd='63', server='AF_INET(192.169.1.1:514)', time_reopen='60' : 44 Time(s)
-   #TD Syslog connection established; fd='48', server='AF_INET(192.168.1.1:514)', local='AF_INET(0.0.0.0:0)' 
+   #TD Syslog connection established; fd='48', server='AF_INET(192.168.1.1:514)', local='AF_INET(0.0.0.0:0)'
    elsif ($ThisLine =~ /^Syslog connection (\S+); fd='\d+', (server|client)='AF_INET\(([.\d]+):\d+\)', (?:local='AF_INET\(([.\d]+:\d+)\)'|time_reopen='\d+')?$/) {
       my $loc = defined($4) ? $4 : '0.0.0.0';
       $Connections{"$1 ($2)"}{$loc}{$3}++;
@@ -135,7 +137,7 @@ while (defined($ThisLine = <STDIN>)) {
    # syslog-ng v2.X
    #TD syslog-ng[4833]: Connection failed; error='Connection timed out (110)', time_reopen='60'
    #TD syslog-ng[4833]: Connection failed; error='Connection refused (111)', time_reopen='60'
-   #TD syslog-ng[4833]: Connection broken; time_reopen='60' 
+   #TD syslog-ng[4833]: Connection broken; time_reopen='60'
    elsif ($ThisLine =~ /^(Connection \w+); (?:error='([^\(']+) \(\d+\)', )?time_reopen='\d+'/ ) {
       $Conns{$1}{$2}++;
       $ConnsSum{$1}++;
@@ -143,15 +145,15 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD syslog-ng[4869]: io.c: do_write: write() failed (errno 111), Connection refused
    #TD syslog-ng[4869]: I/O error occurred while writing; fd='66', error='Connection refused (111)'
-   elsif ( ($ThisLine =~ /^io\.c: do_write: write\(\) failed \(errno ([\d]+)\)/) or 
-           ($ThisLine =~ /I\/O error occurred while writing; fd='\d+', error='[^'(]+ \((\d+)\)'/) 
+   elsif ( ($ThisLine =~ /^io\.c: do_write: write\(\) failed \(errno ([\d]+)\)/) or
+           ($ThisLine =~ /I\/O error occurred while writing; fd='\d+', error='[^'(]+ \((\d+)\)'/)
    ) {
       $WriteErrs{$1}++;
       $WriteErrsSum++;
-   } 
+   }
 
    # Log statistics from syslog-ng v2.X
-   #TD syslog-ng[4883]: Log statistics; dropped='program(/path/to/p)=12', 
+   #TD syslog-ng[4883]: Log statistics; dropped='program(/path/to/p)=12',
    #        processed='center(queued)=1717', processed='center(received)=916', ...
    #        suppressed='program(/path/to/p)=0'
    # Log statisctics from syslog-ng v3.X
@@ -159,19 +161,19 @@ while (defined($ThisLine = <STDIN>)) {
    #     processed='center(queued)=0', processed='src.internal(src#0)=7',
    #     stamp='src.internal(src#0)=1283808150', processed='global(msg_clones)=0', ...
    elsif ($ThisLine =~ /^Log statistics; /) {
-      my @processed = 
+      my @processed =
          $ThisLine =~ /processed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@processed; $i=$i+3)
       {
-         if ($processed[$i] eq "center") { 
-            $Stats_center{$processed[$i+1]} = 
-               $Stats_center{$processed[$i+1]} + $processed[$i+2]; 
+         if ($processed[$i] eq "center") {
+            $Stats_center{$processed[$i+1]} =
+               $Stats_center{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "destination") {
-            $Stats_dest{$processed[$i+1]} = 
+            $Stats_dest{$processed[$i+1]} =
                $Stats_dest{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "source" || $processed[$i] eq "src.internal" ||
                   $processed[$i] eq 'src.none' || $processed[$i] eq 'src.journald') {
-            $Stats_source{$processed[$i+1]} = 
+            $Stats_source{$processed[$i+1]} =
                $Stats_source{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "global") {
             $Stats_global{$processed[$i+1]} =
@@ -204,7 +206,7 @@ while (defined($ThisLine = <STDIN>)) {
                   $Stats_dropped_program{$dropped[$i+1]} + $dropped[$i+2];
             }
          } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
-      }   
+      }
       my @suppressed =
          $ThisLine =~ /suppressed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@suppressed; $i=$i+3)
@@ -226,7 +228,7 @@ while (defined($ThisLine = <STDIN>)) {
             }
          } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
       }
-      my @stored = 
+      my @stored =
           $ThisLine =~ /stored='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@stored; $i=$i+3)
       {
@@ -240,7 +242,7 @@ while (defined($ThisLine = <STDIN>)) {
    }
 
    # syslog-ng v2.X
-   #TD syslog-ng[1796]: Number of allowed concurrent connections exceeded; num='10', max='10'  
+   #TD syslog-ng[1796]: Number of allowed concurrent connections exceeded; num='10', max='10'
    elsif ($ThisLine =~ /^Number of allowed concurrent connections exceeded/) {
       $ExceedConns++;
    }
@@ -290,79 +292,117 @@ while (defined($ThisLine = <STDIN>)) {
    }
 }
 
+sub outCount {
+   my ($msg, $count, $category, $subcat) = @_;
+   if ($format ne 'xml') {
+      print $msg;
+   } else {
+      print "<syslog-ng:Count";
+      print " count='${count}'";
+      print " cat=\'${category}\'" if $category;
+      print " subcat=\'${subcat}\'" if $subcat;
+      print "/>\n";
+   }
+}
 ### generate the output ###
 
-if ($Starts) {
-    printf "\n%-48s %5i Time(s)", "Syslog-ng started:", $Starts;
+if ($format eq 'xml') {
+   # todo, embargo the output until the first actual output..
+   print "<?xml version='1.0' encoding='UTF-8' ?>\n";
+   print "<syslog-ng:LogwatchReport xmlns:syslog-ng='http://sourceforge.net/projects/logwatch/services/syslog-ng/20221002'>\n";
 }
 
-if ($Stops) {
-    printf "\n%-48s %5i Time(s)", "Syslog-ng stopped:", $Stops;
+if (($Starts || $Stops || $Reloads) && $Detail) {
+   print "<syslog-ng:Service>\n" if $format eq 'xml';
 }
 
-if ($Reloads) {
-    printf "\n%-48s %5i Time(s)", "Syslog-ng reloaded:", $Reloads;
+if ($Starts && $Detail) {
+    outCount(sprintf("\n%-48s %5i Time(s)", "Syslog-ng started:", $Starts), $Starts, "Service", "started");
 }
-if ($Starts || $Stops || $Reloads) { print "\n"; }
+
+if ($Stops && $Detail) {
+    outCount(sprintf("\n%-48s %5i Time(s)", "Syslog-ng stopped:", $Stops), $Stops, "Service", "stopped");
+}
+
+if ($Reloads && $Detail) {
+    outCount(sprintf("\n%-48s %5i Time(s)", "Syslog-ng reloaded:", $Reloads), $Reloads, "Service", "reloaded");
+}
+if (($Starts || $Stops || $Reloads) && $Detail) {
+   print "</syslog-ng:Service>" if $format eq 'xml';
+   print "\n";
+}
 
 if ($Perms) {
+    print "<syslog-ng:perms>\n" if $format eq 'xml';
     if ($Detail >= 5) {
-        print "\nSyslog-ng changed the permission on the file(s):";
+        print "\nSyslog-ng changed the permission on the file(s):" unless $format eq 'xml';
         foreach my $file (keys %PermFiles) {
-             printf "\n\t%-41s %5i Time(s)", $file, $PermFiles{$file};
+             outCount(sprintf("\n\t%-41s %5i Time(s)", $file, $PermFiles{$file}), $PermFiles{$file}, 'Perms', $file);
         }
         print "\n";
     } else {
-        printf "\n$-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms;
+        outCount(sprintf("\n%-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms), $Perms, 'Perms');
     }
+    print "</syslog-ng:perms>\n" if $format eq 'xml';
 }
 
 if ($FileOpenErrors) {
+    print "<syslog-ng:FileOpenErrors>\n" if $format eq 'xml';
     if ($Detail >= 5) {
-        print "\nSyslog-ng could not open the file(s):";
+        print "\nSyslog-ng could not open the file(s):" unless $format eq 'xml';
         foreach my $file (keys %OpenFiles) {
-            printf "\n\t%-41s %5i Time(s)", $file, $OpenFiles{$file};
+            outCount(sprintf("\n\t%-41s %5i Time(s)", $file, $OpenFiles{$file}),$OpenFiles{$file},'FileOpenErrors',$file);
         }
         print "\n";
     } else {
-        printf "\n%-48s %5i Time(s)\n", "Syslog-ng could not open file:", $FileOpenErrors;
+        outCount(sprintf("\n%-48s %5i Time(s)\n", "Syslog-ng could not open file:", $FileOpenErrors),$FileOpenErrors,'FileOpenErrors');
     }
+    print "</syslog-ng:FileOpenErrors>\n" if $format eq 'xml';
 }
 
 if (keys %Conns) {
+    print "<syslog-ng:Connections>\n" if $format eq 'xml';
     foreach my $cat (keys %Conns) {
+        print "<syslog-ng:Connection cat=\'${cat}\'>\n" if $format eq 'xml';
         if ($Detail >= 5) {
-            print "\n$cat:";
+            print "\n$cat:" unless $format eq 'xml';
             foreach my $IP (keys %{$Conns{$cat}}) {
-                printf "\n\t%-41s %5i Time(s)", $IP, $Conns{$cat}{$IP}; 
+                outCount(sprintf("\n\t%-41s %5i Time(s)", $IP, $Conns{$cat}{$IP}),$Conns{$cat}{$IP},$cat,$IP);
             }
             print "\n";
         } else {
-            printf "\n%-48s %5i Time(s)\n", "$cat:", $ConnsSum{$cat};
+            outCount(sprintf("\n%-48s %5i Time(s)\n", "$cat:", $ConnsSum{$cat}),$ConnsSum{$cat},$cat);
         }
+        print "</syslog-ng:Connection>\n" if $format eq 'xml';
     }
+    print "</syslog-ng:Connections>\n" if $format eq 'xml';
 }
 
 if (keys %WriteErrs) {
+    print "<syslog-ng:WriteErrors>\n" if $format eq 'xml';
     if ($Detail >= 5) {
-        print "\nWrite Error(s):";
+        print "\nWrite Error(s):" unless $format eq 'xml';
         foreach my $err (keys %WriteErrs) {
-            printf "\n\t%-41s %5i Time(s)", "Error Number $err:", $WriteErrs{$err};
+            outCount(sprintf("\n\t%-41s %5i Time(s)", "Error Number $err:", $WriteErrs{$err}),$WriteErrs{$err},'WriteErrors',$err);
         }
         print "\n";
     } else {
-        printf "\n%-48s %5i Time(s)\n", "Write Error(s):", $WriteErrsSum;
+        outCount(sprintf("\n%-48s %5i Time(s)\n", "Write Error(s):", $WriteErrsSum),$WriteErrsSum,'WriteErrors');
     }
+    print "</syslog-ng:WriteErrors>\n" if $format eq 'xml';
 }
 
 if ($ExceedConns && $Detail >= 5) {
-    printf "\n%-48s %5i Time(s)\n", "Concurrent Connections Exceeded:", $ExceedConns;
+    print "<syslog-ng:ExceedConnections>\n" if $format eq 'xml';
+    outCount(sprintf("\n%-48s %5i Time(s)\n", "Concurrent Connections Exceeded:", $ExceedConns),$ExceedConns,'ExceedConns');
+    print "</syslog-ng:ExceedConnections>\n" if $format eq 'xml';
 }
 
 if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
     keys %Stats_dropped || keys %Stats_supp || keys %Stats_global ||
     keys %Stats_stored || keys %Stats_program || keys %Stats_net) {
    my ($lost_rcvd, $lost_dest) = ( 0, 0);
+   print '<syslog-ng:LogStatistics>' if $format eq 'xml';
 
    if ($Stats_center{received} && %Stats_source) {
       $lost_rcvd = 0 - $Stats_center{received};
@@ -377,16 +417,16 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
       map { $lost_dest = $lost_dest - $Stats_dest{$_} } keys %Stats_dest;
    }
 
-   if ($Detail >= 6) { print "\nLog Statistics:"; }
+   if ($Detail >= 6 and $format ne 'xml') { print "\nLog Statistics:"; }
    if ($lost_rcvd != 0 || $lost_dest != 0) {
-      if ($lost_rcvd != 0) { 
-         if ($Detail >= 5) { 
-            print "\n- Failed to receive $lost_rcvd message(s)!"; 
+      if ($lost_rcvd != 0) {
+         if ($Detail >= 5) {
+            outCount("\n- Failed to receive $lost_rcvd message(s)!",$lost_rcvd,'Log Statistics','Failed to receive messages');
          }
       }
       if ($lost_dest != 0) {
          if ($Detail >= 5 ) {
-            print "\n- Failed to save $lost_dest message(s) in logfile(s)!";
+            outCount("\n- Failed to save $lost_dest message(s) in logfile(s)!",$lost_dest,'Log Statistics','Failed to save messages');
          } else { $Drops = $Drops +  $lost_dest; }
       }
       if ($Detail >= 5) { print "\n"; }
@@ -394,141 +434,164 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
 
    if ($Detail >= 6) {
       if (keys %Stats_center) {
-         print "\nCenter:";
+         print "\nCenter:" unless $format eq 'xml';
          foreach my $center (sort {$a cmp $b} keys %Stats_center) {
-            printf "\n\t%-34s %12i", $center, $Stats_center{$center};
+            outCount(sprintf("\n\t%-34s %12i", $center, $Stats_center{$center}), $Stats_center{$center}, "Center", $center);
          }
       }
       if (keys %Stats_dest) {
-         print "\nDestination:";
+         print "\nDestination:" unless $format eq 'xml';
          foreach my $dest (sort {$a cmp $b} keys %Stats_dest) {
-            printf "\n\t%-34s %12i", $dest, $Stats_dest{$dest};
+            outCount(sprintf("\n\t%-34s %12i", $dest, $Stats_dest{$dest}), $Stats_dest{$dest}, "Destination", $dest);
          }
       }
       if (keys %Stats_source) {
-         print "\nSource:";
+         print "\nSource:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_source) {
-            printf "\n\t%-34s %12i", $source, $Stats_source{$source};
+            outCount(sprintf("\n\t%-34s %12i", $source, $Stats_source{$source}),$Stats_source{$source},"Source",$source);
          }
       }
       if (keys %Stats_net) {
-         print "\nNetwork:";
+         print "\nNetwork:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_net) {
-            (my $short_source) = ($source =~ /,?([^,]*)/); 
-            printf "\n\t%-34s %12i", $short_source, $Stats_net{$source};
+            (my $short_source) = ($source =~ /,?([^,]*)/);
+            outCount(sprintf("\n\t%-34s %12i", $short_source, $Stats_net{$source}),$Stats_net{$source},"Network",$short_source);
          }
       }
       if (keys %Stats_program) {
-         print "\nProgram:";
+         print "\nProgram:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_program) {
-            (my $short_source) = ($source =~ /,?([^,]*)/); 
-            printf "\n\t%-34s %12i", $short_source, $Stats_program{$source};
+            (my $short_source) = ($source =~ /,?([^,]*)/);
+            outCount(sprintf("\n\t%-34s %12i", $short_source, $Stats_program{$source}),$Stats_program{$source},"Program",$short_source);
          }
       }
       if (keys %Stats_supp) {
-         print "\nSuppressed:";
+         print "\nSuppressed:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_supp) {
-            printf "\n\t%-34s %12i", $source, $Stats_supp{$source};
+            outCount(sprintf("\n\t%-34s %12i", $source, $Stats_supp{$source}),$Stats_supp{$source},"Suppressed",$source);
          }
       }
       if (keys %Stats_supp_net) {
          print "\nSuppressed(net):";
          foreach my $source (sort {$a cmp $b} keys %Stats_supp_net) {
-            printf "\n\t%-34s %12i", $source, $Stats_supp_net{$source};
+            outCount(sprintf("\n\t%-34s %12i", $source, $Stats_supp_net{$source}),$Stats_supp_net{$source},"Suppressed(net)",$source);
          }
       }
       if (keys %Stats_supp_program) {
-         print "\nSuppressed(program):";
+         print "\nSuppressed(program):" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_supp_program) {
-            printf "\n\t%-34s %12i", $source, $Stats_supp_program{$source};
+            outCount(sprintf("\n\t%-34s %12i", $source, $Stats_supp_program{$source}),$Stats_supp_program{$source},"Suppressed(program)",$source);
          }
       }
       if (keys %Stats_stored) {
-         print "\nStored:";
+         print "\nStored:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_stored) {
-            (my $short_source) = ($source =~ /,?([^,]*)/); 
-            printf "\n\t%-34s %12i", $short_source, $Stats_stored{$source};
+            (my $short_source) = ($source =~ /,?([^,]*)/);
+            outCount(sprintf("\n\t%-34s %12i", $short_source, $Stats_stored{$source}),$Stats_stored{$source},"Stored",$short_source);
          }
       }
       if (keys %Stats_global) {
-         print "\nGlobal:";
+         print "\nGlobal:" unless $format eq 'xml';
          foreach my $source (sort {$a cmp $b} keys %Stats_global) {
-            printf "\n\t%-34s %12i", $source, $Stats_global{$source};
+            outCount(sprintf("\n\t%-34s %12i", $source, $Stats_global{$source}),$Stats_global{$source},"Global",$source);
          }
       }
    }
    if (keys %Stats_dropped) {
-      print "\nDropped:";
+      print "\nDropped:" unless $format eq 'xml';
       foreach my $source (sort {$a cmp $b} keys %Stats_dropped) {
-         printf "\n\t%-34s %12i", $source, $Stats_dropped{$source};
+         outCount(sprintf("\n\t%-34s %12i", $source, $Stats_dropped{$source}),$Stats_dropped{$source},'Dropped',$source);
       }
    }
    if (keys %Stats_dropped_net) {
-   print "\nDropped(net):";
+   print "\nDropped(net):" unless $format eq 'xml';
    foreach my $source (sort {$a cmp $b} keys %Stats_dropped_net) {
-         printf "\n\t%-34s %12i", $source, $Stats_dropped_net{$source};
+         outCount(sprintf("\n\t%-34s %12i", $source, $Stats_dropped_net{$source}),$Stats_dropped_net{$source},'Dropped(net)',$source);
       }
    }
    if (keys %Stats_dropped_program) {
-   print "\nDropped(program):";
+   print "\nDropped(program):" unless $format eq 'xml';
    foreach my $source (sort {$a cmp $b} keys %Stats_dropped_program) {
-         printf "\n\t%-34s %12i", $source, $Stats_dropped_program{$source};
+         outCount(sprintf("\n\t%-34s %12i", $source, $Stats_dropped_program{$source}),$Stats_dropped_program{$source},'Dropped(program)',$source);
       }
    }
-   if (keys %Stats_center or keys %Stats_dropped or keys %Stats_dropped_net or 
+   if (keys %Stats_center or keys %Stats_dropped or keys %Stats_dropped_net or
        keys %Stats_dropped_program) {
       print "\n";
    }
+
+   print '</syslog-ng:LogStatistics>' if $format eq 'xml';
 }
 
 if (keys %Connections) {
+   print '<syslog-ng:ConnectionStates>' if $format eq 'xml';
+   print "syslog-ng:" unless $format eq 'xml';
    foreach my $state (sort {$a cmp $b} keys %Connections) {
       my $sum = 0;
-      print "\nConnections $state: ";
+      print "<syslog-ng:ConnectionState state=\'${state}\'>" if $format eq 'xml';
+      print "\nConnections $state: " unless $format eq 'xml';
       print "\n" if $Detail > 2;
       foreach my $localip (sort {$a cmp $b} keys %{$Connections{$state}}) {
-         print "    $localip: " if $Detail > 2;
+         print "<syslog-ng:interface addr=\'${localip}\'>" if $Detail > 2 and $format eq 'xml';
+         print "    $localip: " if $Detail > 2 and $format ne 'xml';
          print "\n" if $Detail > 5;
          my $sum_pro_ip = 0;
          foreach my $extip (sort {$a cmp $b} keys %{$Connections{$state}{$localip}}) {
-            print "\t$extip : $Connections{$state}{$localip}{$extip} Time(s)\n" if $Detail > 5;
+            outCount("\t$extip : $Connections{$state}{$localip}{$extip} Time(s)\n", $Connections{$state}{$localip}{$extip},'Sum',$extip) if $Detail > 5;
             $sum = $sum + $Connections{$state}{$localip}{$extip};
             $sum_pro_ip = $sum_pro_ip + $Connections{$state}{$localip}{$extip};
          }
-         print "$sum_pro_ip\n" if $Detail > 2 and $Detail <= 5;
+         outCount("$sum_pro_ip\n",$sum_pro_ip,'Sum') if $Detail > 2 and $Detail <= 5;
+         print "</syslog-ng:interface>" if $Detail > 2 and $format eq 'xml';
       }
-      print "$sum\n" if $Detail <= 2;
+      outCount("$sum\n",$sum,'Sum') if $Detail <= 2;
+      print '</syslog-ng:ConnectionState>' if $format eq 'xml';
    }
+   print '</syslog-ng:ConnectionStates>' if $format eq 'xml';
 }
 
 if ($Drops) {
-    print "\nSyslog-ng dropped " . $Drops ." line(s)\n";
+   print '<syslog-ng:Drops>' if $format eq 'xml';
+   outCount("\nSyslog-ng dropped " . $Drops ." line(s)\n",$Drops,'Dropped','lines');
+   print '</syslog-ng:Drops>' if $format eq 'xml';
 }
 
 if (keys %IntErrors) {
-   print "\nInternal Errors:";
+   print '<syslog-ng:InternalErrors>' if $format eq 'xml';
+   print "\nInternal Errors:" unless $format eq 'xml';
    foreach my $class (sort {$a cmp $b} keys %IntErrors) {
-      print "\n    $class";
+      print "\n    $class" unless $format eq 'xml';
+      print "<syslog-ng:InternalError class=\'${class}\'>" if $format eq 'xml';
       foreach my $error (sort {$a cmp $b} keys %{$IntErrors{$class}}) {
-         printf "\n\t%-41s %5i Time(s)", "$error:", $IntErrors{$class}{$error};
+         outCount(sprintf("\n\t%-41s %5i Time(s)", "$error:", $IntErrors{$class}{$error}),$IntErrors{$class}{$error},'IntErrors',$class);
       }
    }
+   print '</syslog-ng:InternalErrors>' if $format eq 'xml';
    print "\n";
 }
 
 if (keys %Warnings) {
-   print "\nWarnings:";
+   print '<syslog-ng:Warnings>' if $format eq 'xml';
+   print "\nWarnings:" unless $format eq 'xml';
    foreach my $warning (keys %Warnings) {
-      printf "\n\t%-41s %5i Time(s)", "$warning:", $Warnings{$warning};
+      outCount(sprintf("\n\t%-41s %5i Time(s)", "$warning:", $Warnings{$warning}),$Warnings{$warning},'Warning',$warning);
    }
+   print '</syslog-ng:Warnings>' if $format eq 'xml';
    print "\n";
 }
 
 if (keys %OtherList) {
-   print "\n**** Unmatched entries ****\n";
+   print '<syslog-ng:UnmatchedEntries>' if $format eq 'xml';
+   print "\n**** Unmatched entries ****\n" unless $format eq 'xml';
    foreach my $Error (keys %OtherList) {
-      print "    $Error : $OtherList{$Error} Time(s)\n";
+      outCount("    $Error : $OtherList{$Error} Time(s)\n",$OtherList{$Error},'UnmatchedEntry',$Error);
    }
+   print '</syslog-ng:UnmatchedEntries>' if $format eq 'xml';
+}
+
+if ($format eq 'xml') {
+   # todo, embargo the output until the first actual output..
+   print "</syslog-ng:LogwatchReport>\n";
 }
 
 ### return without a failure ###

@@ -1,13 +1,13 @@
 Summary: Analyzes and Reports on system logs
 Name: logwatch
-Version: 7.7
+Version: 7.15
 Release: 1
 License: MIT
 Group: Applications/System
 URL: https://sourceforge.net/projects/logwatch/
 BuildArch: noarch
 Source0: https://sourceforge.net/projects/logwatch/files/%{name}-%{version}/%{name}-%{version}.tar.gz
-Requires: perl,grep,crontabs
+Requires: perl,grep,perl-HTML-Parser
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
 %description
@@ -68,12 +68,12 @@ install -m 0755 -d %{buildroot}%{_mandir}/man8
 install -m 0644 logwatch.8 %{buildroot}%{_mandir}/man8
 
 rm -f %{buildroot}%{_sysconfdir}/cron.daily/logwatch \
-   %{buildroot}%{_sbindir}/logwatch
+   %{buildroot}%{_bindir}/logwatch
 
 install -m 0755 -d %{buildroot}%{_sysconfdir}/cron.daily
 install -m 0755 scheduler/logwatch.cron %{buildroot}%{_sysconfdir}/cron.daily/0logwatch
-install -m 0755 -d %{buildroot}%{_sbindir}
-ln -s %{_datadir}/logwatch/scripts/logwatch.pl %{buildroot}%{_sbindir}/logwatch
+install -m 0755 -d %{buildroot}%{_bindir}
+ln -s %{_datadir}/logwatch/scripts/logwatch.pl %{buildroot}%{_bindir}/logwatch
 
 echo "###### REGULAR EXPRESSIONS IN THIS FILE WILL BE TRIMMED FROM REPORT OUTPUT #####" > %{buildroot}%{_sysconfdir}/logwatch/conf/ignore.conf
 echo "# Local configuration options go here (defaults are in %{_datadir}/logwatch/default.conf/logwatch.conf)" > %{buildroot}%{_sysconfdir}/logwatch/conf/logwatch.conf
@@ -103,7 +103,7 @@ rm -rf %{buildroot}
 %dir %{_sysconfdir}/logwatch
 %dir %{_sysconfdir}/logwatch/*
 %dir %{_sysconfdir}/logwatch/*/*
-%{_sbindir}/logwatch
+%{_bindir}/logwatch
 %{_datadir}/logwatch
 %doc %{_mandir}/man*/*
 %config(noreplace) %{_sysconfdir}/logwatch/conf/*.conf
@@ -112,6 +112,35 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Jul 22 2026 Frank Crawford <frank@crawford.emu.id.au> 7.15
+- release 7.15
+
+* Thu Jan 22 2026 Frank Crawford <frank@crawford.emu.id.au> 7.14
+- release 7.14
+
+* Sun Jun 22 2025 Bjorn <bjorn1@users.sourceforge.net> 7.13
+
+* Wed Jan 22 2025 Bjorn <bjorn1@users.sourceforge.net> 7.12
+
+* Mon Jul 22 2024 Bjorn <bjorn1@users.sourceforge.net> 7.11
+
+* Mon Jan 22 2024 Bjorn <bjorn1@users.sourceforge.net> 7.10
+
+* Sat Jul 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.9-2
+- corrected dates in changelog, not released
+
+* Sat Jul 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.9-1
+- release 7.8, noarch on EL and cygwin
+
+* Thu Jan 26 2023 Bjorn <bjorn1@users.sourceforge.net> 7.8-3
+- Made noarch version for linux
+
+* Sun Jan 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.8-2
+- add missing requires (impacting EL8)
+- add dist to release
+
+* Sun Jan 22 2023 Jason Pyeron <jpyeron@pdinc.us> 7.8-1
+
 * Fri Jul 22 2022 Bjorn <bjorn1@users.sourceforge.net> 7.7
 
 * Sat Jan 22 2022 Jason Pyeron <jpyeron@pdinc.us> 7.6-1

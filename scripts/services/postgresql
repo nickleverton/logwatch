@@ -106,12 +106,12 @@ while(<>) {
 	    my $msgs = $cur_cat->[2];
 	    $msgs->{$1} = {count => '0',
 			   first_occurrence => $time,
-			   sum => 0, 
+			   sum => 0,
 			   sqrsum => 0} unless exists $msgs->{$1};
 	    $msgs->{$1}->{'count'}++;
 	    # summing up timestamps and squares of timestamps
 	    # in order to calculate the rms
-	    # using first occurrence of message as offset in calculation to 
+	    # using first occurrence of message as offset in calculation to
 	    # prevent an integer overflow
 	    $msgs->{$1}->{'sum'} += $time - $msgs->{$1}->{'first_occurrence'};
 	    $msgs->{$1}->{'sqrsum'} += ($time - $msgs->{$1}->{'first_occurrence'}) ** 2;
@@ -135,7 +135,7 @@ foreach my $cur_cat (@message_categories) {
 
     foreach my $msg (@sorted_msgs) {
 	# grouping messages by number of occurrence
-	print "\n", $msgs->{$msg}->{'count'}, " times:\n" unless $last_count == $msgs->{$msg}->{'count'};   
+	print "\n", $msgs->{$msg}->{'count'}, " times:\n" unless $last_count == $msgs->{$msg}->{'count'};
 	my $rms = 0;
 
 
@@ -145,16 +145,16 @@ foreach my $cur_cat (@message_categories) {
 	if($msgs->{$msg}->{'count'} > 1) {
 	    # calculating rms
 	    $rms = int(sqrt(
-			   ($msgs->{$msg}->{'count'} * 
-			    $msgs->{$msg}->{'sqrsum'} - 
-			    $msgs->{$msg}->{'sum'}) / 
-			   ($msgs->{$msg}->{'count'} * 
+			   ($msgs->{$msg}->{'count'} *
+			    $msgs->{$msg}->{'sqrsum'} -
+			    $msgs->{$msg}->{'sum'}) /
+			   ($msgs->{$msg}->{'count'} *
 			    ($msgs->{$msg}->{'count'} - 1))));
 
 	    print strftime($date_format1, localtime($msgs->{$msg}->{'first_occurrence'}+int($rms/2)));
 
 	    print ' +/-';
-	    
+	
 	    # printing rms
 	    if($rms > 86400) {
 		print int($rms/86400) , ' day(s)';
@@ -169,7 +169,7 @@ foreach my $cur_cat (@message_categories) {
 	    # we have got this message a single time
 	    print strftime($date_format1, localtime($msgs->{$msg}->{'first_occurrence'}));
 	}
-	   
+	
 	print '] ', $msg, "\n";	
 	$last_count = $msgs->{$msg}->{'count'};
     }

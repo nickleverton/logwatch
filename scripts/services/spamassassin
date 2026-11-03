@@ -167,7 +167,7 @@ if (keys %SpamRelay) {
       last if ++$i == 10;
    }
 }
-   
+
 if ( $StillRoot ) {
    print qq{\n"still running as root" error: $StillRoot time(s)\n};
 }

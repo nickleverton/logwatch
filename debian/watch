@@ -1,5 +1,4 @@
-# Watch file by Clint Adams
-version=3
-https://sf.net/logwatch/logwatch-(.+)\.tar\.gz debian uupdate
+Version: 5
 
-
+Source: http://sf.net/logwatch
+Matching-Pattern: .*/logwatch-(.+)\.tar\.gz

@@ -32,8 +32,8 @@ my $FromThreshold  = $ENV{'from_threshold'};
 
 #Init String Containers
 my (
-$IgnoreUnmatched,       $LocalServer,   $RemoteServer, 
-$TotalFrom,             $TotalTo,       $Warning, 
+$IgnoreUnmatched,       $LocalServer,   $RemoteServer,
+$TotalFrom,             $TotalTo,       $Warning,
 $pid1,                  $pid2,          $threshold_reached,
 );
 #Init Hashes

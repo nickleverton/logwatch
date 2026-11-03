@@ -8,7 +8,7 @@ Subject: clam-update: Fix encoding
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/conf/logfiles/clam-update.conf b/conf/logfiles/clam-update.conf
-index f0249e1..e331771 100644
+index a0d9efc..6378f0b 100644
 --- a/conf/logfiles/clam-update.conf
 +++ b/conf/logfiles/clam-update.conf
 @@ -7,7 +7,7 @@
@@ -21,7 +21,7 @@ index f0249e1..e331771 100644
  
  #########################################################################
 diff --git a/conf/services/clam-update.conf b/conf/services/clam-update.conf
-index 6c5e774..0cca693 100644
+index 8564476..3a7c4b7 100644
 --- a/conf/services/clam-update.conf
 +++ b/conf/services/clam-update.conf
 @@ -7,7 +7,7 @@

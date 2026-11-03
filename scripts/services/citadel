@@ -44,7 +44,7 @@ use strict;
 my $Detail 	= $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Version	= "0.1-20110109";
 
-# initialize logwatch variables 
+# initialize logwatch variables
 my $ThisLine	= "";
 my %OtherList 	= ();
 
@@ -200,13 +200,13 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ($ThisLine =~ /^\*\*\* Citadel server engine/) {
       $Starts++;
    }
-   
+
    #TD: citserver: Exiting with status 15
    elsif ($ThisLine =~ /^citserver: Exiting with status (\d+)$/) {
       $Stops{$1}++;
    }
 
-   #TD: Posting crash message 
+   #TD: Posting crash message
    elsif ($ThisLine =~ /^Posting crash message$/) {
       $Crashs++;
    }
@@ -246,11 +246,11 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ( ($ThisLine =~ /^\S+_thread\(\) exiting/) ||
            ($ThisLine =~ /^Garbage collection on own thread/) ||
            ($ThisLine =~ /^Startup thread \d+ becoming garbage collector/) ||
-           ($ThisLine =~ /^Interrupted CtdlThreadSelect/) 
+           ($ThisLine =~ /^Interrupted CtdlThreadSelect/)
    ) {
       # ignore lines
    }
-   
+
    elsif ($ThisLine =~ /^(?:Thread|Created a new thread|Garbage Collection for thread|Waiting for thread)/) {
 
       if ( ($ThisLine =~ /^Thread system stopping thread/) ||
@@ -258,7 +258,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^Thread .* caught signal/)
       ) {
          # ignore these lines
-      } 
+      }
 
       #TD: Created a new thread "SMTP Send" (0x40504950).
       elsif ($ThisLine =~ /Created a new thread "(.+)" \(([x0-9a-fA-F]+)\)/) {
@@ -292,14 +292,14 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^Context: Scheduled \d+ idle sessions for termination$/) ||
            ($ThisLine =~ /^Context: Flushed \d+ stuck sessions$/) ||
            ($ThisLine =~ /^Context: terminate_all_sessions\(\) is murdering/) ||
-           ($ThisLine =~ /^(Modules: )?\[(?:citadel-TCP|DICT_TCP)\] closing service$/) 
+           ($ThisLine =~ /^(Modules: )?\[(?:citadel-TCP|DICT_TCP)\] closing service$/)
    ) {
       # ignore these lines
    }
    #TD: Session (IMAPS) started from myhost (192.168.36.150)
    #TD: Session (citadel-TCP) started from localhost.localdomain (127.0.0.1).
    #TD: Session (LMTP) started via local socket UID:101.
-   elsif ($ThisLine =~ /^Session \(([\w-]+)\) started (?:from (\S+) \(([\da-fA-F.:]+)\)|via (local socket) (UID:-?\d+))/) { 
+   elsif ($ThisLine =~ /^Session \(([\w-]+)\) started (?:from (\S+) \(([\da-fA-F.:]+)\)|via (local socket) (UID:-?\d+))/) {
       $SessionStarted{$1}{"$2$4 [$3$5]"}++;
       $Session = "$1";
    }
@@ -347,7 +347,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^smtp_do_bounce\(\) called$/) ||
            ($ThisLine =~ /^key=<(?:msgid|submitted)?> addr=<.*> status=\d+ dsn=<.*>$/) ||
            ($ThisLine =~ /^Done processing bounces$/) ||
-           ($ThisLine =~ /^SMTPCQ: Msg No \d+: already in progress!$/) 
+           ($ThisLine =~ /^SMTPCQ: Msg No \d+: already in progress!$/)
    ) {
       # ignore these lines
    }
@@ -364,7 +364,7 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ($ThisLine =~ /^>([A-Z ]+)(?::<(.+)>)?/) {
       $SMTPclientCMDS{$1}{$2}++;
    }
- 
+
    #TD: SMTP client: delivery to <useraddr> @ <gmail.com> (user) succeeded
    elsif ($ThisLine =~ /SMTP client: delivery to <(.*)> @ <(.*)> \(.*\) (\w+)$/) {
       $SMTPclientDelivery{$3}{$2}{$1}++;
@@ -422,7 +422,7 @@ while (defined($ThisLine = <STDIN>)) {
       if ($ThisLine =~ /^SMTP server: (?:LHLO|HELO|EHLO) (\S+)/i) {
          $SMTPserverHELO{$1}++;
       }
- 
+
       #TD: SMTP server: RCPT TO:<room_spamassassin-user@localside.net>
       elsif ($ThisLine =~ /^SMTP server: RCPT TO: *<?([^\s<>]+)>?$/i) {
          $SMTPserverRCPT{$1}++;
@@ -478,18 +478,18 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^[\w ]+ already exists\.$/) ||
            ($ThisLine =~ /^(?:before| after) update:/) ||
            ($ThisLine =~ /^(?:Performing|Finished) IMAP cleanup hook$/) ||
-           ($ThisLine =~ /^Section is: \[.*\]/) || 
+           ($ThisLine =~ /^Section is: \[.*\]/) ||
            ($ThisLine =~ /^Converting CRLF to LF$/) ||
            ($ThisLine =~ /^IMAP(?:CC\[[ \d]+\]|:) client disconnected: ending session/) ||
            ($ThisLine =~ /^(Modules: )?\[IMAPS?\] closing service$/)
    ) {
       # ignore these lines
    }
- 
+
    elsif ($ThisLine =~ /^IMAP/) {
-   
+
       if ( ($ThisLine =~ /^IMAP(?:CC\[[ \d]+\]|:) <plain_auth>$/) ||
-           ($ThisLine =~ /^IMAPCC\[[ \d]+\] not subordinate to inbox$/) 
+           ($ThisLine =~ /^IMAPCC\[[ \d]+\] not subordinate to inbox$/)
 
       ) {
          # ignore these lines
@@ -508,7 +508,7 @@ while (defined($ThisLine = <STDIN>)) {
       elsif ($ThisLine =~ /^IMAP: \w?\d+ ([A-Z ]+)/) {
          $IMAPCmds{$1}++;
       }
-  
+
       #TD: IMAP: LOGIN...
       #TD: IMAPCC[51121] LOGIN...
       elsif ($ThisLine =~ /^IMAP(?:CC\[[ \d]+\]|:) (LOGIN)/) {
@@ -531,8 +531,8 @@ while (defined($ThisLine = <STDIN>)) {
          $IMAPUserLogin{$user}++;
       } elsif ($Session =~ /^POPS?/) {
          $POPUserLogin{$user}++;
-      } elsif ($Session =~ /^(?:citadel-TCP|LMTP)$/) { #ignore 
-      } else { 
+      } elsif ($Session =~ /^(?:citadel-TCP|LMTP)$/) { #ignore
+      } else {
          chomp($ThisLine);
          $OtherList{$ThisLine}++;
       }
@@ -541,7 +541,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD: Expunged 0 messages from <SpamAssassin-user>
    elsif ($ThisLine =~ /^Expunged (\d+) messages from <(.+)>/) {
-      if ($1 > 0) { $IMAPexpunge{$2} += $1; } 
+      if ($1 > 0) { $IMAPexpunge{$2} += $1; }
    }
 
    ### Citadel internal processing ###
@@ -567,7 +567,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^ft_index_message\(\) (?:adding|removing) msg/) ||
            ($ThisLine =~ /^fixed_output(?:_pre|_post)?\(\) (?:part|type)/) ||
            ($ThisLine =~ /^Skipping part \d+/) ||
-           ($ThisLine =~ /^Indexing message \d+ \[\d+ tokens\]/) || 
+           ($ThisLine =~ /^Indexing message \d+ \[\d+ tokens\]/) ||
            ($ThisLine =~ /^Indexing message #\d+ <.*>/) ||
            ($ThisLine =~ /^Flush(?:ing|ed) index cache to disk/) ||
            ($ThisLine =~ /^Delivering to room <.*>$/) ||
@@ -583,14 +583,14 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^Seeding the pseudo-random number generator/) ||
 	   ($ThisLine =~ /^Registered (?:server command|a new .+ function)/) ||
            ($ThisLine =~ /^Creating base rooms/) ||
-           ($ThisLine =~ /^Floor \d{1,3}: \d+ rooms/) || 
-           ($ThisLine =~ /^Server-hosted upgrade level is/) || 
+           ($ThisLine =~ /^Floor \d{1,3}: \d+ rooms/) ||
+           ($ThisLine =~ /^Server-hosted upgrade level is/) ||
            ### report this as status ???
-           ($ThisLine =~ /^(?:Sieve: )?Extensions:/) || 
+           ($ThisLine =~ /^(?:Sieve: )?Extensions:/) ||
            ($ThisLine =~ /registered\.$/) ||
            ($ThisLine =~ /^Initiali(?:s|z)e modules, /) ||
            ($ThisLine =~ /(?:_thread|startup|databases)\(\) (?:initializing|finished|started)/) ||
-           ($ThisLine =~ /^(?:Modules: )?Service \S+ has been manually disabled, skipping/) || 
+           ($ThisLine =~ /^(?:Modules: )?Service \S+ has been manually disabled, skipping/) ||
            ($ThisLine =~ /^Checking floor reference counts$/) ||
            ($ThisLine =~ /^Changing uid to \d+$/) ||
            ### report these files ???
@@ -614,7 +614,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^Loaded module: /) ||
            ($ThisLine =~ /^Waiting \d+ seconds for \d+ worker threads to exit$/) ||
            ($ThisLine =~ /^Existing database version on disk is/) ||
-           ($ThisLine =~ /^Upgrad(?:ing|e) modules/) || 
+           ($ThisLine =~ /^Upgrad(?:ing|e) modules/) ||
            ($ThisLine =~ /^Modules: (?:upgrade|Upgrade modules|Destroyed service)/) ||
            ### report this as warning ???
            ($ThisLine =~ /^Modules: Initializing\. CtdlThreads not yet enabled\.$/) ||
@@ -642,7 +642,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD: Deleting message <103425>
    elsif ($ThisLine =~ /Deleting message <(\d+)>$/) {
-      $CtdlMsgDeleted++; 
+      $CtdlMsgDeleted++;
    }
    #TD: 7 message(s) deleted.
    elsif ($ThisLine =~ /(\d+) message\(s\) deleted\.$/) {  # This belongs to CtdlDeleteMessages
@@ -666,11 +666,11 @@ while (defined($ThisLine = <STDIN>)) {
       push(@CtdlLogDeleted, $1);
    }
 
-   #TD: Deleting user <SYS_Citadel> 
+   #TD: Deleting user <SYS_Citadel>
    #TD: Context: Deleting user <SYS_Citadel>
    elsif ($ThisLine =~ /^(?:Context: )?Deleting user <(.*)>$/) {
       push(@CtdlUserDeleted, $1);
-   } 
+   }
 
    #TD: Deleting room <00000000033.Tasks>
    elsif ($ThisLine =~ /^(?:Context: )?Deleting room <(.*)>$/) {
@@ -699,12 +699,12 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD: Adding contact: "Full Name" <user@example.com>
    elsif ($ThisLine =~ /Adding contact: (.*)$/) {
-      $CtdlAddContact{$1}++;  
-   } 
+      $CtdlAddContact{$1}++;
+   }
 
    elsif ($ThisLine =~ /^Ctdl/) {
 
-      if ($ThisLine =~ /^$/) 
+      if ($ThisLine =~ /^$/)
       {
          # ignore these lines
       }
@@ -782,7 +782,7 @@ while (defined($ThisLine = <STDIN>)) {
       $NetHost=$2;
    }
 
-   #TD: Sent 0 octets to <valaskjalf> 
+   #TD: Sent 0 octets to <valaskjalf>
    #TD: IO[49977]CC[49977]NW[valaskjalf][49972]Sent 0 octets to <valaskjalf>
    elsif ($ThisLine =~ /^(?:IO\[\d+\]CC\[\d+\]NW\[\w+\]\[\d+\])?Sent (\d+) octets to <(.+)>/) {
       $NetNodes{"Bytes sent to"}{$2}{""} += $1;
@@ -879,8 +879,8 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^Done with RemoveContext\(\)/) ||
            ($ThisLine =~ /^RemoveContext\(\) session/) ||
            ($ThisLine =~ /^Purging session \d+/) ||
-           ($ThisLine =~ /^Searching for EUID/) || 
-           ($ThisLine =~ /^returning msgnum = -?\d+/) 
+           ($ThisLine =~ /^Searching for EUID/) ||
+           ($ThisLine =~ /^returning msgnum = -?\d+/)
    ) {
       # ignore these lines
    }
@@ -905,7 +905,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    ### XMPP ###
    elsif ( ($ThisLine =~ /^xmpp_queue_event/) ||
-           ($ThisLine =~ /^(Modules: )?\[XMPP\] closing service$/) 
+           ($ThisLine =~ /^(Modules: )?\[XMPP\] closing service$/)
    ) {
       # ignore these lines
    }
@@ -915,7 +915,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^ctdl_getscript\(\) is using script/) ||
            ($ThisLine =~ /^ctdl_getheaders\(\) was called$/) ||
            ($ThisLine =~ /^<.*> queued for Sieve processing$/) ||
-           ($ThisLine =~ /^(Modules: )?\[ManageSieve\] closing service$/) 
+           ($ThisLine =~ /^(Modules: )?\[ManageSieve\] closing service$/)
    ) {
       # ignore these lines
    }
@@ -958,7 +958,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^Sieve: top of the eval loop$/) ||
            ($ThisLine =~ /^Sieve: Doing a header comparison$/) ||
            ($ThisLine =~ /^Sieve: Header parse error, returning null$/) ||
-           ($ThisLine =~ /^Sieve: Relation is \[\d+\]$/) || 
+           ($ThisLine =~ /^Sieve: Relation is \[\d+\]$/) ||
            ($ThisLine =~ /^Sieve: the commandlist is null$/) ||
            ($ThisLine =~ /^Sieve: Eat some whitespace and return COLON, forget TEXT$/) ||
            ($ThisLine =~ /^Sieve: Doing a fileinto$/) ||
@@ -994,7 +994,7 @@ while (defined($ThisLine = <STDIN>)) {
          $OtherList{$ThisLine}++;
       }
    }
-   
+
    #TD: Action is FILEINTO, destination is <Citadel Support>
    elsif ($ThisLine =~ /^Action is ([A-Z]+), destination is <(.+)>$/) {
       $SieveMsg{$SieveMsgID}{"Action"}{$1} = $2;
@@ -1013,7 +1013,7 @@ while (defined($ThisLine = <STDIN>)) {
    ### POP3 server ###
    elsif ( ($ThisLine =~ /^Performing POP3 cleanup hook$/) ||
            ($ThisLine =~ /^POP3 client disconnected: ending session/) ||
-           ($ThisLine =~ /^(Modules: )?\[POP3S?\] closing service$/) 
+           ($ThisLine =~ /^(Modules: )?\[POP3S?\] closing service$/)
    ) {
       # ignore these lines
    }
@@ -1024,14 +1024,14 @@ while (defined($ThisLine = <STDIN>)) {
    }
 
    #TD: POP3: LIST
-   #TD: POP3: PASS... 
+   #TD: POP3: PASS...
    elsif ($ThisLine =~ /^POP3: ([.A-Z]+) ?(\S+)?/) {
       if ("$2" eq "") {
          $POPDCmds{$1}++;
       } else {
          $POPDCmds{"$1 ($2)"}++;
       }
-   } 
+   }
 
    ### POP3 client ###
    elsif ( ($ThisLine =~ /^>\d+ \d+$/) ||
@@ -1061,8 +1061,8 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ($ThisLine =~ /^Connecting to <(\S+)>$/) {
       $POPClientConnects{$1}++;
    }
- 
-   #TD: 
+
+   #TD:
    elsif ($ThisLine =~ /^<([A-Z]+)/) {
       my $cmd = $1;
       # exclude IGnet and clamav commands
@@ -1095,7 +1095,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^(?:bdb\(\)|dbenv->)/) ||
            ($ThisLine =~ /dbversion:/) ||
            ($ThisLine =~ /^ *(?:Linked|Compiled) (?:zlib|db):/) ||
-           ($ThisLine =~ /^Starting up DB/) 
+           ($ThisLine =~ /^Starting up DB/)
    ) {
       # ignore these lines
    }
@@ -1121,7 +1121,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^(?:Delete|Create) directory entry: \S+ --> \S+ @ \S+$/) ||
            ($ThisLine =~ /^Adding \S+ @ \S+ \(\S+\) to directory$/) ||
            ($ThisLine =~ /^Checking for <\S+>\.\.\.$/) ||
-           ($ThisLine =~ /^vcard client disconnected: ending session/)  
+           ($ThisLine =~ /^vcard client disconnected: ending session/)
    ) {
       # ignore these
    }
@@ -1159,7 +1159,7 @@ if ($Crashs) {
    printf "  %8i   %-36s  %12i\n", $Crashs, "Citadel crashs", 1000;
 }
 if (keys %Warnings) {
-   print_2xhash(\%Warnings, "Warnings"); 
+   print_2xhash(\%Warnings, "Warnings");
 }
 
 if ($Starts or keys %Stops or $Reloads) { print_doubleline();  }
@@ -1227,9 +1227,9 @@ if (keys %SMTPserverHELO or keys %SMTPserverEval) {
       print_2xhash(\%SMTPSSLError, "SSL Errors");
    }
 #   print "\n";
-} 
+}
 
-if ($SMTPclient_queuerun or $SMTPclient_messages or 
+if ($SMTPclient_queuerun or $SMTPclient_messages or
     keys %SMTPclientCMDS or keys %SMTPclientDelivery) {
    print "\nSMTP CLIENT:";
    print "\n------------\n";
@@ -1270,7 +1270,7 @@ if ($SMTPclient_queuerun or $SMTPclient_messages or
 #      printf "     %-50s: %5i\n", $cmd, scalar keys %{$SMTPclientCMDS{$cmd}};
 #      foreach my $addr (sort {$a cmp $b} keys %{$SMTPclientCMDS{$cmd}}) {
 #         if ($addr != "") { printf "\t%-48s: %5i\n"; $addr, $SMTPclientCMDS{$cmd}{$addr}; }
-#      } 
+#      }
 #   }
    if (keys %SMTPclientRelay) {
       print_2xhash(\%SMTPclientRelay, "Messages relayed");
@@ -1322,7 +1322,7 @@ if (keys %IMAPCmds or keys %IMAPexpunge or keys %IMAPUserLogin) {
        print_hash(\%IMAPCmds, "IMAP commands processed");
    }
    if (keys %IMAPexpunge) {
-      print_hash(\%IMAPexpunge, "Messages expunged from"); 
+      print_hash(\%IMAPexpunge, "Messages expunged from");
    }
 #   print "\n";
 }
@@ -1352,7 +1352,7 @@ if ($POPClientStarted or keys %POPCmds or keys %POPErrors) {
    printf "  %8i   %-36s  %12i\n", $POPClientEnded, "POP3 client ended", 1000;
    if ($POPClientFetched > 0) {
       print_line();
-      printf "  %8i   %-36s\n", $POPClientFetched, "Messages fetched via POP3"; 
+      printf "  %8i   %-36s\n", $POPClientFetched, "Messages fetched via POP3";
    }
    if ($POPClientProcessTime > 0 and $POPClientFetched > 0) {
       print_line();
@@ -1409,7 +1409,7 @@ if (keys %Ctdlcmds or keys %CtdlMsgCorrupted or keys %CtdlReplChecks or
    if (@CtdlLogDeleted) {
       printf "\n  %8i   %-36s  %12i\n", scalar @CtdlLogDeleted, "Logs deleted", 1000;
       foreach my $log (sort {$a cmp $b} @CtdlLogDeleted) {
-         printf "  %8i      %-36s\n", 1, $log; 
+         printf "  %8i      %-36s\n", 1, $log;
       }
    }
    if (keys %RSSfeeds) {
@@ -1449,7 +1449,7 @@ if (keys %Ctdlcmds or keys %CtdlMsgCorrupted or keys %CtdlReplChecks or
 #      foreach my $user (sort {$a cmp $b} keys %CtdlReplChecks) {
 #         printf "     %s\n", $user;
 #         foreach my $mbox (sort {$a cmp $b} keys %{$CtdlReplChecks{$user}}) {
-#            printf "\t%-48s: %5i Time(s)\n", $mbox, $CtdlReplChecks{$user}{$mbox}; 
+#            printf "\t%-48s: %5i Time(s)\n", $mbox, $CtdlReplChecks{$user}{$mbox};
 #         }
 #      }
    }
@@ -1484,7 +1484,7 @@ if ($NetProcessingTime or $NetProcessingCount or keys %NetNodes or
    }
    if (keys %NetNodes) {
 ### this doesn't make much sense
-      print_3xhash(\%NetNodes, "Network nodes");  
+      print_3xhash(\%NetNodes, "Network nodes");
    }
    if (keys %NetNoConnect) {
       print_3xhash(\%NetNoConnect, "Connections failed");

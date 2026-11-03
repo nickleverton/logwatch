@@ -136,7 +136,7 @@ while (my $line = <STDIN>) {
    } elsif ($line =~ s/^No subnet6? declaration for ([a-z\d\.]+) \(no IPv[46] addresses\)\.\s*$/No subnet declaration for $1/) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ /^If this DHCP server is authoritative for that subnet,$/) {
-      $data{'Config error'}{'missing authoritative directive'}++; 
+      $data{'Config error'}{'missing authoritative directive'}++;
    } elsif ($line =~ s/^WARNING: (Host declarations are global).\s+.*$/$1/) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ s/Not searching LDAP\s+.*$/No support for LDAP configured/) {

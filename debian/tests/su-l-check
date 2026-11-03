@@ -1,0 +1,37 @@
+#!/bin/bash
+
+##################################
+### Check detection su -l      ###
+##################################
+
+set -eo pipefail
+
+LOGWATCH_CONF_FILE="/etc/logwatch/conf/logwatch.conf"
+NEED_ERASING=1
+
+clear_logwatch_conf_file(){
+    if [ "${NEED_ERASING}" -eq "0" ]; then 
+        if [ -e "${LOGWATCH_CONF_FILE}".test.bak ]; then
+            cp "${LOGWATCH_CONF_FILE}".test.bak "${LOGWATCH_CONF_FILE}"
+            rm "${LOGWATCH_CONF_FILE}".test.bak
+        else
+            rm "${LOGWATCH_CONF_FILE}"
+        fi
+    fi
+}
+
+trap 'clear_logwatch_conf_file' 0 INT QUIT ABRT PIPE TERM
+
+cp "$(dirname "${0}")"/data/su-l "${AUTOPKGTEST_TMP}"/auth.log
+
+if  ! [ -e "${LOGWATCH_CONF_FILE}" ] ; then
+    echo "AppendVarLogToLogDirs = 0" >> "${LOGWATCH_CONF_FILE}"
+elif ! grep -q "^AppendVarLogToLogDirs" "${LOGWATCH_CONF_FILE}" ; then
+    cp "${LOGWATCH_CONF_FILE}" "${LOGWATCH_CONF_FILE}".test.bak
+    echo "AppendVarLogToLogDirs = 0" >> "${LOGWATCH_CONF_FILE}"
+else
+    sed -i.test.bak 's/^\(AppendVarLogToLogDirs = \).*/\10/' "${LOGWATCH_CONF_FILE}"
+fi
+NEED_ERASING=0
+
+/usr/sbin/logwatch --detail High --range all --service pam_unix --logdir "${AUTOPKGTEST_TMP}" --output stdout | grep -qF "ubuntu -> root"

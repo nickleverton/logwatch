@@ -13,7 +13,7 @@ logwatch \- system log analyzer and reporter
 .I service-name
 .B ] [--mailto
 .I address
-.B ] [--archives] [--range
+.B ] [--noarchives] [--range
 .I range
 .B ] [--debug
 .I level
@@ -27,7 +27,7 @@ logwatch \- system log analyzer and reporter
 .I hostname
 .B ] [--html_wrap
 .I number of characters
-.B ] [--hostformat 
+.B ] [--hostformat
 .I host based options
 .B ] [--output
 .I output-type
@@ -73,25 +73,28 @@ filters installed.
 Mail the results to the email address or user specified in
 .I address.
 .IP "\fB--range\fR range"
-You can specify a date-range to process. Common ranges are  
+You can specify a date-range to process. Common ranges are
 .I Yesterday, Today, All,
 and
 .I Help.
 Additional options are listed when invoked with the
 .I Help
 parameter.
-.IP "\fB--archives\fR"
+.IP "\fB--noarchives\fR"
 Each log-file-group has basic logfiles (i.e. /var/log/messages) as
 well as archives (i.e. /var/log/messages.? or /var/log/messages.?.gz).
-When used with "\-\-range all", this option will make Logwatch search
-through the archives in addition to the regular logfiles.  For other
-values of \-\-range, Logwatch will search the appropriate archived logs.
+By default, Logwatch will search through the archives in addition to the
+regular logfiles.  For values of \-\-range other than "all", Logwatch will
+search the appropriate archived logs. If "\-\-noarchives" is specified,
+Logwatch will not search the archived logs for any value of "\-\-range"
 .IP "\fB--debug\fR level"
 For debugging purposes.
 .I level
-can range from 0 to 100.  This will
-.I really
-clutter up your output.  You probably don't want to use this.
+typically ranges in value from 0 to 100.  This will
+clutter up your output, so you probably only want to use this when
+debugging.  Values of 100 or more will retain the temporary files
+(by default, created under /var/cache/logwatch, unless specified
+as tmpdir in the logwatch.conf file).
 .IP "\fB--filename\fR file-name"
 Save the output to
 .I file-name
@@ -149,12 +152,12 @@ the default configuration.  See \fBMORE INFORMATION\fR below for more
 information.
 .RE
 .SH EXAMPLES
-.B logwatch --service ftpd-xferlog --range all --detail high --archives
+.B logwatch --service ftpd-xferlog --range all --detail high
 .RS
 This will print out all FTP transfers that are stored in all current and archived
 xferlogs.
 .RE
-.B logwatch --service pam_pwdb --range yesterday --detail high 
+.B logwatch --service pam_pwdb --range yesterday --detail high
 .RS
 This will print out login information for the previous day...
 .RE
@@ -163,7 +166,7 @@ The directory /usr/share/doc/logwatch-* contains several files with additional
 documentation:
 .RE
 .I HOWTO-Customize-LogWatch
-.RS 
+.RS
 Documents the directory structure of Logwatch configuration and executable
 files, and describes how to customize Logwatch by overriding these default
 files.

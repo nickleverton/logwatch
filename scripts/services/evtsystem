@@ -35,6 +35,14 @@ my %Updates;
 my %UpdatesInstalled;
 my %UpdatesReadyForInstall;
 
+sub human() {
+   my $b=$_;
+   my $i;
+   for ($i=0;$b>1024;$i++) { $b/=1024 }
+   my $u=qw{B K M G T}[$i];
+   return "$b$u";
+}
+
 while (defined(my $ThisLine = <STDIN>)) {
    # User specified ignore messages, lower cased
    next if $ThisLine =~ /$Ignore_messages/i;
@@ -66,6 +74,11 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ExpandedString =~ s/processor \d+/processor X/;
       $ExpandedString =~ s/for \d+ seconds/for XX seconds/;
       $ExpandedString =~ s/(APPID|CLSID)\s+\{[0-9A-F\-]+\}/$1 {XXX}/g;
+      $ExpandedString =~ s/(Time:) \d+:\d+:\d+\.\d+ \d+\/\d+\/\d+ Z/$1 TIME/g;
+      while ($ExpandedString =~ /(\d{4,}) bytes/) {
+         my $h = &human($1);
+         $ExpandedString =~ s/$1 bytes/${h}b/g;
+      }
    }
 
    if ($System eq "Application Popup") {
@@ -185,7 +198,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       #High Detail
       next if $ExpandedString =~ /^Automatic Updates is now paused\.$/ and $Detail < 10;
       next if $ExpandedString =~ /^Windows Update started downloading an update\.$/ and $Detail < 10;
-      
+
       #Updates
       if (my ($InstallDateTime, $Updates) = $ExpandedString =~ /^Installation Ready: The following updates are downloaded and ready for installation(?:\. )?(?:This computer is currently scheduled to install these updates on (.*)|To install the updates, an administrator should log on.*|):  - (.*)$/) {
           $InstallDateTime =~ s/\?//g;
@@ -317,7 +330,7 @@ if (keys %UpdatesReadyForInstall or keys %UpdatesInstalled) {
    foreach my $Hostname (sort(keys %UpdatesReadyForInstall)) {
       # We may have removed all updates from this list when installed
       if (keys %{$UpdatesReadyForInstall{$Hostname}}) {
-         print "    Updates ready for install on $Hostname:\n"; 
+         print "    Updates ready for install on $Hostname:\n";
          foreach my $Update (sort(keys %{$UpdatesReadyForInstall{$Hostname}})) {
             print "        $Update at $UpdatesReadyForInstall{$Hostname}->{$Update}\n";
          }

@@ -4,25 +4,14 @@
 # Please file all bug reports, patches, and feature
 # requests under:
 #      https://sourceforge.net/p/logwatch/_list/tickets
-# and copy:
-#    Mike "MrC" Cappella <mike (at) cappella (dot) us>
 # Help requests and discusion can be filed under:
 #      https://sourceforge.net/p/logwatch/discussion/
 ########################################################
 
-##########################################################################
-# Postfix-logwatch: written and maintained by:
-#
-#    Mike "MrC" Cappella <mike (at) cappella (dot) us>
-#      http://logreporters.sourceforge.net/
-#
-# Please send all comments, suggestions, bug reports regarding this
-# program/module to the email address above.  I will respond as quickly
-# as possible. [MrC]
 #######################################################
 ### All work since Dec 12, 2006 (logwatch CVS revision 1.28)
 ### Copyright (c) 2006-2012  Mike Cappella
-### 
+###
 ### Covered under the included MIT/X-Consortium License:
 ###    http://www.opensource.org/licenses/mit-license.php
 ### All modifications and contributions by other persons to
@@ -52,7 +41,7 @@
 #
 
 #use Devel::Size qw(size total_size);
- 
+
 package Logreporters;
 use 5.008;
 use strict;
@@ -72,7 +61,8 @@ my $re_QID_l   = qr/(?:NOQUEUE|[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ\d]+)/
 our $re_QID;
 
 our $re_DSN     = qr/(?:(?:\d{3})?(?: ?\d\.\d\.\d+)?)/;
-our $re_DDD     = qr/(?:(?:conn_use=\d+ )?delay=-?[\d.]+(?:, delays=[\d\/.]+)?(?:, dsn=[\d.]+)?)/;
+# postfix >= 3.11 will log TLS feature information in delivery status logging by default (tls=)
+our $re_DDD     = qr/(?:(?:conn_use=\d+ )?delay=-?[\d.]+(?:, delays=[\d\/.]+)?(?:, tls=[^,]*)?(?:, dsn=[\d.]+)?)/;
 
 #MODULE: ../Logreporters/Utils.pm
 package Logreporters::Utils;
@@ -186,7 +176,7 @@ sub get_usable_sectvars(\@ $) {
 }
 
 # Print program and version info, preceeded by an optional string, and exit.
-# 
+#
 sub get_version() {
 
    print STDOUT "@_\n"  if ($_[0]);
@@ -255,7 +245,7 @@ sub get_num_scores($) {
 
 # scoretab
 #
-#  (score1, n1), (score2, n2), ... (scoreN, nN) 
+#  (score1, n1), (score2, n2), ... (scoreN, nN)
 #     $i   $i+1
 #
 # scores are 0 based (0 = 1st score)
@@ -325,7 +315,7 @@ sub get_percentiles2(\@ @) {
 #
 # Arg1 is an array ref to the sorted series
 # Arg2 is a list of frequency buckets to use
-sub get_frequencies(\@ @) { 
+sub get_frequencies(\@ @) {
    my ($aref,@blist) = @_;
 
    my @vals = ( 0 ) x (@blist);
@@ -697,7 +687,7 @@ sub init_getopts_table_common(@) {
    add_option ('help',                       sub { print STDOUT Logreporters::usage(undef); exit 0 });
    add_option ('gen_test_log=s',             sub { Logreporters::Utils::gen_test_log($_[1]); exit 0; });
    add_option ('detail=i');
-   add_option ('nodetail',                   sub { 
+   add_option ('nodetail',                   sub {
       # __none__ will set all limiters to 0 in process_limiters
       # since they are not known (Sections table is not yet built).
       push @Limiters, '__none__';
@@ -739,7 +729,7 @@ sub init_getopts_table_common(@) {
          exit 2;
       }
       foreach my $val (split(/(?:\s+|\s*,\s*)/, $lspec)) {
-         if ($val !~ /^\d+$/ and 
+         if ($val !~ /^\d+$/ and
              $val !~ /^(\d*)\.(\d+)$/ and
              $val !~ /^::(\d+)$/ and
              $val !~ /^:(\d+):(\d+)?$/ and
@@ -902,7 +892,7 @@ sub process_limiters(\@) {
 
    # Set the default value of 10 for each section if no limiter exists.
    # This allows output for each section should there be no configuration
-   # file or missing limiter within the configuration file. 
+   # file or missing limiter within the configuration file.
    foreach (@l) {
       $Opts{$_} = 10 unless exists $Opts{$_};
    }
@@ -1266,7 +1256,7 @@ sub print_unmatched_report() {
 
 =pod
    ****** Summary ********************************************************
-          2   Miscellaneous warnings 
+          2   Miscellaneous warnings
 
       20621   Total messages scanned ----------------  100.00%
     662.993M  Total bytes scanned                  695,198,092
@@ -1284,13 +1274,13 @@ sub print_unmatched_report() {
          15     Malware blocked                          0.07%
 
 
-       1978   SpamAssassin bypassed 
-         18   Released from quarantine 
-       1982   Whitelisted           
-          3   Blacklisted           
-         12   MIME error            
-         51   Bad header (debug supplemental) 
-         28   Extra code modules loaded at runtime 
+       1978   SpamAssassin bypassed
+         18   Released from quarantine
+       1982   Whitelisted
+          3   Blacklisted
+         12   MIME error
+         51   Bad header (debug supplemental)
+         28   Extra code modules loaded at runtime
 =cut
 # Prints the Summary report section
 #
@@ -1382,12 +1372,12 @@ sub print_summary_report (\@) {
                   $desc = @$desc[0] . ' ' . @$desc[1] x (42 - 2 - length(@$desc[0]));
                }
 
-               push @{$lines[$cur_level]}, 
+               push @{$lines[$cur_level]},
                   sprintf "$fmt  %-42s %6.2f%%\n", $total, $desc,
                      $$divisor == $Totals{$keyname} ? 100.00 : $Totals{$keyname} * 100 / $$divisor;
             }
             else {
-               push @{$lines[$cur_level]}, 
+               push @{$lines[$cur_level]},
                   sprintf "$fmt  %-37s $extra\n", $total, $desc, commify ($Totals{$keyname});
             }
          }
@@ -1401,8 +1391,8 @@ sub print_summary_report (\@) {
 }
 
 # Prints the Detail report section
-# 
-# Note: side affect; deletes each key in Totals/Counts 
+#
+# Note: side affect; deletes each key in Totals/Counts
 # after printout.  Only the first instance of a key in
 # the Section table will result in Detail output.
 sub print_detail_report (\@) {
@@ -1438,7 +1428,7 @@ sub print_detail_report (\@) {
       # at detail 5, print level 1, detail 6: level 2, ...
 
 #print STDERR "building: $keyname\n";
-      my ($count, $treeref) = 
+      my ($count, $treeref) =
             buildTree (%{$Counts{$keyname}}, defined ($max_level) ? $max_level : 11,
                        \@levelspecs, $Opts{'detail'} - 4, 0, $Opts{'debug'} & D_TREE);
 
@@ -1490,8 +1480,8 @@ Print out a standard percentiles report
    -------------------------------------------------------------------------------------------
    Postgrey       727.00    727.00    727.00    727.00    727.00    727.00    727.00    727.00
    ===========================================================================================
- 
- tableref: 
+
+ tableref:
    data table: ref to array of arrays, first cell is label, subsequent cells are data
  title:
    table's title
@@ -1507,7 +1497,7 @@ sub print_percentiles_report2($$$) {
    my $myfw2 = $fw2 - 1;
    my @percents = split /[ ,]/, $percentiles_str;
 
-   # Calc y label width from the hash's keys. Each key is padded with the 
+   # Calc y label width from the hash's keys. Each key is padded with the
    # string "#: ", # where # is a single-digit sort index.
    my $y_label_max_width = 0;
    for (@$tableref) {
@@ -1602,7 +1592,7 @@ sub create_level_specs($ $ $) {
          # force top N at level 1 (zero based)
          push @specsP1, { level => 0, topn => $2, threshold => 0 };
       }
-      # newer level specs 
+      # newer level specs
       elsif ($sp =~ /^::(\d+)$/) {
          push @specsP3, { level => undef, topn => 0, threshold => $1 };
       }
@@ -1624,7 +1614,7 @@ sub create_level_specs($ $ $) {
    my ($min, $max);
    foreach my $sp ( @specsP3, @specsP2, @specsP1) {
       ($min, $max) = (0, $max_level);
-      
+
       if (defined $sp->{level}) {
          $min = $max = $sp->{level};
       }
@@ -1838,9 +1828,9 @@ sub postfix_policy_spf($) {
 
    if (
         $line =~ /^Attribute: / or
-        # handler sender_policy_framework: is decisive. 
+        # handler sender_policy_framework: is decisive.
         $line =~ /^handler [^:]+/ or
-        # decided action=REJECT Please see http://www.openspf.org/why.html?sender=jrzjcez%40telecomitalia.it&ip=81.178.62.236&receiver=protegate1.zmi.at 
+        # decided action=REJECT Please see http://www.openspf.org/why.html?sender=jrzjcez%40telecomitalia.it&ip=81.178.62.236&receiver=protegate1.zmi.at
         $line =~ /^decided action=/ or
 
         # pypolicyd-spf-0.7.1
@@ -1853,7 +1843,7 @@ sub postfix_policy_spf($) {
         # Traceback (most recent call last):
         #   File "/usr/local/bin/policyd-spf", line 405, in <module>
         #     line = sys.stdin.readline()
-        # KeyboardInterrupt 
+        # KeyboardInterrupt
         $line =~ /^Read line: "/ or
         $line =~ /^Found the end of entry$/ or
         $line =~ /^Config: \{/ or
@@ -1872,7 +1862,7 @@ sub postfix_policy_spf($) {
 
    # Keep policy-spf warnings in its section
    if (my ($warn,$msg) = $line =~ /^warning: ([^:]+): (.*)$/) {
-      #TDspf warning: ignoring garbage: # No SPF 
+      #TDspf warning: ignoring garbage: # No SPF
 
       $msg =~ s/^# ?//;
       $Totals{'policyspf'}++;
@@ -1891,7 +1881,7 @@ sub postfix_policy_spf($) {
    # None;      identity=mailfrom; client-ip=192.168.0.2; helo=example.com; envelope-from=f@example.com; receiver=bogus2@example.net
    # Pass;      identity=helo;     client-ip=192.168.0.2; helo=example.com; envelope-from=<>;            receiver=bogus@example.net
    # Permerror; identity=helo;     client-ip=192.168.0.4; helo=example.com; envelope-from=f@example.com; receiver=bogus2@example.net
-   # Softfail;  identity=mailfrom; client-ip=192.168.0.6; helo=example.com; envelope-from=f@example.com; receiver=yahl@example.org 
+   # Softfail;  identity=mailfrom; client-ip=192.168.0.6; helo=example.com; envelope-from=f@example.com; receiver=yahl@example.org
    if ($line =~ /^(?:prepend Received-SPF: )?(Pass|Fail|None|Neutral|Permerror|Softfail|Temperror);? (.*)$/) {
          my $result = $1;
          my %params = $2 =~ /([-\w]+)=([^;]+)/g;
@@ -1900,7 +1890,7 @@ sub postfix_policy_spf($) {
          if ($Logreporters::TreeData::Collecting{'policyspf'}) {
             my ($id) = $params{'identity'};
             $id =~ s/mailfrom/envelope-from/;
-            
+
             $Counts{'policyspf'}{'Policy Action'}{"SPF: $result"}{join(': ',$params{'identity'},$params{$id})}{$params{'client-ip'}}{$params{'receiver'}}++;
          }
          return;
@@ -1923,19 +1913,19 @@ sub postfix_policy_spf($) {
         $line =~ /^testing:/
       )
    {
-        #TDspf testing: stripped sender=jrzjcez@telecomitalia.it, stripped rcpt=hengstberger@adv.at 
+        #TDspf testing: stripped sender=jrzjcez@telecomitalia.it, stripped rcpt=hengstberger@adv.at
         # postfix-policyd-spf-perl-2.007
         #TDspf SPF pass (Mechanism 'ip4:10.0.0.2/22' matched): Envelope-from: foo@example.com
-        #TDspf SPF pass (Mechanism 'ip4:10.10.10.10' matched): Envelope-from: anyone@sample.net 
-        #TDspf SPF pass (Mechanism 'ip4:10.10.10.10' matched): HELO/EHLO (Null Sender): mailout2.example.com 
-        #TDspf SPF fail (Mechanism '-all' matched): HELO/EHLO: mailout1.example.com 
-        #TDspf SPF none (No applicable sender policy available): Envelope-from: efrom@example.com 
-        #TDspf SPF permerror (Included domain 'example.com' has no applicable sender policy): Envelope-from: efrom@example.com 
-        #TDspf SPF permerror (Maximum DNS-interactive terms limit (10) exceeded): Envelope-from: efrom@example.com 
+        #TDspf SPF pass (Mechanism 'ip4:10.10.10.10' matched): Envelope-from: anyone@sample.net
+        #TDspf SPF pass (Mechanism 'ip4:10.10.10.10' matched): HELO/EHLO (Null Sender): mailout2.example.com
+        #TDspf SPF fail (Mechanism '-all' matched): HELO/EHLO: mailout1.example.com
+        #TDspf SPF none (No applicable sender policy available): Envelope-from: efrom@example.com
+        #TDspf SPF permerror (Included domain 'example.com' has no applicable sender policy): Envelope-from: efrom@example.com
+        #TDspf SPF permerror (Maximum DNS-interactive terms limit (10) exceeded): Envelope-from: efrom@example.com
         #TDspf Mail From (sender) check failed - Mail::SPF->new(10.0.0.1, , test.DNSreport.com) failed: 'identity' option must not be empty
-        #TDspf HELO check failed - Mail::SPF->new(, , ) failed: Missing required 'identity' option 
+        #TDspf HELO check failed - Mail::SPF->new(, , ) failed: Missing required 'identity' option
 
-        #TDspf SPF not applicable to localhost connection - skipped check 
+        #TDspf SPF not applicable to localhost connection - skipped check
 
         #print "IGNORING...\n\tLINE: $line\n\tORIG: \"$Logreporters::Reports::origline\"\n";
         return;
@@ -1949,16 +1939,16 @@ sub postfix_policy_spf($) {
    if ($line =~ /^Policy action=(.*)$/) {
       $line = $1;
 
-      #: Policy action=DUNNO 
+      #: Policy action=DUNNO
       return if $line =~ /^DUNNO/;
-      # Policy action=PREPEND X-Comment: SPF not applicable to localhost connection - skipped check 
+      # Policy action=PREPEND X-Comment: SPF not applicable to localhost connection - skipped check
       return if $line =~ /^PREPEND X-Comment: SPF not applicable to localhost connection - skipped check$/;
 
       #print "LINE: '$line'\n";
       if ($line =~ /^DEFER_IF_PERMIT SPF-Result=\[?(.*?)\]?: (.*) of .*$/) {
          my ($lookup,$message) = ($1,$2);
-         # Policy action=DEFER_IF_PERMIT SPF-Result=[10.0.0.1]: Time-out on DNS 'SPF' lookup of '[10.0.0.1]' 
-         # Policy action=DEFER_IF_PERMIT SPF-Result=example.com: 'SERVFAIL' error on DNS 'SPF' lookup of 'example.com' 
+         # Policy action=DEFER_IF_PERMIT SPF-Result=[10.0.0.1]: Time-out on DNS 'SPF' lookup of '[10.0.0.1]'
+         # Policy action=DEFER_IF_PERMIT SPF-Result=example.com: 'SERVFAIL' error on DNS 'SPF' lookup of 'example.com'
          $message =~ s/^(.*?) on (DNS SPF lookup)$/$2: $1/;
          $message =~ s/'//g;
          $Totals{'policyspf'}++;
@@ -1966,9 +1956,9 @@ sub postfix_policy_spf($) {
          return;
       }
 
-      if ($line =~ m{^\Q550 Please see http://www.openspf.\E(?:org|net)/Why\?(.*)$}) {
+      if ($line =~ m{^550(?: \d\.\d\.\d+)? Please see http://www.openspf.(?:org|net)/Why\?(.*)$}) {
          # Policy action=550 Please see http://www.openspf.org/Why?s=mfrom&id=from%40example.com&ip=10.0.0.1&r=example.net
-         # Policy action=550 Please see http://www.openspf.org/Why?s=helo;id=mailout03.example.com;ip=192.168.0.1;r=mx1.example.net 
+         # Policy action=550 Please see http://www.openspf.org/Why?s=helo;id=mailout03.example.com;ip=192.168.0.1;r=mx1.example.net
          # Policy action=550 Please see http://www.openspf.org/Why?id=someone%40example.com&ip=10.0.0.1&receiver=vps.example.net
          # Policy action=550 Please see http://www.openspf.net/Why?s=helo;id=example.com;ip=10.0.0.1;r=example.net
 
@@ -2019,7 +2009,7 @@ sub postfix_policy_spf($) {
 
          $message =~ s/^([^:]+): // and $subject = $1;
 
-         if ($message =~ /^No applicable sender policy available$/) { 
+         if ($message =~ /^No applicable sender policy available$/) {
             $message = 'No sender policy';
          }
          elsif ($message =~ s/^(Junk encountered in mechanism) '(.*?)'/$1/) {
@@ -2030,14 +2020,14 @@ sub postfix_policy_spf($) {
             #TDspf Policy action=PREPEND Received-SPF: permerror (example.com: Included domain 's.example.net' has no applicable sender policy) receiver=x.sample.com; identity=mfrom; envelope-from="ef@example.com"; helo=example.net; client-ip=10.0.0.2
             $subject .= "  (included: $2)";
          }
-         elsif ($message =~ /^Domain does not state whether sender is authorized to use '.*?' in '\S+' identity \(mechanism '(.+?)' matched\)$/) { 
+         elsif ($message =~ /^Domain does not state whether sender is authorized to use '.*?' in '\S+' identity \(mechanism '(.+?)' matched\)$/) {
             # Domain does not state whether sender is authorized to use 'returns@example.com' in 'mfrom' identity                                            (mechanism '?all' matched))
             ($mechanism,$message) = ($1,'Domain does not state if sender authorized to use');
          }
          elsif ($message =~ /^(\S+) is (not )?authorized( by default)? to use '.*?' in '\S+' identity(?:, however domain is not currently prepared for false failures)? \(mechanism '(.+?)' matched\)$/) {
             # Sender is not authorized by default to use 'from@example.com' in 'mfrom' identity, however domain is not currently prepared for false failures (mechanism '~all' matched))
             # 192.168.1.10 is     authorized by default to use 'from@example.com' in 'mfrom' identity                                                              (mechanism 'all' matched))
-            $message = join (' ', 
+            $message = join (' ',
                              $1 eq 'Sender' ? 'Sender' : 'IP',   # canonicalize IP address
                              $2 ? 'not authorized' : 'authorized',
                              $3 ? 'by default to use' : 'to use',
@@ -2090,7 +2080,7 @@ sub postfix_policy_spf($) {
      unknown      "error in processing during lookup of $query->{sender}"
      neutral      "$ip is neither permitted nor denied by domain of $query->{sender}"
      error        "encountered temporary error during SPF processing of $query->{spf_source}"
-     none         "$query->{spf_source} does not designate permitted sender hosts" 
+     none         "$query->{spf_source} does not designate permitted sender hosts"
                   "could not perform SPF query for $query->{spf_source}" );
 =cut
 
@@ -2106,7 +2096,7 @@ sub postfix_policy_spf($) {
 
       if ($reply =~ /^(?:smtp_comment=)(.*)$/) {
          $reply = $1;
-         
+
          # SPF none
          if ($reply =~ /^SPF: domain of sender (?:(?:[^@]+@)?(\S+) )?does not designate mailers/) {
             $domain = $1 ? $1 : '*unknown';
@@ -2273,7 +2263,7 @@ sub postfix_postgrey($) {
       #TDpg cleaning up old entries...
       #TDpg cleaning clients database finished. before: 207, after: 207
       #TDpg cleaning main database finished. before: 3800, after: 2539
-      #TDpg delayed 603 seconds: client=10.0.example.com, from=anyone@sample.net, to=joe@example.com 
+      #TDpg delayed 603 seconds: client=10.0.example.com, from=anyone@sample.net, to=joe@example.com
 
       #TDpg Setting uid to "504"
       #TDpg Setting gid to "1002 1002"
@@ -2725,6 +2715,7 @@ LINE: while ( <> ) {
    # ignored postfix services...
    next if $service_name eq 'postlog';
    next if $service_name =~ /^$Opts{'ignore_services'}$/o;
+   next if $p1 =~ /^[A-Z0-9]+: passing <[^>]+> to transport=lmtp$/;
 
    # common log entries up front
    if ($p1 =~ s/^connect from //) {
@@ -3140,7 +3131,7 @@ sys     0m3.005s
 #TDsdN discard:        RCPT from host[10.0.0.1]: <from@example.com>:         Sender address TEST DISCARD action;                                from=<f@sample.com> to=<eto@example.com> proto=ESMTP helo=<sample.com>
 #TDsdN discard:        RCPT from host[10.0.0.1]: <host[10.0.0.1]>:           Client host    TEST DISCARD action w/ip(client_checks);            from=<f@sample.com> to=<eto@example.com> proto=ESMTP helo=<sample.com>
 #TDsdN discard:        RCPT from host[10.0.0.1]: <host[10.0.0.1]>:           Unverified Client host triggers DISCARD action;                    from=<f@sample.net> to=<eto@example.com> proto=ESMTP helo=<10.0.0.1>
-#TDsdN hold:           RCPT from host[10.0.0.1]: <eto@example.com>:          Recipient address triggers HOLD action;                            from=<f@sample.net> to=<eto@example.com> proto=SMTP  helo=<10.0.0.1> 
+#TDsdN hold:           RCPT from host[10.0.0.1]: <eto@example.com>:          Recipient address triggers HOLD action;                            from=<f@sample.net> to=<eto@example.com> proto=SMTP  helo=<10.0.0.1>
 #TDsdN hold:           RCPT from host[10.0.0.1]: <dummy>:                    Helo command optional text...;                                     from=<f@sample.net> to=<eto@example.com> proto=ESMTP helo=<dummy>
 #TDsdN hold:           RCPT from host[10.0.0.1]: <dummy>:                    Helo command triggers HOLD action;                                 from=<f@sample.net> to=<eto@example.com> proto=ESMTP helo=<dummy>
 #TDsdN hold:           DATA from host[10.0.0.1]: <dummy>:                    Helo command triggers HOLD action;                                 from=<f@sample.net> to=<eto@example.com> proto=ESMTP helo=<dummy>
@@ -3150,7 +3141,7 @@ sys     0m3.005s
 #TDsdN redirect:       RCPT from host[10.0.0.1]: <eto@example.com>:          Recipient address triggers REDIRECT root@localhost;                from=<f@sample.net> to=<eto@example.com> proto=ESMTP helo=<sample.com>
 
 # BCC action (postfix 2.6+)
-#TDsdN bcc:            RCPT from host[10.0.0.1]: <user@example.com>:         Sender address triggers BCC root@localhost;                        from=<f@sample.net> to=<eto@sample.com> proto=ESMTP helo=<sample.net> 
+#TDsdN bcc:            RCPT from host[10.0.0.1]: <user@example.com>:         Sender address triggers BCC root@localhost;                        from=<f@sample.net> to=<eto@sample.com> proto=ESMTP helo=<sample.net>
 
          # $re_QID: discard, filter, hold, redirect, warn, bcc, replace ...
          else {
@@ -3297,14 +3288,30 @@ sys     0m3.005s
       }
 
       ### sent, forwarded, bounced, softbounce, deferred, (un)deliverable
+      #
+      # postfix >= 3.11 will log TLS feature information in delivery status logging by default (tls=)
+      # modified $re_DDD detects the corresponding tls= part, now
+      #
       elsif ($p1 =~ s/^to=<(.*?)>,(?: orig_to=<(.*?)>,)? relay=([^,]*).*, ($re_DDD), status=(\S+) //o) {
          ($relay,$status) = ($3,$5);
 
          my ($to,$origto,$localpart,$domainpart,$dsn,$p1) = process_delivery_attempt ($1,$2,$4,$p1);
 
+         my ($tlsfeatures) = $4 =~ /tls=([^,]+)/;
+         if ($tlsfeatures ne '') {
+            $domainpart = $domainpart . " (tls=" . $tlsfeatures . ")";
+         }
+
+         # postfix <= 3.10:
+         #
          #TD 552B6C20E: to=<to@sample.com>, relay=mail.example.net[10.0.0.1]:25, delay=1021, delays=1020/0.04/0.56/0.78, dsn=2.0.0, status=sent (250 Ok: queued as 6EAC4719EB)
          #TD 552B6C20E: to=<to@sample.com>, relay=mail.example.net[10.0.0.1]:25, conn_use=2 delay=1021, delays=1020/0.04/0.56/0.78, dsn=2.0.0, status=sent (250 Ok: queued as 6EAC4719EB)
          #TD DD925BBE2: to=<to@example.net>, orig_to=<to-ext@example.net>, relay=mail.example.net[2001:dead:beef::1], delay=2, status=sent (250 Ok: queued as 5221227246)
+         #
+         # postfix >= 3.11:
+         #
+         #TD4d9bVw113Wz1SwX: to=<to@example.net>, relay=mail.example.org[10.0.01]:25, delay=3.2, delays=0.09/0.05/1.8/1.2, tls=dane, dsn=2.0.0, status=sent (250 OK id=1vLFwP-00000008xhU-3ZkI)
+         #TD4d9bVw113Wz1SwX: to=<to@example.net>, relay=mail.example.org[10.0.01]:25, delay=3.2, delays=0.09/0.05/1.8/1.2, tls=may, dsn=2.0.0, status=sent (250 OK id=1vLFwP-00000008xhU-3ZkI)
 
          ### sent
          if ($status eq 'sent') {
@@ -3369,7 +3376,7 @@ sys     0m3.005s
 
 
             #TDsQ to=<envto@example.com>,                  relay=none,  delay=0.57, delays=0.57/0/0/0,      dsn=5.4.6, status=bounced (mail for sample.net loops back to myself)
-            #TDsQ to=<>,                                   relay=none,  delay=1,                                       status=bounced (mail for sample.net loops back to myself) 
+            #TDsQ to=<>,                                   relay=none,  delay=1,                                       status=bounced (mail for sample.net loops back to myself)
             #TDsQ to=<envto@example.com>,                  relay=none,  delay=0,                                       status=bounced (Host or domain name not found. Name service error for name=unknown.com type=A: Host not found)
             # XXX verify these...
             #TD EB0B8770: to=<to@example.com>, orig_to=<postmaster>, relay=none, delay=1, status=bounced (User unknown in virtual alias table)
@@ -3387,7 +3394,7 @@ sys     0m3.005s
 
             # print "bounce message from " . $to . " msg : " . $relay . "\n";
 
-            # See same code elsewhere "Note: Bounce" 
+            # See same code elsewhere "Note: Bounce"
             ### local bounce
             # XXX local v. remote bounce seems iffy, relative
             if ($relay =~ /^(?:none|local|virtual|127\.0\.0\.1|maildrop|avcheck)/) {
@@ -3518,6 +3525,53 @@ sys     0m3.005s
          $Totals{'tlsclientcertnottrusted'}++; next unless ($Collecting{'tlsclientcertnottrusted'});
          $Counts{'tlsclientcertnottrusted'}{formathost($hostip,$host)}++;
       }
+
+      # postfix >= 3.10: the following has to be covered under the $re_QID section
+      #
+      # < 3.10: 
+      # TDsd timeout after AUTH from unknown[1.2.3.4]
+      #
+      # >= 3.10:
+      # TDsd NOQUEUE: timeout after AUTH from unknown[1.2.3.4]
+      #
+      # as NOQUEUE is matched as part of $re_QID the following events have to be processed here as well (just a copy):
+      #
+      # 3.10 release notes:
+      #   The SMTP server now logs the queue ID (or "NOQUEUE") when a connection
+      #   ends abnormally (timeout, lost connection, or too many errors),
+      #   and the cleanup server now logs "queueid: canceled" when a message
+      #   transaction is started but not completed. These changes simplify
+      #   logfile analysis.
+      #
+      elsif ($p1 =~ /^(timeout|lost connection) (after [^ ]+)(?: \((?:approximately )?(\d+) bytes\))? from ([^[]*)\[([^]]+)\](?::\d+)?$/) {
+         my ($lort,$reason,$bytes,$host,$hostip) = ($1,$2,$3,$4,$5);
+         if ($lort eq 'timeout') {
+            # see also TimeoutInbound in $re_QID section
+            #TDsd timeout after RSET from example.com[192.168.0.1]
+            #TDsd timeout after DATA (6253 bytes) from example.com[10.0.0.1]
+
+            $Totals{'timeoutinbound'}++; next unless ($Collecting{'timeoutinbound'});
+            $Counts{'timeoutinbound'}{ucfirst($reason)}{formathost($hostip,$host)}{commify($bytes)}++;
+         } else {
+            #TDsd lost connection after CONNECT from mail.example.com[192.168.0.1]
+            # postfix 2.5:20071003
+            #TDsd lost connection after DATA (494133 bytes) from localhost[127.0.0.1]
+            # postfix 2.6:20080621
+            #TDsd lost connection after DATA (approximately 0 bytes) from example.com[10.0.0.1]
+
+            $Totals{'connectionlostinbound'}++; next unless ($Collecting{'connectionlostinbound'});
+            $Counts{'connectionlostinbound'}{ucfirst($reason)}{formathost($hostip,$host)}{commify($bytes)}++;
+         }
+      }
+      elsif ($p1 =~ /^(too many errors) (after [^ ]*)(?: \((?:approximately )?\d+ bytes\))? from ([^[]*)\[([^]]+)\](?::\d+)?$/) {
+         my ($error,$stage,$host,$hostip) = ($1,$2,$3,$4);
+         #TDsd too many errors after AUTH from sample.net[10.0.0.1]
+         #TDsd too many errors after DATA (0 bytes) from 1-0-0-10.example.com[10.0.0.1]
+         $Totals{'smtpprotocolviolation'}++; next unless ($Collecting{'smtpprotocolviolation'});
+         $Counts{'smtpprotocolviolation'}{ucfirst($error)}{ucfirst($stage)}{formathost($hostip,$host)}++;
+      }
+      # end of postfix >= 3.10 and $re_QID section
+
       else {
          # keep this as the last condition in this else clause
          inc_unmatched('unknownqid')  if  ! in_ignore_list ($p1);
@@ -3525,6 +3579,8 @@ sys     0m3.005s
    }
    # end of $re_QID section
 
+   # postfix < 3.10:
+   #
    elsif ($p1 =~ /^(timeout|lost connection) (after [^ ]+)(?: \((?:approximately )?(\d+) bytes\))? from ([^[]*)\[([^]]+)\](?::\d+)?$/) {
       my ($lort,$reason,$bytes,$host,$hostip) = ($1,$2,$3,$4,$5);
       if ($lort eq 'timeout') {
@@ -3574,7 +3630,7 @@ sys     0m3.005s
    # proxy-reject, proxy-accept
    elsif ($p1 =~ s/^proxy-(reject|accept): ([^:]+): //) {
       # 2.7
-      #TDsdN proxy-accept: END-OF-MESSAGE: 250 2.0.0 Ok: queued as 9BE3547AFE; from=<senderexample.com> to=<recipientexample.com> proto=ESMTP helo=<client.example.com> 
+      #TDsdN proxy-accept: END-OF-MESSAGE: 250 2.0.0 Ok: queued as 9BE3547AFE; from=<senderexample.com> to=<recipientexample.com> proto=ESMTP helo=<client.example.com>
       #TDsdN proxy-reject: END-OF-MESSAGE: 554 5.7.0 Reject, id=11912-03 - INFECTED: Eicar-Test-Signature; from=<root@example.com> to=<root@example.net> proto=ESMTP helo=<example.com>
       #TDsdN proxy-reject: END-OF-MESSAGE: ; from=<user@example.com> to=<user@example.org> proto=SMTP helo=<mail.example.net>
 
@@ -3605,7 +3661,7 @@ sys     0m3.005s
       #TDsd TLS connection established from example.com[192.168.0.1]: TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits)
       # Postfix 2.5+: status: Untrusted or Trusted
       #TDsd Untrusted TLS connection established from example.com[192.168.0.1]: TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits)
-      #TDsd Anonymous TLS connection established from localhost[127.0.0.1]: TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits) 
+      #TDsd Anonymous TLS connection established from localhost[127.0.0.1]: TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits)
 
       $Totals{'tlsserverconnect'}++; next unless ($Collecting{'tlsserverconnect'});
       $Counts{'tlsserverconnect'}{$status ? "$status: $type" : $type}{formathost($hostip,$host)}++;
@@ -4053,7 +4109,7 @@ sub process_delivery_attempt ($ $ $ $) {
 }
 
 # Processes postfix/bounce messages
-# 
+#
 sub postfix_bounce($) {
    my $line = shift;
    my $type;
@@ -4083,7 +4139,7 @@ sub postfix_bounce($) {
 
 # Processes postfix/cleanup messages
 #   cleanup always has a QID
-# 
+#
 sub postfix_cleanup($) {
    my $line = shift;
    my ($qid,$reply,$fmthost,$reject_name);
@@ -4101,11 +4157,24 @@ sub postfix_cleanup($) {
 
    ### cleanup bounced messages (always_bcc, recipient_bcc_maps, sender_bcc_maps)
    # Note: Bounce
-   #   See same code elsewhere "Note: Bounce" 
+   #   See same code elsewhere "Note: Bounce"
    #TDcQ to=<envto@example.com>,                  relay=none, delay=0.11, delays=0.11/0/0/0, dsn=5.7.1, status=bounced optional text...
    #TDcQ to=<envto@example.com>, orig_to=<envto>, relay=none, delay=0.13, delays=0.13/0/0/0, dsn=5.7.1, status=bounced optional text...
+
    if ($line =~ /^to=<(.*?)>,(?: orig_to=<(.*?)>,)? relay=([^,]*).*, ($re_DDD), status=([^ ]+) (.*)$/o) {
       # ($to,$origto,$relay,$DDD,$status,$reason) = ($1,$2,$3,$4,$5,$6);
+
+      ### deliverable messages reported by postfix/cleanup
+      #TDcQ to=<envto@example.com>, relay=none, delay=0, delays=0.1/0/0/0, dsn=2.0.0, status=deliverable optional text...
+      #
+      if ($5 eq 'deliverable') {
+         my ($to,$origto,$relay,$DDD,$reason) = ($1,$2,$3,$4,$6);
+         my ($localpart,$domainpart,$dsn);
+         ($to,$origto,$localpart,$domainpart,$dsn,$reason) = process_delivery_attempt ($to,$origto,$DDD,$reason);
+         $Counts{'deliverable'}{$dsn}{$reason}{$origto ? "$to ($origto)" : $to}++;
+         return;
+      }
+
       if ($5 ne 'bounced' and $5 ne 'SOFTBOUNCE') {
          inc_unmatched('cleanupbounce');
          return;
@@ -4147,6 +4216,13 @@ sub postfix_cleanup($) {
       # strip extraneous doubling of library path
       $line = "$1$2 $3" if ($line =~ /(unable to dlopen )([^:]+: )\2(.+)$/);
       postfix_warning($line);
+   }
+
+   # postfix >= 3.10
+   # line=removed (reason)
+   #
+   elsif ($line =~ /^removed/) {
+      $Totals{'removedfromqueue'}++;
    }
 
    else {
@@ -4203,7 +4279,7 @@ sub header_body_checks($)
       #TDcQ reject:   body   Quality replica watches!!!          from hb.example.com[10.0.0.1]; from=<efrom@example.com> to=<eto@sample.net> proto=SMTP  helo=<example.com>: optional text...
       #TDcQ reject:   header To: <user@example.com>              from hb.example.com[10.0.0.1]; from=<efrom@example.com> to=<eto@sample.net> proto=ESMTP helo=<example.com>: optional text...
       # message_reject_characters (postfix >= 2.3)
-      #TDcQ reject:   content Received: by example.com Postfix   from example.com[10.0.0.1];    from=<efrom@example.com> to=<eto@sample.net> proto=ESMTP helo=.example.com>: 5.7.1 disallowed character 
+      #TDcQ reject:   content Received: by example.com Postfix   from example.com[10.0.0.1];    from=<efrom@example.com> to=<eto@sample.net> proto=ESMTP helo=.example.com>: 5.7.1 disallowed character
 
       #TDcQ filter:   header To: to@example.com                  from hb.example.com[10.0.0.1]; from=<efrom@example.com> to=<eto@sample.net> proto=ESMTP helo=<example.com>: transport:destination
       #TDcQ hold:     header Message-ID: <user@example.com>      from localhost[127.0.0.1];     from=<efrom@example.com> to=<eto@sample.net> proto=ESMTP helo=<example.com>: optional text...
@@ -4226,7 +4302,7 @@ sub header_body_checks($)
 
    else {
       # smtp_body_checks, smtp_header_checks, smtp_mime_header_checks, smtp_nested_header_checks (postfix >= 2.5)
-      #TDsQ replace:  header Sender:   <from@example.com>                                                                                                                  : Sender:   <fm2@sample.net> 
+      #TDsQ replace:  header Sender:   <from@example.com>                                                                                                                  : Sender:   <fm2@sample.net>
 
       $trigger = $p3; $host = ''; $eto = ''; $p4 = $part eq 'body' ? 'smtp_body_checks' : 'smtp_*header_checks';
 
@@ -4322,7 +4398,7 @@ sub milter_common($) {
    #TDcQ milter-reject:  END-OF-MESSAGE from milterC.example.com[10.0.0.1]: 5.7.1 Some problem;                                      from=<efrom@example.com> to=<eto@sample.net>  proto=SMTP  helo=<example.com>
    #TDcQ milter-reject:  CONNECT        from milterC.example.com[10.0.0.2]: 5.7.1 Some problem;                                                                                    proto=SMTP
    #TDcQ milter-hold:    END-OF-MESSAGE from milterC.example.com[10.0.0.3]: milter triggers HOLD action;                             from=<efrom@example.com> to=<eto@example.net> proto=ESMTP helo=<example.com>
-   #TDcQ milter-discard: END-OF-MESSAGE from milterC.example.com[10.0.0.4]: milter triggers DISCARD action;                          from=<efrom@example.com> to=<eto@example.net> proto=ESMTP helo=<example.com> 
+   #TDcQ milter-discard: END-OF-MESSAGE from milterC.example.com[10.0.0.4]: milter triggers DISCARD action;                          from=<efrom@example.com> to=<eto@example.net> proto=ESMTP helo=<example.com>
 #   84B82AC8B3: milter-reject: END-OF-MESSAGE from localhost[127.0.0.1]: 5.7.1 Blocked
 
    my ($efrom,$eto,$proto,$helo) = strip_ftph($line);
@@ -4404,6 +4480,7 @@ sub postfix_postscreen {
    }
    elsif ($line =~ /^DNSBL rank (\S+) for \[([^]]+)\](?::\d+)?$/) {
       $Counts{'postscreen'}{'dnsbl'}{$2}{$1}++      if $Collecting{'postscreen'};
+      $Counts{'dnsblranks'}{$1}{$2}++  if $Collecting{'postscreen'};
    }
 
    elsif ($line =~ /^(CONNECT|COMMAND (?:(?:TIME|COUNT|LENGTH) LIMIT|PIPELINING)|NON-SMTP COMMAND|BARE NEWLINE) from \[([^\]]+)\]:\d+/) {
@@ -4664,7 +4741,7 @@ sub postfix_warning($) {
       #TDsd warning: example.com[192.168.0.1] sent message header instead of SMTP command: From: "Someone" <40245426501example.com>
       # current
       #TDsd warning: non-SMTP command from sample.net[10.0.0.1]: Received: from 192.168.0.1 (HELO bogus.sample.com)
-      #TDs warning: 6B01A8DEF: non-ESMTP response from mail.example.com[192.168.0.1]:25: 
+      #TDs warning: 6B01A8DEF: non-ESMTP response from mail.example.com[192.168.0.1]:25:
 
       $Totals{'smtpconversationerror'}++; return unless ($Collecting{'smtpconversationerror'});
       $host .= ' :' . $port   if ($port and $port ne '25');
@@ -4776,8 +4853,8 @@ sub postfix_warning($) {
       #TDsd warning: 009314BD9E: read timeout on cleanup socket
       $warning =~ s/^$re_QID: (read timeout on \S+ socket)/$1/;
 
-      #TDsd warning: Read failed in network_biopair_interop with errno=0: num_read=0, want_read=11 
-      #TDs warning: Read failed in network_biopair_interop with errno=0: num_read=0, want_read=11 
+      #TDsd warning: Read failed in network_biopair_interop with errno=0: num_read=0, want_read=11
+      #TDs warning: Read failed in network_biopair_interop with errno=0: num_read=0, want_read=11
       $warning =~ s/^(Read failed in network_biopair_interop) with .*$/$1/;
 
 =cut
@@ -4890,11 +4967,11 @@ sub cleanhostreply($ $ $ $) {
          $dsn = "$dsn $1"; $r1 = "see $2";
       }
       elsif ($r1 =~ /^Resources temporarily not available - Please try again later \[#(\d\.\d+\.\d+)\]\.$/o) {
-         #Yahoo 451 Resources temporarily not available - Please try again later [#4.16.5]. 
+         #Yahoo 451 Resources temporarily not available - Please try again later [#4.16.5].
          $dsn = "$dsn $1"; $r1 = "resources not available";
       }
       elsif ($r1 =~ /^Message temporarily deferred - (\[\d+\])/o) {
-         # Yahoo: 451 Message temporarily deferred - [160] 
+         # Yahoo: 451 Message temporarily deferred - [160]
          $dsn = "$dsn $1"; $r1 = '';
       }
    }
@@ -5035,7 +5112,7 @@ sub init_getopts_table() {
 #   6. A hash to a divisor used to calculate the percentage of a total for that key
 #
 # Use begin_section_group/end_section_group to create groupings around sections.
-# 
+#
 # Sections can be freely reordered if desired, but maintain proper group nesting.
 #
 #
@@ -5048,7 +5125,7 @@ sub init_getopts_table() {
 # require special-case processing to distinguish 4xx temporary rejects from 5xx
 # permanent rejects in various Totals{'totalrejects*'} counts, and in the
 # Totals{'totalrejects'} tally.
-# 
+#
 # Sections can be freely reordered if desired.
 sub build_sect_table() {
    if ($Opts{'debug'} & Logreporters::D_SECT) {
@@ -5190,6 +5267,7 @@ sub build_sect_table() {
    add_section ($S, 'bouncefailed',                1, 'd', 'Bounce failure');
    add_section ($S, 'postscreen',                  1, 'd', 'Postscreen');
    add_section ($S, 'dnsblog',                     1, 'd', 'DNSBL log');
+   add_section ($S, 'dnsblranks',                  1, 'd', 'DNSBL ranks');
 
    add_section ($S, 'envelopesenders',             1, 'd', 'Envelope senders');
    add_section ($S, 'envelopesenderdomains',       1, 'd', 'Envelope sender domains');
@@ -5246,7 +5324,7 @@ sub build_sect_table() {
    end_section_group ($S, 'postfixstate');
 
    begin_section_group ($S, 'backwardscompatible', "\n");
-   add_section ($S, 'backwardscompatible',         1, 'd', 'Running in backwards compatibile mode');
+   add_section ($S, 'backwardscompatible',         1, 'd', 'Running in backwards compatible mode');
    end_section_group ($S, 'backwardscompatible');
 
    if ($Opts{'debug'} & Logreporters::D_SECT) {
@@ -5291,7 +5369,7 @@ sub get_reject_key($) {
    return;
 }
 
-# Replace bare reject limiters with specific reject limiters 
+# Replace bare reject limiters with specific reject limiters
 # based on reject_reply_patterns
 #
 sub expand_bare_reject_limiters()

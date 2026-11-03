@@ -395,6 +395,8 @@ while (my $line = <STDIN>) {
       next;
    }
 
+   # http_rc checked even if not set, so we set a default
+   $field{http_rc} = 0;
    # hash the results so we can identify the fields
    #
    for my $i (0..$#log_fields) {

@@ -1,0 +1,214 @@
+########################################################
+# Please file all bug reports, patches, and feature
+# requests under:
+#      https://sourceforge.net/p/logwatch/_list/tickets
+# Help requests and discusion can be filed under:
+#      https://sourceforge.net/p/logwatch/discussion/
+########################################################
+
+#######################################################
+## Copyright (c) 2025 Frank Crawford <frank@crawford.emu.id.au>
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+#########################################################
+## Based on a script by Matthew McGillis
+#########################################################
+
+use lib "/usr/share/logwatch/lib";
+use strict;
+use POSIX;
+use Logwatch ':dates';
+eval "use Date::Manip"; my $hasDM = $@ ? 0 : 1;
+
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+my $DebugCounter = 0;
+
+my $SearchDate = TimeFilter($ARGV[0] || '%Y-%m-%d %H:%M:%S');
+
+my $pathto_dnf5 = $ENV{'pathto_dnf5'} || '/usr/bin/dnf';
+my $dnf5_uses_UTC = $ENV{'dnf5_uses_utc'} || 0;
+
+if ( ! -f "$pathto_dnf5" ) {
+   print STDERR "\n\nDEBUG: Exiting DNF5 Filter - dnf5 not found at $pathto_dnf5\n" if $Debug >= 5;
+   exit(0);
+}
+
+if ( $Debug >= 5 ) {
+   print STDERR "\nDEBUG: Inside dnf5 Filter \n";
+   print STDERR "DEBUG: Path to dnf: $pathto_dnf5\n";
+   print STDERR "DEBUG: Looking For: " . $SearchDate . "\n";
+   print STDERR "DEBUG: dnf5_uses_UTC: " . $dnf5_uses_UTC . "\n";
+   $DebugCounter = 1;
+}
+
+open(VERSION, '-|', $pathto_dnf5, '--version') || exit(0);
+my $version = <VERSION>;
+if ( $version !~ "dnf5" ) {
+   if ( $Debug >= 5 ) {
+      print STDERR "DEBUG: Version does not match dnf5: $version\n";
+   }
+   exit(1);
+}
+
+if ( !$hasDM and $dnf5_uses_UTC and $Debug ) {
+   print STDERR "DEBUG: Date::Manip not found so cannot convert from UTC to localtime\n";
+}
+
+#Init Hashes
+my (
+   %PackageInstall,
+   %PackageUpgrade,
+   %PackageDowngrade,
+   %PackageReinstall,
+   %PackageRemove,
+   %PackageReplaced
+);
+
+my @InfoMessages = ();
+
+open(LISTLINE, '-|', $pathto_dnf5, 'history', 'list', '--reverse') || die "can't run $pathto_dnf5: $!";
+while ( my $ListLine = <LISTLINE> ) {
+   my ($ID, $Cmd, $Date, $Count) = ($ListLine =~ /([ \d]+) +(.*) +([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}) +(\d+)/);
+   if ( $Debug >= 20 ) {
+      print STDERR "DEBUG($DebugCounter): $ListLine";
+      $DebugCounter++;
+   }
+
+   if ( $dnf5_uses_UTC and defined($Date) ) {
+      my $new_date = ParseDate($Date);
+      $new_date = Date_ConvTZ($new_date, "UTC") if $new_date;
+
+      if ( ! $new_date ) {
+         print STDERR "DEBUG($DebugCounter): Error converting date from UTC to localtime: $Date\n" if $Debug;
+      } else {
+         $Date = UnixDate( $new_date, $ARGV[0] || '%Y-%m-%d %H:%M:%S' );
+         print STDERR "DEBUG($DebugCounter): Local Date: $Date\n" if $Debug >= 20;
+      }
+   }
+
+   if ( $Date =~ /^$SearchDate/o ) {
+      open (INFOLINE, '-|', $pathto_dnf5, 'history', 'info', "$ID") || die "can't run $pathto_dnf5: $!";
+      while ( my $InfoLine = <INFOLINE> ) {
+         if ( $Debug >= 10 and $InfoLine =~ /^[^\s]/ ) {
+            print STDERR "DEBUG($DebugCounter): $InfoLine";
+            $DebugCounter++;
+         }
+
+         if ( $InfoLine =~ /(Groups|Environments) altered:/ ) {
+            push(@InfoMessages, $InfoLine);
+         }
+
+         next if ( $InfoLine =~ /^\s*$/ or $InfoLine =~ /^[^\s]/ );
+         my ($Action, $Package, $Reason, $Repository) = ($InfoLine =~ / *([^\s]+) +([^\s]+) +(.+) +([^\s]+)$/);
+          if ( $Debug >= 5 ) {
+             print STDERR "DEBUG($DebugCounter): $InfoLine";
+             print STDERR "DEBUG($DebugCounter): Action = $Action, Package = $Package\n";
+             $DebugCounter++;
+          }
+
+          if ( $Action !~ "Action" ) {
+             my ($Name, $EVRA, $Arch) = ($Package =~ /([^\s]+)-(\d+:[^\s-]+-[^\s]+\.([^\s.]+))/);
+             if ( $Debug >= 5 ) {
+                my $DC = $DebugCounter - 1;
+                print STDERR "DEBUG($DC): Name = $Name, EVRA = $EVRA, Arch = $Arch\n";
+             }
+
+            if ( !defined($Name) ) {
+               push(@InfoMessages, $InfoLine);
+            } elsif ( $Action =~ "Install" ) {
+               $PackageInstall{$Name . ":" . $Arch} = $EVRA;
+            } elsif ( $Action =~ "Upgrade" ) {
+               $PackageUpgrade{$Name . ":" . $Arch} = $EVRA;
+            } elsif ( $Action =~ "Downgrade" ) {
+               $PackageDowngrade{$Name . ":" . $Arch} = $EVRA;
+            } elsif ( $Action =~ "Reinstall" ) {
+               $PackageReinstall{$Name . ":" . $Arch} = $EVRA;
+            } elsif ( $Action =~ "Remove" ) {
+               $PackageRemove{$Name . ":" . $Arch} = $EVRA;
+            } elsif ( $Action =~ "Replaced" ) {
+               $PackageReplaced{$Name . ":" . $Arch} = $EVRA;
+            } else {
+               push(@InfoMessages, $InfoLine);
+            }
+         }
+      }
+   }
+}
+
+if (keys %PackageInstall) {
+   print "\nPackages Installed:\n";
+   foreach my $ThisOne (sort {lc($a) cmp lc($b)} keys %PackageInstall) {
+      my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
+      print "   " . $Name . ": " . $PackageInstall{$ThisOne} . "\n";
+   }
+}
+if (keys %PackageReinstall) {
+   print "\nPackages Reinstalled:\n";
+   foreach my $ThisOne (sort {lc($a) cmp lc($b)} keys %PackageReinstall) {
+      my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
+      print "   " . $Name . ": " . $PackageReinstall{$ThisOne} . "\n";
+   }
+}
+if (keys %PackageUpgrade) {
+   print "\nPackages Updated:\n";
+   foreach my $ThisOne (sort {lc($a) cmp lc($b)} keys %PackageReplaced) {
+      if ( defined($PackageUpgrade{$ThisOne}) ) {
+         my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
+         print "   " . $Name . ": " . $PackageReplaced{$ThisOne} . " -> " . $PackageUpgrade{$ThisOne} . "\n";
+      } elsif ( !defined($PackageDowngrade{$ThisOne}) ) {
+         if ( $Debug >= 5 ) {
+            print STDERR "\nDEBUG($DebugCounter): Action = Updated->Removed, Package = $ThisOne\n";
+            $DebugCounter++;
+         }
+         $PackageRemove{$ThisOne} = $PackageReplaced{$ThisOne};
+      }
+   }
+}
+if (keys %PackageDowngrade) {
+   print "\nPackages Downgraded:\n";
+   foreach my $ThisOne (sort {lc($a) cmp lc($b)} keys %PackageReplaced) {
+      if ( defined($PackageDowngrade{$ThisOne}) ) {
+         my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
+         print "   " . $Name . ": " . $PackageReplaced{$ThisOne} . " -> " . $PackageDowngrade{$ThisOne} . "\n";
+      } elsif ( !defined($PackageUpgrade{$ThisOne}) ) {
+         if ( $Debug >= 5 ) {
+            print STDERR "\nDEBUG($DebugCounter): Action = Downgraded->Removed, Package = $ThisOne\n";
+            $DebugCounter++;
+         }
+         $PackageRemove{$ThisOne} = $PackageReplaced{$ThisOne};
+      }
+   }
+}
+if (keys %PackageRemove) {
+   print "\nPackages Erased:\n";
+   foreach my $ThisOne (sort {lc($a) cmp lc($b)} keys %PackageRemove) {
+      my ($Name, $Arch) = ($ThisOne =~ /([^\s]+):([^\s]+)/ );
+      print "   " . $Name . ": " . $PackageRemove{$ThisOne} . "\n";
+   }
+}
+
+if (@InfoMessages) {
+   print "\nInformation Messages:\n";
+   foreach my $ThisOne (@InfoMessages) {
+      print "   " . $ThisOne;
+   }
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3

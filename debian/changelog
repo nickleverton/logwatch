@@ -1,3 +1,116 @@
+logwatch (7.15-1) unstable; urgency=medium
+
+  * New upstream release
+  * Drop upstreamed 0005-dovecot-Login-aborted.patch
+
+ -- Eric Dorland <eric@debian.org>  Sun, 26 Jul 2026 00:42:55 -0400
+
+logwatch (7.14-5) unstable; urgency=medium
+
+  [ Renan Rodrigo ]
+  * Add dep8 test to check --detail levels
+
+ -- Eric Dorland <eric@debian.org>  Sun, 05 Jul 2026 22:58:39 -0400
+
+logwatch (7.14-4) unstable; urgency=medium
+
+  * Drop now unused Suggests
+  * Cherrypick upstream patch for dovecot "Login aborted" failures
+  * Remove redundant Priority: optional from source stanza.
+  * Update standards version to 4.7.4, no changes needed.
+  * Add ITP, RFP bugs in 5.0-1.
+
+ -- Eric Dorland <eric@debian.org>  Sun, 14 Jun 2026 18:04:48 -0400
+
+logwatch (7.14-3) unstable; urgency=medium
+
+  * Add debian/upstream/metadata
+  * Set upstream metadata fields: Bug-Database, Repository-Browse.
+
+ -- Eric Dorland <eric@debian.org>  Sat, 11 Apr 2026 12:22:59 -0400
+
+logwatch (7.14-2) unstable; urgency=medium
+
+  * Update watch file format version to 5.
+  * Add proper machine readable debian/copyright
+  * Update Standards-Version to 4.7.3
+
+ -- Eric Dorland <eric@debian.org>  Sat, 28 Feb 2026 13:09:05 -0500
+
+logwatch (7.14-1) unstable; urgency=medium
+
+  * New upstream release (Closes: 941032, 1125745)
+  * Add upstream-vcs-tag to include git history
+
+ -- Eric Dorland <eric@debian.org>  Thu, 22 Jan 2026 14:11:49 -0500
+
+logwatch (7.13-1) unstable; urgency=medium
+
+  * New upstream version 7.13
+  * Update standards version to 4.6.2, no changes needed.
+  * Update watch file format version to 4.
+  * Fix the watchfile to find new tarballs
+  * Add eric@debian.org as an uploader
+
+ -- Eric Dorland <eric@debian.org>  Fri, 07 Nov 2025 13:12:09 -0500
+
+logwatch (7.12-3) unstable; urgency=medium
+
+  * Tweak output of the packages-and-report test
+  * Add salsa CI config
+  * Disable packages-and-report test temporarily, which is failing
+    (Closes: 1098314)
+
+ -- Eric Dorland <eric@debian.org>  Tue, 25 Feb 2025 00:38:03 -0500
+
+logwatch (7.12-2) unstable; urgency=medium
+
+  * Team upload, salsa debian namespace
+  * Add needed dependency on libhtml-parser-perl
+  * Run wrap-and-sort
+
+ -- Eric Dorland <eric@debian.org>  Sun, 02 Feb 2025 18:43:32 -0500
+
+logwatch (7.12-1) unstable; urgency=medium
+
+  * Team upload, salsa debian namespace
+  * New upstream version 7.12, should fix ssh parsing
+  * Add output artifact for packages-and-report test
+  * Enable pristine-tar by default
+
+ -- Eric Dorland <eric@debian.org>  Sat, 01 Feb 2025 15:06:55 -0500
+
+logwatch (7.11-1) unstable; urgency=medium
+
+  * Team upload, salsa debian namespace
+  * New upstream version 7.11 (Closes: #1091969)
+  * Delete upstreamed patches
+  * Refresh patches
+
+ -- Eric Dorland <eric@debian.org>  Mon, 27 Jan 2025 00:34:13 -0500
+
+logwatch (7.7-2) unstable; urgency=medium
+
+  * Team upload, salsa debian namespace.
+  * Merge salsa git and uploaded package.
+  * Merge most of the delta from Ubuntu
+    - Fix typo in extreme-networks script
+    - Ignore securetty missing messages from pam_unix (LP #1890749)
+    - Fix zfs detection (LP #1880211)
+    - Add tests (LP #1679329, LP #1577948), except for "detail" test as it
+      fails.
+    New delta to Ubuntu in tests: allow for sbin to not be in PATH.
+    We're keeping libsys-cpu-perl, libsys-meminfo-perl in recommends.
+  * tests/packages-and-report: avoid installing packages ourselves
+
+  [ Debian Janitor ]
+  * Trim trailing whitespace.
+  * Bump debhelper from old 11 to 13.
+  * Set debhelper-compat version in Build-Depends.
+  * Update standards version to 4.6.1, no changes needed.
+
+ -- Chris Hofstaedtler <zeha@debian.org>  Sat, 04 Jan 2025 18:04:55 +0100
+
 logwatch (7.7-1) unstable; urgency=medium
 
   * New upstream version 7.7
@@ -783,7 +896,7 @@ logwatch (5.0-2) unstable; urgency=low
 
 logwatch (5.0-1) unstable; urgency=low
 
-  * Initial Release.
+  * Initial Release. Closes: #230602, #232127
   * Reporting for many services should work, including cron, ssh, courier,
     exim.
   * Please report bugs. If a particular service has no output, I need the path

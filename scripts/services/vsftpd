@@ -47,7 +47,7 @@ $TotalKBytesOut,    $TotalMBytesIn,
 $TotalMBytesOut,    $User
 );
 #Init Arrays
-my ( 
+my (
 @CreatedDirs,           @DeletedFiles,          @DownloadedFiles,
 @FailedCreatedDirs,     @FailedCreatedFiles,    @FailedDeletedFiles,
 @FailedDownloadedFiles, @FailedRemovedDirs,     @FailedRemovedFiles,
@@ -206,7 +206,7 @@ if ( $Detail > 5 ) {
    if ( $#FailedDeletedFiles >= 0) {
       print "\n Failed Deleted\n";
       print @FailedDeletedFiles;
-   } 
+   }
 
    if ( $#CreatedDirs >= 0 ) {
       print "\nCreated Directories: (Total: $TotalCreatedDirs)\n";

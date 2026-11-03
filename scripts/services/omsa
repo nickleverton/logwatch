@@ -36,8 +36,13 @@ my %OtherList;
 #     \d+ \d+ - (\w+) Service  (.*)
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   my ($Service,$Message) = ($ThisLine =~ /^\d+ \d+ - (\w+) Service  (.*)$/);
-   if ($Message =~ /fail|disable|replace/i) {
+   my ($Service, $Severity, $Category, $MessageID, $Message);
+   if (($Service, $Severity, $Category, $MessageID, $Message) = ($ThisLine =~ /^\d+ \d+ - (\w+) Service  Severity: ([^,]+), Category: ([^,]+), MessageID: ([^,]+), Message: (.*)/)) {
+   } else {
+       # Old style
+       ($Service,$Message) = ($ThisLine =~ /^\d+ \d+ - (\w+) Service  (.*)$/);
+   }
+   if ($Message =~ /error|fail|degraded|disable|replace|timeout/i or (defined($Severity) and $Severity eq "Critical")) {
       # Service erroneously detects failure on service startup
       next if (($Service eq "Instrumentation") and $Message =~ /^Power supply detected a failure.*Previous state was: Unknown/);
       $ServiceError{$Service}->{$Message}++;
@@ -46,25 +51,29 @@ while (defined(my $ThisLine = <STDIN>)) {
       if ($Service eq "Instrumentation") {
          # Service erroneously detects absence on service startup
          next if ($Message =~ /^Battery sensor detected absence value/);
-         next if (($Message =~ /^IPMI status.*Interface:/) and ($Detail < 10));
-         next if (($Message =~ /^Server Administrator start.*/) and ($Detail < 10));
+         next if (($Message =~ /^Detected new peak power value/) and ($Detail < 5));
+         next if (($Message =~ /IPMI status.*[Ii]nterface:/) and ($Detail < 10));
+         next if (($Message =~ /Administrator .* (?:start|stopped).*/) and ($Detail < 10));
          next if (($Message =~ /^Systems Management Data Manager (?:Started|Stopped)/) and ($Detail < 10));
-      } elsif ($Service eq "Storage") {
-         next if (($Message =~ /^Controller event log: Battery (?:Present|charge complete|started charging|temperature is normal)/) and ($Detail < 5));
-         next if (($Message =~ /^Controller event log: (Board Revision|Controller hardware revision ID)/) and ($Detail < 10));
-         next if (($Message =~ /^Controller event log: Current capacity of the battery is above threshold/) and ($Detail < 5));
-         next if (($Message =~ /^Controller event log: Enclosure .* (:?communication restored|discovered)/) and ($Detail < 10));
-         next if (($Message =~ /^Controller event log: Firmware initialization started/) and ($Detail < 10));
-         next if (($Message =~ /^Controller event log: Inserted:/) and ($Detail < 5));
-         next if (($Message =~ /^Controller event log: PD .* is not a certified drive/) and ($IgnoreNonCertifiedDrives));
-         next if (($Message =~ /^Controller event log: Package version/) and ($Detail < 10));
-         next if (($Message =~ /^Controller event log: Patrol Read (started|stopped|resumed)/) and ($Detail < 5));
-         next if (($Message =~ /^Controller event log: Shutdown command received from host/) and ($Detail < 1));
-         next if (($Message =~ /^Controller event log: Time established as/) and ($Detail < 10));
-         next if (($Message =~ /^Controller event log: Unexpected sense: Encl PD .* CDB: 12 00 00 00 (:?04|20) 00, Sense: 5\/24\/00/) and ($IgnoreNonCertifiedDrives));
-         next if (($Message =~ /^Controller event log: Unexpected sense: PD .* CDB: 12 01 dc 01 1d 00, Sense: (4\/cf|5\/24)\/00/) and ($IgnoreNonCertifiedDrives));
+      } elsif ($Service =~ "Storage") {
+         next if (($Message =~ /^Controller.* event log: Battery (?:Present|charge complete|started charging|temperature is normal)/) and ($Detail < 5));
+         next if (($Message =~ /^Controller.* event log: Controller operating temperature within normal range/) and ($Detail < 5));
+         next if (($Message =~ /^Controller.* event log: (Board Revision|Controller hardware revision ID)/) and ($Detail < 10));
+         next if (($Message =~ /^Controller.* event log: Current capacity of the battery is above threshold/) and ($Detail < 5));
+         next if (($Message =~ /^Controller.* event log: Enclosure .* (?:communication restored|discovered)/) and ($Detail < 10));
+         next if (($Message =~ /^Controller.* event log: Firmware initialization started/) and ($Detail < 10));
+         next if (($Message =~ /^Controller.* event log: Host driver is loaded and operational/) and ($Detail < 5));
+         next if (($Message =~ /^Controller.* event log: Inserted:/) and ($Detail < 5));
+         next if (($Message =~ /^Controller.* event log: PD .* is not a certified drive/) and ($IgnoreNonCertifiedDrives));
+         next if (($Message =~ /^Controller.* event log: Package version/) and ($Detail < 10));
+         next if (($Message =~ /^Controller.* event log: Shutdown command received from host/) and ($Detail < 1));
+         next if (($Message =~ /^Controller.* event log: Time established as/) and ($Detail < 10));
+         next if (($Message =~ /^Controller.* event log: Unexpected sense: Encl PD .* CDB: 12 00 00 00 (?:04|20) 00, Sense: 5\/24\/00/) and ($IgnoreNonCertifiedDrives));
+         next if (($Message =~ /^Controller.* event log: Unexpected sense: PD .* CDB: 12 01 dc 01 1d 00, Sense: (4\/cf|5\/24)\/00/) and ($IgnoreNonCertifiedDrives));
+         next if (($Message =~ /Disk .* is not supplied by an authorized hardware provider/) and ($IgnoreNonCertifiedDrives));
+         next if (($Message =~ /Patrol Read .*(started|stopped|resumed|completed)/) and ($Detail < 5));
          next if (($Message =~ /SCSI sense data:? \(?Sense key:  5 Sense code: 24 Sense qualifier:  0/) and ($IgnoreNonCertifiedDrives));
-         next if (($Message =~ /^Disk found is not supplied by an authorized hardware provider/) and ($IgnoreNonCertifiedDrives));
+         next if (($Message =~ /Unexpected sense: PD .*, Sense: b\/00\/00/) and ($IgnoreNonCertifiedDrives));
          next if (($Message =~ /^The battery charge cycle is complete\./) and ($Detail < 5));
          next if (($Message =~ /^The controller battery Learn cycle will start in (?:\d+) days\./) and ($Detail < 5));
          next if (($Message =~ /^The Patrol Read has (started|stopped|resumed)/) and ($Detail < 5));

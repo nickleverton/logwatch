@@ -68,4 +68,3 @@ override_dh_install:
 
 override_dh_installcron:
 	dh_installcron --name=00logwatch
-

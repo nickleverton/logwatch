@@ -52,7 +52,7 @@ $xfer_byte_rcvd,    $xfer_byte_sent,    $xfer_port_type,
 $xfer_way,
 );
 #Init Array
-my @OtherList = (); 
+my @OtherList = ();
 
 #Init Hashes
 my (

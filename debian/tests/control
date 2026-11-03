@@ -1,0 +1,16 @@
+Tests: basic-checks
+Depends: @
+Restrictions: superficial
+
+Tests: syntax-check
+Depends: liburi-perl, @
+Restrictions: allow-stderr
+
+Tests: su-l-check apparmor-unmatched-entries detail
+Depends: @
+Restrictions: needs-root
+
+# Disabled since it fails on newer upstream versions
+# Tests: packages-and-report
+# Depends: openssh-server, @
+# Restrictions: needs-root isolation-container

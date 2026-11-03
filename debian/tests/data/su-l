@@ -1,0 +1,2 @@
+Jul 27 15:29:50 test-logwatch su: pam_unix(su-l:session): session opened for user root by ubuntu(uid=0)
+Jul 27 23:22:22 test-logwatch su: pam_unix(su-l:session): session closed for user root

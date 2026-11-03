@@ -54,7 +54,7 @@ my (
 
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   if ( 
+   if (
       ($ThisLine =~ /Using cached catalog/) or
       ($ThisLine =~ /Caching catalog for /) or
       ($ThisLine =~ /Caching node for /) or

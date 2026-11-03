@@ -8,7 +8,7 @@ Bug-Debian: https://bugs.debian.org/862337
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/scripts/services/cron b/scripts/services/cron
-index 4a5db98..ee7e29e 100644
+index a3d1ffb..7c994ee 100644
 --- a/scripts/services/cron
 +++ b/scripts/services/cron
 @@ -73,7 +73,8 @@ while (defined(my $ThisLine = <STDIN>)) {

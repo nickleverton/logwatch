@@ -49,6 +49,8 @@ $Pom1,          $Pom2,          $Port,
 $Prio,          $Reason,        $Received,
 $Sent,          $To,            $User,
 $Why,           $realm,         $user,
+$hr,            $min,           $sec,
+$conn,
 );
 # No sense in running if 'sshd' doesn't even exist on this system...
 #unless (( -f "/usr/sbin/sshd" ) or ( -f "/usr/local/sbin/sshd") or ( -f "/usr/lib/ssh/sshd")) {
@@ -113,6 +115,13 @@ my $StatusNoSuchFile = 0;
 my $BytesSent = 0;
 my $BytesReceived = 0;
 my $NoCipher = 0;
+my $MaxStartupsThrottling = 0;
+my $MaxStartupsDrops = 0;
+my $MaxStartupsTime = 0;
+my %MaxStartupsIPs = ();
+my %DroppedConnections = ();
+
+my $multiline = 0;
 
 if ( $Debug >= 5 ) {
    print STDERR "\n\nDEBUG: Inside SSHD Filter \n\n";
@@ -125,6 +134,19 @@ while (defined(my $ThisLine = <STDIN>)) {
       $DebugCounter++;
    }
    chomp($ThisLine);
+
+   if ( $multiline ) {
+      if ( ($Host) = ($ThisLine =~ /^banner exchange: Connection from ([^ ]+)(?: port \d+)?:/) ) {
+         $NegotiationFailed{$Reason}{$Host}{$Offer}++;
+      } elsif ( ($Host) = ($ThisLine =~ /^Connection reset by ([^ ]+)(?: port \d+)?/) ) {
+         $NegotiationFailed{$Reason}{$Host}{$Offer}++;
+      } elsif ( ($Host) = ($ThisLine =~ /^Connection closed by authenticating user [^ ]+ ([^ ]+)(?: port \d+)?/) ) {
+         $NegotiationFailed{$Reason}{$Host}{$Offer}++;
+      }
+   }
+
+   $multiline = 0;
+
    if (
        ($ThisLine =~ /^pam_succeed_if: requirement "uid < 100" (not|was) met by user /) or
        ($ThisLine =~ /^pam_succeed_if\(.*?\): requirement "uid >= 1000" (not|was) met by user /) or
@@ -140,7 +162,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ m/^Disconnecting: Command terminated on signal \d+/) or
        ($ThisLine =~ m/^Disconnecting: server_input_channel_req: unknown channel -?\d+/) or
        ($ThisLine =~ m/^connect from \d+\.\d+\.\d+\.\d+/) or
-       ($ThisLine =~ m/^fatal: Timeout before authentication/ ) or
+       ($ThisLine =~ m/^(fatal: )?Timeout before authentication/ ) or
        ($ThisLine =~ m/^fatal: no hostkey alg/) or
        ($ThisLine =~ m/Connection from .* port /) or
        ($ThisLine =~ m/Postponed (keyboard-interactive|publickey) for [^ ]+ from [^ ]+/) or
@@ -171,6 +193,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /pam_winbind\(sshd:account\): user .* OK/) or
        ($ThisLine =~ /pam_systemd\(sshd:session\): Moving/) or
        ($ThisLine =~ /pam_systemd\(sshd:session\): .*: Connection reset by peer/) or
+       ($ThisLine =~ /userauth_finish: .*: Connection reset by peer/) or
        ($ThisLine =~ /PAM \d+ more authentication failures?;/) or
        ($ThisLine =~ /^PAM service\(sshd\) ignoring max retries;/) or
        ($ThisLine =~ /^Failed keyboard-interactive for <invalid username> from/ ) or
@@ -189,7 +212,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /Disconnecting( (authenticating|invalid) user .* port \d+)?: Change of username or service not allowed: .* \[preauth\]/ ) or
        ($ThisLine =~ /Failed to release session: Interrupted system call/) or
        ($ThisLine =~ /Close session: user /) or
-       ($ThisLine =~ /error: .*: banner line contains invalid characters/) or
+       #($ThisLine =~ /error: .*: banner line contains invalid characters/) or
+       #($ThisLine =~ /past MaxStartups/) or
+       #($ThisLine =~ /exited MaxStartups throttling/) or
        # user already accounted for in other statement
        ($ThisLine =~ /^input_userauth_request: (illegal|invalid) user (.*)(?: \[preauth\])?$/ ) or
        0 # This line prevents blame shifting as lines are added above
@@ -224,8 +249,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $NoIdent{$name}++;
    } elsif (
       ($ThisLine =~ m/^(?:error:.*|fatal:) Connection closed by remote host/ ) or
-      ($ThisLine =~ m/^(|fatal: )Read error from remote host(| [^ ]+): Connection reset by peer/ ) or
-      ($ThisLine =~ m/^Read error from remote host [^ ]+: (Connection timed out|No route to host)/ ) or
+      ($ThisLine =~ m/^(|fatal: )Read error from remote host(| [^ ]+)(| port \d+): Connection reset by peer/ ) or
+      ($ThisLine =~ m/^error: .*: (read|write): Connection reset by peer/ ) or
+      ($ThisLine =~ m/^error: .*: write: Broken pipe/ ) or
+      ($ThisLine =~ m/^Read error from remote host [^ ]+(| port \d+): (Connection timed out|No route to host)/ ) or
       ($ThisLine =~ m/^fatal: Read from socket failed: No route to host/) or
       ($ThisLine =~ m/^fatal: Write failed: Network is unreachable/ ) or
       ($ThisLine =~ m/^fatal: Write failed: Broken pipe/) or
@@ -241,10 +268,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       if ( $Debug >= 5 ) {
          print STDERR "DEBUG: Found -Signal 15 Terminating- line\n";
       }
-   } elsif ( $ThisLine =~ m/^(log: )?Server listening on( [^ ]+)? port \d+/ ) { #ssh/openssh
+   } elsif ( ($Port) =  ($ThisLine =~ m/^(log: )?Server listening on(( [^ ]+)? port \d+)/ ) ) { #ssh/openssh
       $Starts++;
       if ( $Debug >= 5 ) {
-         print STDERR "DEBUG: Found -Listening on port 22- line\n";
+         print STDERR "DEBUG: Found -Listening on ${Port}- line\n";
       }
    } elsif ( ($Port,$Address,$Reason) = ($ThisLine =~ /^error: Bind to port ([^ ]+) on ([^ ]+) failed: (.+).$/ )) {
       my $Temp = "$Address port $Port ($Reason)";
@@ -293,7 +320,15 @@ while (defined(my $ThisLine = <STDIN>)) {
       $NegotiationFailed{$Reason}{$Host}{$Offer}++;
    } elsif ( ($Reason,$Host,$Offer) = ($ThisLine =~ /^(Protocol major versions differ) for ([^ ]+)(?: port \d+)?: (.*)$/) ) {
       $NegotiationFailed{$Reason}{$Host}{$Offer}++;
-   } elsif ( ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*)$/)) {
+   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^error: (Protocol major versions differ): (.*)$/) ) {
+      $multiline++;
+   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^error: (kex_exchange_identification): (.*)$/) ) {
+      $multiline++;
+   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^error: (kex protocol error|key_protocol_error): (.*)$/) ) {
+      $multiline++;
+   } elsif ( ($Reason,$Offer) = ($ThisLine =~ /^(userauth_pubkey): (.*)( \[preaut\])?$/) ) {
+      $multiline++;
+   } elsif ( ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): ?(.*)$/)) {
       # Reason 11 ({SSH,SSH2}_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
       if (($Reason =~ /preauth/) || ($Code != 11) || ($Detail >= 30)) {
 	$DisconnectReceived{$Reason}{$Host}++;
@@ -391,6 +426,15 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ConnectFailed{"$Host port $Port"}++;
    } elsif ($ThisLine =~ /^fatal: no matching cipher found: /) {
       $NoCipher++;
+   } elsif ($ThisLine =~ /beginning MaxStartups throttling/) {
+      $MaxStartupsThrottling++;
+   } elsif (($IP) = ($ThisLine =~ /drop connection #\d+ from \[(\S+)\]:\d+ on \[\S+\]:\d+ past MaxStartups/)) {
+      $MaxStartupsIPs{$IP}++;
+   } elsif (($hr, $min, $sec, $conn) = ($ThisLine =~ /exited MaxStartups throttling after (\d\d):(\d\d):(\d\d), (\d+) connections dropped/)) {
+      $MaxStartupsTime += (((($hr * 60) + $min) * 60) + $sec);
+      $MaxStartupsDrops += $conn;
+   } elsif (($IP,$Reason) = ($ThisLine =~ /drop connection #\d+ from \[(\S+)\]:\d+ on \[\S+\]:\d+ penalty: (.*)/)) {
+      $DroppedConnections{$IP . " - " . $Reason}++;
    } else {
       # Report any unmatched entries...
       unless ($ThisLine =~ /fwd X11 connect/) {
@@ -436,7 +480,7 @@ if (keys %RootLogin) {
 if (keys %BindFailed) {
    print "\nFailed to bind:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %BindFailed) {
-           print "   $ThisOne : " . timesplural($BindFailed{$ThisOne});
+      print "   $ThisOne : " . timesplural($BindFailed{$ThisOne});
    }
 }
 
@@ -444,7 +488,7 @@ if ($Detail >= 30 && keys %ConnectFailed) {
    # SSH Socks Forwarding
    print "\nFailed to connect to:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %ConnectFailed) {
-           print "   $ThisOne : " . timesplural($ConnectFailed{$ThisOne});
+      print "   $ThisOne : " . timesplural($ConnectFailed{$ThisOne});
    }
 }
 
@@ -501,7 +545,7 @@ if (keys %NegotiationFailed) {
 
 if ($NoCipher && $Detail > 0) {
    print "\nNo matching cipher offered: " . timesplural($NoCipher);
-   }
+}
 
 if (keys %TooManyFailures) {
    print "\nDisconnecting after too many authentication failures for user:\n";
@@ -533,16 +577,15 @@ if (keys %IllegalUsers) {
    print "\nIllegal users from";
    if ($IllegalUsersThreshold) {
       print " (with threshold >= $IllegalUsersThreshold)";
-      }
+   }
    print ":\n";
    foreach my $ip (sort SortIP keys %IllegalUsers) {
       my $name = LookupIP($ip);
       my $totcount = 0;
       foreach my $user (keys %{$IllegalUsers{$ip}}) {
          $totcount += $IllegalUsers{$ip}{$user};
-         }
-      if ($IllegalUsersThreshold == 0 ||
-            $totcount >= $IllegalUsersThreshold) {
+      }
+      if ($IllegalUsersThreshold == 0 || $totcount >= $IllegalUsersThreshold) {
          print "   $name: " . timesplural($totcount);
          if ($Detail >= 5) {
             my $sort = CountOrder(%{$IllegalUsers{$ip}});
@@ -717,9 +760,9 @@ if (keys %DisconnectReceived) {
       print "   $Reason";
       foreach my $Host (sort {$a cmp $b} keys %{$DisconnectReceived{$Reason}}) {
          $Total += $DisconnectReceived{$Reason}{$Host};
-        if( $Detail > 0 ) {
+         if( $Detail > 0 ) {
             print "\n      $Host : $DisconnectReceived{$Reason}{$Host} Time(s)";
-        }
+         }
       }
       if( $Detail > 0 ) {
          print "\n";
@@ -740,12 +783,35 @@ if (keys %RefusedConnections) {
    my $output;
    foreach my $badguy (sort {$a cmp $b} keys %RefusedConnections ) {
       if ($RefusedConnectionsThreshold == 0 || $Detail > 5 || $RefusedConnections{$badguy} >= $RefusedConnectionsThreshold) {
-        $output .= "      $badguy: " . timesplural($RefusedConnections{$badguy});
+         $output .= "      $badguy: " . timesplural($RefusedConnections{$badguy});
       }
    }
    if ($output ne '') {
      print "\nRefused incoming connections:\n";
      print $output;
+   }
+}
+
+if ($MaxStartupsThrottling) {
+   print "\nMaxStartups throttling begins: " . timesplural($MaxStartupsThrottling);
+   if ($Detail >= 5) {
+      print "    Dropped connections total: " . timesplural($MaxStartupsDrops);
+      my $hr = $MaxStartupsTime / 3600;
+      my $min = ($MaxStartupsTime / 60) % 60;
+      my $sec = $MaxStartupsTime % 60;
+      printf "        Throttling time total: %02d:%02d:%02d\n", $hr, $min, $sec;
+   }
+   if ($Detail >= 10) {
+      print "   Initial dropped IP:\n";
+      foreach my $ThisOne (sort SortIP keys %MaxStartupsIPs) {
+         print "      " . LookupIP($ThisOne) . " : " . timesplural($MaxStartupsIPs{$ThisOne});
+      }
+   }
+}
+
+if (keys %DroppedConnections) {
+   foreach my $Dropped (sort keys %DroppedConnections) {
+      print "   $Dropped: " . timesplural($DroppedConnections{$Dropped});
    }
 }
 
@@ -850,33 +916,33 @@ if ($sftpRequests > 0) {
 }
 
 if (keys %ChmodErr) {
-  print "\nChmod errors:\n";
-  foreach (sort keys %ChmodErr) {
-    my ($File,$Perm,$Why)= split ",";
-    print "   " . $File . " " . $Perm . " failed(" . $Why . "): " . timesplural($ChmodErr{"$File,$Perm,$Why"});
-  }
+   print "\nChmod errors:\n";
+   foreach (sort keys %ChmodErr) {
+      my ($File,$Perm,$Why)= split ",";
+      print "   " . $File . " " . $Perm . " failed(" . $Why . "): " . timesplural($ChmodErr{"$File,$Perm,$Why"});
+   }
 }
 
 if (keys %ChownErr) {
-  print "\nChown errors:\n";
-  foreach (keys %ChownErr) {
-    my ($File,$From,$To,$Why)= split ",";
-    print "   " . $File . " " . $From . " " .$To . " failed(" . $Why . "): " . timesplural($ChmodErr{"$File,$From,$To,$Why"});
-  }
+   print "\nChown errors:\n";
+   foreach (keys %ChownErr) {
+      my ($File,$From,$To,$Why)= split ",";
+      print "   " . $File . " " . $From . " " .$To . " failed(" . $Why . "): " . timesplural($ChmodErr{"$File,$From,$To,$Why"});
+   }
 }
 
 if ( ($Detail == 7 && keys %Krb_realm > 1) || ($Detail > 7 && keys %Krb_realm) ){
-  print "\nSuccessful Kerberos Authentication from ",(scalar keys %Krb_realm)," realm:\n";
-  foreach my $realm (sort keys %Krb_realm) {
-    if($Detail > 9){
-      print "   ",$realm,":\n";
-      foreach my $user(sort keys %{$Krb_realm{$realm}}){
-        print "     ",$user,": " . timesplural($Krb_realm{$realm}{$user});
+   print "\nSuccessful Kerberos Authentication from ",(scalar keys %Krb_realm)," realm:\n";
+   foreach my $realm (sort keys %Krb_realm) {
+      if($Detail > 9){
+         print "   ",$realm,":\n";
+         foreach my $user(sort keys %{$Krb_realm{$realm}}) {
+            print "     ",$user,": " . timesplural($Krb_realm{$realm}{$user});
+         }
+      } else {
+         print "   ",$realm,": ". (scalar keys %{$Krb_realm{$realm}}) . " User(s)\n";
       }
-    }else{
-      print "   ",$realm,": ". (scalar keys %{$Krb_realm{$realm}}) . " User(s)\n";
-    }
-  }
+   }
 }
 
 if (keys %OtherList) {

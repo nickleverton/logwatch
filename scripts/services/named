@@ -30,10 +30,11 @@ DoLookup( ValueOrDefault($ENV{'named_ip_lookup'}, 0) );
 my $Debug = ValueOrDefault($ENV{'LOGWATCH_DEBUG'}, 0);
 my $Detail = ValueOrDefault($ENV{'LOGWATCH_DETAIL_LEVEL'}, 0);
 my $FailedZoneTransferThreshold = $ENV{'failed_zone_transfer_threshold'} || 0;
+my $IgnoreDeniedZoneTransfers = $ENV{'ignore_denied_zone_transfers'} || 0;
 
 #Init Counters
 my $DebugCounter=       my $StartNamed=         my $ReloadNamed=
-my $ShutdownNamed=      my $ShutdownNamedFail= 
+my $ShutdownNamed=      my $ShutdownNamedFail=  my $TCPClientQuota=
 0;
 #Init String Containers
 my (
@@ -68,7 +69,10 @@ my (
 %GeoIPError,            %HUR,                   %Hints,
 %LimitSlip,             %NError,                %NUR,
 %NoSOA,                 %OtherList,             %StartLog,
-%UnknownCCCommands,
+%UnknownCCCommands,     %BadCookie,             %Timeout,
+%LoopDetected,          %MissingCookie,		%FormatError,
+%Rewrites,              %PolicyZoneChanged,     %JournalRemoved,
+%ZoneNotLoaded,
 );
 # Avoid "Use of uninitialized value" warning messages.
 sub ValueOrDefault {
@@ -108,6 +112,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /bad referral/) or
       ($ThisLine =~ /prerequisite not satisfied/) or
       ($ThisLine =~ /(rcvd|Sent) NOTIFY/) or
+      ($ThisLine =~ /sending notify to/) or
       ($ThisLine =~ /ns_resp: TCP truncated/) or
       ($ThisLine =~ /No possible A RRs/) or
       ($ThisLine =~ /points to a CNAME/) or
@@ -119,16 +124,17 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /recvfrom: No route to host/) or
       # Be sure to catch: transfer of 'zone' from IP#53: failed to connect: timed out
       # not exact just triggers a full transfer
-      ($ThisLine =~ /transfer of .*: (:?IXFR|AXFR(:?|-style IXFR) (:?started|ended)|connected using|failed while receiving responses: not exact)/) or
+      ($ThisLine =~ /transfer of .*: (?:IXFR|AXFR(?:|-style IXFR) (?:started|ended)|connected using|failed while receiving responses: not exact)/) or
       # This will generate another error that we will catch
       ($ThisLine =~ /transfer of .*: resetting/) or
-      ($ThisLine =~ /Transfer status: (:?success|up to date)/) or
+      ($ThisLine =~ /Transfer status: (?:success|up to date)/) or
       ($ThisLine =~ /using \d+ CPU/) or
       ($ThisLine =~ /loading configuration/) or
       ($ThisLine =~ /command channel listening/) or
       ($ThisLine =~ /configuring command channel from/) or
       ($ThisLine =~ /interface ignored/) or
       ($ThisLine =~ /no IPv6 interfaces found/) or
+      ($ThisLine =~ /IPv6 socket API is incomplete; explicitly binding to each IPv6 address separately/) or
       ($ThisLine =~ /using \d+ UDP listeners? per interface/) or
       ($ThisLine =~ /^running/) or
       ($ThisLine =~ /^exiting/) or
@@ -166,15 +172,19 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /zone .*: zone serial unchanged. zone may fail to transfer to slaves/) or
       ($ThisLine =~ /zone .*: loading from master file .* failed/) or
       ($ThisLine =~ /zone .*: NS '.*' has no address records/) or
+      ($ThisLine =~ /zone .* \(signed\): receive_secure_serial: unchanged/) or
       ($ThisLine =~ /.*: not a valid number$/) or
       ($ThisLine =~ /^(.*: )?unexpected end of input/) or
       ($ThisLine =~ /too many timeouts resolving '.*' .*: disabling EDNS/) or
       ($ThisLine =~ /too many timeouts resolving '.*' .*: reducing the advertised EDNS UDP packet size to .* octets/) or
       ($ThisLine =~ /reloading zones succeeded/) or
+      ($ThisLine =~ /rpz: .*: reload (?:start|done)/) or
       ($ThisLine =~ /generating session key/) or
       ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after disabling EDNS/) or
-      ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after reducing the advertised EDNS UDP packet size to 512 octets/) or
-      ($ThisLine =~ /the working directory is not writable/) or
+      ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after disabling EDNS/) or
+      ($ThisLine =~ /success resolving '.*' after disabling qname minimization due to 'failure'/) or
+      ($ThisLine =~ /success resolving '.*' after disabling qname minimization due to 'ncache nxdomain'/) or
+      ($ThisLine =~ /the working directory is now/) or
       ($ThisLine =~ /using default UDP\/IPv[46] port range: \[[0-9]*, [0-9]*\]/) or
       ($ThisLine =~ /adjusted limit on open files from [0-9]* to [0-9]*/) or
       ($ThisLine =~ /using up to [0-9]* sockets/) or
@@ -196,6 +206,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /serial number \(\d+\) received from master/) or
       ($ThisLine =~ /zone .*: skipping zone transfer as master .* is unreachable \(cached\)/) or
       ($ThisLine =~ /zone .*: notify from .*: serial \d+/) or
+      ($ThisLine =~ /zone [^:]+: serial \d+/) or
       ($ThisLine =~ /zone is up to date/) or
       ($ThisLine =~ /refresh in progress, refresh check queued/) or
       ($ThisLine =~ /refresh: NODATA response from master/) or
@@ -205,7 +216,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /using built-in trusted-keys/) or
       ($ThisLine =~ /using built-in keys instead/) or
       ($ThisLine =~ /set up managed keys zone/) or
-      ($ThisLine =~ /managed-keys-zone.*key now trusted/) or
+      ($ThisLine =~ /managed-keys-zone.*[Kk]ey .*now trusted/) or
       ($ThisLine =~ /forwarding update for zone/) or
       ($ThisLine =~ /forwarded dynamic update: master [^ ]* returned: (NXRRSET|YXDOMAIN)/) or
       ($ThisLine =~ /using .* as GeoIP directory/) or
@@ -224,10 +235,16 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /corporation.  Support and training for BIND \d+ are/) or
       ($ThisLine =~ /available at https:\/\/www.isc.org\/support/) or
       ($ThisLine =~ /----------------------------------------------------/) or
+      ($ThisLine =~ /^[^ ]+ algorithms: /) or
+      ($ThisLine =~ /^TKEY mode \d+ support /) or
+      ($ThisLine =~ /Fetching .* from key repository/) or
+      ($ThisLine =~ /New key .* observed for zone/) or
       ($ThisLine =~ /next key event: /) or
       ($ThisLine =~ /reconfiguring zone keys/) or
       ($ThisLine =~ /using built-in DLV key/) or
+      ($ThisLine =~ /(?:DNSKEY|key) .* is now (?:active|published)/) or
       ($ThisLine =~ /trust-anchor-telemetry/) or
+      ($ThisLine =~ /^adb: grow_entries /) or
 #      ($ThisLine =~ /reading built-in trusted keys from file/) or
       ($ThisLine =~ /all zones loaded/) or
       ($ThisLine =~ /resolver priming query complete/) or
@@ -235,8 +252,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /stop limiting/) or
       # Previous line appears to contain the error
       ($ThisLine =~ /client .*: query failed .* for .* at /) or
-      ($ThisLine =~ /increase from .* to .* RRL bins for .* entries/) or
+      ($ThisLine =~ /increase from .* to .* RRL.* entries/) or
       ($ThisLine =~ /flushing caches in all views succeeded/) or
+      ($ThisLine =~ /automatic interface scanning terminated/) or
       # ignore this line because the following line describes the error
       ($ThisLine =~ /unexpected error/)
    ) {
@@ -257,9 +275,13 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ShutdownNamed++;
    } elsif ( $ThisLine =~ /named shutdown failed/ ) {
       $ShutdownNamedFail++;
-   } elsif ( (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?zone transfer '(.+)' denied/ )) or
-             (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?bad zone transfer request: '(.+)':/ )) ) {
-      $DeniedZoneTransfers{$Host}{$Zone}++;
+   } elsif ( $ThisLine =~ /TCP client quota reached/ ) {
+      $TCPClientQuota++;
+   } elsif ( (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?\s*zone transfer '(.+)' denied/ )) or
+             (($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: (?:view \w+: )?\s*bad zone transfer request: '(.+)':/ )) ) {
+      $DeniedZoneTransfers{$Host}{$Zone}++ unless $IgnoreDeniedZoneTransfers;
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): not loaded due to errors/ ) ) {
+      $ZoneNotLoaded{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+) zone transfer deferred due to quota/ ) ) {
       $DeferredZoneTransfers{$Zone}++;
    } elsif ( ($Zone, $Host) = ( $ThisLine =~ /transfer of '(.+)' from ([^\#]+)#[^\:]+: (failed|(Transfer status|giving up): ((network|host) unreachable|timed out|connection refused|REFUSED))/ ) ) {
@@ -278,6 +300,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ZoneLoaded{"secondary $Zone"}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /slave zone \"(.+)\" .* loaded/ ) ) {
       $ZoneLoaded{"secondary $Zone"}++;
+   } elsif ( ($Zone) = ( $ThisLine =~ /loading policy zone '(.+)' changed/ ) ) {
+      $PolicyZoneChanged{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): expired/ ) ) {
       $ZoneExpired{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): loaded serial/ ) ) {
@@ -293,7 +317,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ZoneRemoved{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /received notify for zone '(.*)'/ ) ) {
       $ZoneReceivedNotify{$Zone}++;
-   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): refused notify from non-master/ ) ) {
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): refused notify from non-(?:master|primary)/ ) ) {
       $ZoneRefusedNotify{$Zone}++;
 #   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\d\.a-fA-F:]+) bad zone transfer request: '(.+)': (.+)$/ ) ) {
    } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+: bad zone transfer request: '(.+)': (.+)/ ) ) {
@@ -307,10 +331,10 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Way,$Host) = ( $ThisLine =~ /([^ ]+): sendto\(\[([^ ]+)\].+\): Network is unreachable/ ) ) {
       my $FullHost = LookupIP ($Host);
       $NetworkUnreachable{$Way}{$FullHost}++;
-   } elsif ( ($Host,$Way) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+: )?error ([^ ]+) response: network unreachable/ ) ) {
+   } elsif ( ($Host,$Way) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+: )?\s*error ([^ ]+) response: network unreachable/ ) ) {
       my $FullHost = LookupIP ($Host);
       $NetworkUnreachable{$Way}{$FullHost}++;
-   } elsif ( ($Zone,$Message) = ( $ThisLine =~ /client [^\#]+#[^\:]+: (?:view \w+: )?updating zone '([^\:]+)': (.*)$/ ) ) {
+   } elsif ( ($Zone,$Message) = ( $ThisLine =~ /client [^\#]+#[^\:]+: (?:view \w+: )?\s*updating zone '([^\:]+)': (.*)$/ ) ) {
       $ZoneUpdates{$Zone}{$Message}++;
    } elsif ( ($Zone,$Source) = ( $ThisLine =~ /transfer of '([^\']+)' (from [^\#]+)#[^\:]+: Transfer completed: / ) ) {
       $ZoneUpdates{$Zone}{$Source}++;
@@ -320,12 +344,14 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Client) = ( $ThisLine =~ /warning: client (.*) no more TCP clients/ ) ) {
       my $FullClient = LookupIP ($Client);
       $DeniedTCPClient{$FullClient}++;
-   } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+: )?query \(cache\) (?:'.*' )?denied/ ) ) {
+   } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?(.*)#\d+(?: \(.*\))?: (?:view \w+: )?\s*query \(cache\) (?:'.*' )?denied/ ) ) {
       my $FullClient = LookupIP ($Client);
       $DeniedQuery{$FullClient}++;
    } elsif ( ($Client) = ( $ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?([^#]*)(#\d+)?(?: \(.*\))?: query '.*' denied/ ) ) {
       my $FullClient = LookupIP ($Client);
       $DeniedQueryNoCache{$FullClient}++;
+   } elsif ( ($Entry) = ($ThisLine =~ / rewrite (\S+) /) ) {
+      $Rewrites{$Entry}++;
    } elsif ( ($Rhost, $ViewName, $Ldom) = ($ThisLine =~ /client (?:\@0x[0-9a-fA-F]+ )?([\.0-9a-fA-F:]+)#\d+: (?:view (\w+): )?update '(.*)' denied/)) {
       $ViewName = ($ViewName ? "/$ViewName" : "");
       $UpdateDenied{"$Rhost ($Ldom$ViewName)"}++;
@@ -334,13 +360,13 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Rhost, $Ldom) = ($ThisLine =~ /client ([\d\.]+)#\d+: update forwarding '(.*)' denied/)) {
       $UpdateForwardingDenied{"$Rhost ($Ldom)"}++;
    } elsif ( ($Zone, $Master, $Reason) = ($ThisLine =~ /zone (.*): forwarded dynamic update: master (.*)#\d+ returned: (.*)/)) {
-      $UpdateForwardingDenied{"$Zone ($Master) $Reason"}++;
+      $UpdateForwardingDenied{"$Zone ($Master) $Reason"}++ if $Reason ne "NOERROR";
    } elsif ( ($Zone) = ($ThisLine =~ /zone '([0-9a-zA-Z.-]+)' allows updates by IP address, which is insecure/)) {
       $InsecUpdate{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([0-9a-zA-Z.\/-]+): journal rollforward failed: journal out of sync with zone/)) {
       $JournalFail{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /(managed-keys-zone.*): journal file is out of date: removing journal file/)) {
-      $JournalFail{$Zone}++;
+      $JournalRemoved{$Zone}++;
    } elsif ( ($Channel,$Reason) = ($ThisLine =~ /couldn't add command channel (.+#\d+): (.*)$/)) {
       $ChannelAddFail{$Channel}{$Reason}++;
    } elsif ( ($Zone,$Host,undef,$Reason) = ($ThisLine =~ /zone ([^ ]*): refresh: failure trying master ([^ ]*)#\d+( \(source .*\))?: (.*)/) ) {
@@ -350,7 +376,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: non-authoritative answer from master/)) {
       $NonAuthoritative{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: retry limit for master \S+ exceeded/) ) {
-      $RetryLimit{$Zone}++; 
+      $RetryLimit{$Zone}++;
    } elsif ( ($Rcode, $Zone, $Host) = ($ThisLine =~ /(?:error \()?unexpected RCODE\)? \(?(.*?)\)? resolving '(.*)': (.*)$/) ){
       # Remove port number, for proper IP sorting
       $Host =~ s/#.*//;
@@ -359,22 +385,27 @@ while (defined(my $ThisLine = <STDIN>)) {
       # Remove port number, for proper IP sorting
       $Host =~ s/#.*//;
       $UnexpRCODE{$Rcode}{$Zone}{$Host}++;
-   } elsif ( ($ThisLine =~ /(?:error \()?FORMERR\)? resolving '[^ ]+: [.0-9a-fA-F:#]+/) or
-             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for client [^ ]+)?: .*/) ) {
+   } elsif ( ($Problem,$Addr,$Server) = ($ThisLine =~ /((?:error \()??FORMERR\)? resolving) '([^ \/]+)(?:\/[^ ]+)?': ([.0-9a-fA-F:]+)(?:#\d+)?/) ) {
+      $FormatError{$Problem}{$Addr}{$Server}++;
+   } elsif ($ThisLine =~ /(?:error \()?FORMERR\)? resolving .*/) {
       chomp($ThisLine);
       $FormErr{$ThisLine}++;
+   } elsif ( ($Server,$Addr,$Host,$Problem) = ($ThisLine =~ /DNS format error from ([.0-9a-fA-F:]+)(?:#\d+)? resolving ([^ \/]+)(?:\/[^ ]+)? for(?: client)? ([^ #]+)(?:#\d+)?: (.*) -- invalid response/) ) {
+      $FormatError{$Problem}{$Addr}{$Server}++;
+   } elsif ( ($Server,$Addr,$Host,$Problem) = ($ThisLine =~ /DNS format error from ([.0-9a-fA-F:]+)(?:#\d+)? resolving ([^ \/]+)(?:\/[^ ]+)? for(?: client)? ([^ #]+)(?:#\d+)?: (.*)/) ) {
+      $FormatError{$Problem}{$Addr}{$Server}++;
    } elsif ( ($ThisLine =~ /found [0-9]* CPU(s)?, using [0-9]* worker thread(s)?/) ) {
       chomp($ThisLine);
       $StartLog{$ThisLine}++;
    } elsif ( (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(rndc.key|named.conf):([0-9]+): (unknown option '[^ ]*')/)) or
-	     (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(rndc.key|named.conf):([0-9]+): ('[^ ]' expected near end of file)/)) or
-	     (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(named.*.conf):([0-9]+): (.*)/)) or
-	     (($File,$Line,$Problem) = ($ThisLine =~ /()()(could not configure root hints from '.*': file not found)/))) {
+             (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(rndc.key|named.conf):([0-9]+): ('[^ ]' expected near end of file)/)) or
+             (($File,$Line,$Problem) = ($ThisLine =~ /\/etc\/(named.*.conf):([0-9]+): (.*)/)) or
+             (($File,$Line,$Problem) = ($ThisLine =~ /()()(could not configure root hints from '.*': file not found)/))) {
        $ConfProb{$File}{"$Line,$Problem"}++;
    } elsif ( (($ErrorText) = ($ThisLine =~ /^(RUNTIME_CHECK.*)/))or
-	     (($ErrorText) = ($ThisLine =~ /^(.* REQUIRE.* failed.*)$/)) or
-	     (($ErrorText) = ($ThisLine =~ /(.*: fatal error)/)) or
-	     (($ErrorText) = ($ThisLine =~ /(.*: out of memory)/)) ) {
+             (($ErrorText) = ($ThisLine =~ /^(.* REQUIRE.* failed.*)$/)) or
+             (($ErrorText) = ($ThisLine =~ /(.*: fatal error)/)) or
+             (($ErrorText) = ($ThisLine =~ /(.*: out of memory)/)) ) {
       $NError{$ErrorText}++;
    } elsif ( (($ErrorText) = ($ThisLine =~ /^(GeoIP .* DB not available)/)) ) {
       $GeoIPError{$ErrorText}++;
@@ -384,7 +415,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($From,$Log) = ($ThisLine =~ /invalid command from ([\.0-9a-fA-F:]*)#[0-9]*: (.*)/) ) {
       $CCMessages{"$From,$Log"}++;
    } elsif ( (($Log) = ($ThisLine =~ /(freezing .*zone.*)/)) or
-	     (($Log) = ($ThisLine =~ /(thawing .*zone.*)/)) ) {
+             (($Log) = ($ThisLine =~ /(thawing .*zone.*)/)) ) {
       $CCMessages2{$Log}++;
    } elsif (($CCC) = ($ThisLine =~ /unknown control channel command '(.*)'/)) {
       $UnknownCCCommands{$CCC}++;
@@ -396,48 +427,56 @@ while (defined(my $ThisLine = <STDIN>)) {
       $HUR{$Name}{$Address}++;
    } elsif (($Client) = ($ThisLine =~ /client ([\da-fA-F.:]+)(?:#\d*:)? notify question section contains no SOA/)) {
       $NoSOA{$Client}++;
+   } elsif (($Addr) = ($ThisLine =~ /bad cookie from (.*)/)) {
+      $BadCookie{$Addr}++;
+   } elsif (($Addr) = ($ThisLine =~ /missing expected cookie from ([\da-fA-F.:]+)(?:#\d*)?/)) {
+      $MissingCookie{$Addr}++;
+   } elsif (($Entry) = ($ThisLine =~ /shut down hung fetch while resolving '(.*)'/)) {
+      $Timeout{$Entry}++;
+   } elsif (($Entry) = ($ThisLine =~ /loop detected resolving '(.*)'/)) {
+      $LoopDetected{$Entry}++;
    } elsif (($Hint) = ($ThisLine =~ /checkhints: (.*)/) ) {
       $Hints{$Hint}++;
-   } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit (.+) responses to (\S+)(?: for (.+) \()?/)) {
+   } elsif (($Response,$Net,$Zone) = ($ThisLine =~/limit(?:ing)? (.+) responses to (\S+)(?: for (.+) \()?/)) {
       $Zone = "None" unless defined($Zone);
-      $Limit{$Zone}{$Response}{$Net}++;
-   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
+      $Limit{$Zone}{$Response}{$Net}++ if $Detail;
+   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit drop (.+) response to (\S+)(?: for (\S+))?/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++;
-   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit slip (.+) response to (\S+)(?: for (\S+))?/)) {
+      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
+   } elsif (($Client,$Response,$Net,$Zone) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit slip (.+) response to (\S+)(?: for (\S+))?/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++;
+      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
    } elsif (($Net,$Zone,$Response) = ($ThisLine =~/limit responses to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
-      $Limit{$Zone}{$Response}{$Net}++;
-   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit drop response to (\S+)(?: for (\S+))? (.*) +\(/)) {
+      $Limit{$Zone}{$Response}{$Net}++ if $Detail;
+   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit drop response to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++;
-   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?rate limit slip response to (\S+)(?: for (\S+))? (.*) +\(/)) {
+      $LimitDrop{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
+   } elsif (($Client,$Net,$Zone,$Response) = ($ThisLine =~/client ([^#]+)(?:#\d+)? \(.*\): (?:view \w+: )?\s*rate limit slip response to (\S+)(?: for (\S+))? (.*) +\(/)) {
       $Zone = "None" unless defined($Zone);
-      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): got insecure response; parent indicates it should be secure/)) {
+      $LimitSlip{$Zone}{$Response}{$Net}{$Client}++ if $Detail;
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): got insecure response; parent indicates it should be secure/)) {
       $DNSSECInsec{'__Total__'}++;
       $DNSSECInsec{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): no valid signature found/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): no valid signature found/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): bad cache hit/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): bad cache hit/)) {
       $DNSSECBadCache{'__Total__'}++;
       $DNSSECBadCache{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): verify failed due to bad signature/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating \@0x[[:xdigit:]]+: (.*) (\w+): verify failed due to bad signature/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating ([^\/]*)\/(\w+): got insecure response; parent indicates it should be secure/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating ([^\/]*)\/(\w+): got insecure response; parent indicates it should be secure/)) {
       $DNSSECInsec{'__Total__'}++;
       $DNSSECInsec{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating ([^\/]*)\/(\w+): no valid signature found/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating ([^\/]*)\/(\w+): no valid signature found/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating ([^\/]*)\/(\w+): verify failed due to bad signature/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating ([^\/]*)\/(\w+): verify failed due to bad signature/)) {
       $DNSSECInvalid{'__Total__'}++;
       $DNSSECInvalid{$Zone}{$RR}++;
-   } elsif (($Zone,$RR) = ($ThisLine =~ /^\s*validating ([^\/]*)\/(\w+): bad cache hit/)) {
+   } elsif (($Zone,$RR) = ($ThisLine =~ /^(?:view \w+: )?\s*validating ([^\/]*)\/(\w+): bad cache hit/)) {
       $DNSSECBadCache{'__Total__'}++;
       $DNSSECBadCache{$Zone}{$RR}++;
    } elsif (($Error,$Host) = ($ThisLine =~ /^(?:error \()?(.*)\)? resolving '([^']+)':/)) {
@@ -463,6 +502,13 @@ if ( keys %ZoneExpired ) {
    print "\nZones expired:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %ZoneExpired) {
       print "   $ThisOne: $ZoneExpired{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( keys %ZoneNotLoaded ) {
+   print "\nZones not loaded due to errors:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %ZoneNotLoaded) {
+      print "   $ThisOne: $ZoneNotLoaded{$ThisOne} Time(s)\n";
    }
 }
 
@@ -560,6 +606,10 @@ if (keys %ErrOpenFiles) {
    }
 }
 
+if ($TCPClientQuota) {
+   print "\nTCP Client Quota hit: $TCPClientQuota Time(s)\n";
+}
+
 if (keys %Limit) {
    print "\nRate Limiting occurred for:\n";
    foreach my $Zone (keys %Limit) {
@@ -594,6 +644,13 @@ if ((keys %CCMessages)){
    }
 }
 
+if ( ($Detail >=5) and (keys %JournalRemoved) ) {
+   print "\nJournal file out of date and removed:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %JournalRemoved) {
+      print "   " . $ThisOne . ": " . $JournalRemoved{$ThisOne} . " Time(s)\n";
+   }
+}
+
 if ( ( $Detail >= 5 ) and (keys %CCMessages2)){
    print "\nMessages from control channel\n";
    foreach my $ThisOne (keys %CCMessages2) {
@@ -621,6 +678,13 @@ if ( ( $Detail >= 5 ) and (keys %ZoneLoaded) ) {
    print "\nLoaded Zones:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %ZoneLoaded) {
       print "   $ThisOne: $ZoneLoaded{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 5 ) and (keys %PolicyZoneChanged) ) {
+   print "\nPolicy Zone Changes:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %PolicyZoneChanged) {
+      print "   $ThisOne: $PolicyZoneChanged{$ThisOne} Time(s)\n";
    }
 }
 
@@ -672,6 +736,13 @@ if ( ( $Detail >= 5 ) and (keys %ZoneRemoved) ) {
    }
 }
 
+if ( ( $Detail >= 5 ) and (keys %Rewrites) ) {
+   print "\nLookup rewrites:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %Rewrites) {
+      print "   $ThisOne: $Rewrites{$ThisOne} Time(s)\n";
+   }
+}
+
 if ( ( $Detail >= 5 ) and (keys %AXFR) ) {
    print "\nZone Transfers:\n";
    foreach my $ThisOne (keys %AXFR) {
@@ -720,7 +791,7 @@ if ( ( $Detail >= 10 ) and (@CNAMEAndOther) ) {
    }
 }
 
-if ( ( $Detail >= 5 ) and (keys %ZoneFileErrors) ) {
+if (  ( $Detail >= 5 ) and (keys %ZoneFileErrors) ) {
    print "\nSyntax errors in zone files:\n";
    for my $File (keys %ZoneFileErrors) {
       print "   $File\n";
@@ -754,6 +825,20 @@ if ( ( $Detail >= 10 ) and (keys %NonAuthoritative) ) {
    print "\nNon-authoritative answer from master for these zones:\n";
    foreach my $ThisOne (keys %NonAuthoritative) {
       print "   " . $ThisOne . ": " . $NonAuthoritative{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %BadCookie) ) {
+   print "\nBad Cookie returned from these hosts:\n";
+   foreach my $ThisOne (keys %BadCookie) {
+      print "   " . $ThisOne . ": " . $BadCookie{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %MissingCookie) ) {
+   print "\nMissing expected Cookie returned from these hosts:\n";
+   foreach my $ThisOne (keys %MissingCookie) {
+      print "   " . $ThisOne . ": " . $MissingCookie{$ThisOne} . " Time(s)\n";
    }
 }
 
@@ -801,6 +886,20 @@ if ( ( $Detail >= 10 ) and (keys %HUR) ) {
    }
 }
 
+if ( ( $Detail >= 10 ) and (keys %Timeout) ) {
+   print "\nTimeout resolving for:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %Timeout) {
+      print "   " . $ThisOne . ": " . $Timeout{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %LoopDetected) ) {
+   print "\nLoop detected resolving for:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %LoopDetected) {
+      print "   " . $ThisOne . ": " . $LoopDetected{$ThisOne} . " Time(s)\n";
+   }
+}
+
 if ( ( $Detail >= 10 ) and (keys %ZoneUpdates) ) {
    print "\nZone Updates:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %ZoneUpdates) {
@@ -828,6 +927,19 @@ if (($Detail >= 5) and (keys %FormErr)) {
    print "\nIncorrect response format:\n";
    foreach my $ThisOne (keys %FormErr) {
       print "   " . $ThisOne . ": " . $FormErr{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (($Detail >= 5) and (keys %FormatError)) {
+   print "\nDNS Format Error:\n";
+   foreach my $Problem (sort {$a cmp $b} keys %FormatError) {
+      print "   " . $Problem . ":\n";
+      foreach my $Addr (sort {$a cmp $b} keys %{$FormatError{$Problem}}) {
+         print "     " . $Addr . ":\n";
+         foreach my $Server (sort SortIP keys %{$FormatError{$Problem}{$Addr}}) {
+            print "         " . $Server . ": " . $FormatError{$Problem}{$Addr}{$Server} . " Time(s)\n";
+         }
+      }
    }
 }
 

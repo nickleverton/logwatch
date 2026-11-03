@@ -1,0 +1,52 @@
+#!/bin/bash
+
+##################################
+### Check detail option output ###
+##################################
+
+set -eo pipefail
+
+LOGWATCH_CONF_FILE="/etc/logwatch/conf/logwatch.conf"
+NEED_ERASING=1
+
+clear_logwatch_conf_file(){
+    if [ "${NEED_ERASING}" -eq "0" ]; then
+        if [ -e "${LOGWATCH_CONF_FILE}".test.bak ]; then
+            cp "${LOGWATCH_CONF_FILE}".test.bak "${LOGWATCH_CONF_FILE}"
+            rm "${LOGWATCH_CONF_FILE}".test.bak
+        else
+            rm "${LOGWATCH_CONF_FILE}"
+        fi
+    fi
+}
+
+trap 'clear_logwatch_conf_file' 0 INT QUIT ABRT PIPE TERM
+
+# Avoid pulling in /var/log so only our controlled log dir is scanned.
+if  ! [ -e "${LOGWATCH_CONF_FILE}" ] ; then
+    echo "AppendVarLogToLogDirs = 0" >> "${LOGWATCH_CONF_FILE}"
+elif ! grep -q "^AppendVarLogToLogDirs" "${LOGWATCH_CONF_FILE}" ; then
+    cp "${LOGWATCH_CONF_FILE}" "${LOGWATCH_CONF_FILE}".test.bak
+    echo "AppendVarLogToLogDirs = 0" >> "${LOGWATCH_CONF_FILE}"
+else
+    sed -i.test.bak 's/^\(AppendVarLogToLogDirs = \).*/\10/' "${LOGWATCH_CONF_FILE}"
+fi
+NEED_ERASING=0
+
+cp "$(dirname "${0}")"/data/detail-sshd "${AUTOPKGTEST_TMP}"/auth.log
+
+run_detail(){
+    /usr/sbin/logwatch --detail "${1}" --range all --service sshd \
+        --logdir "${AUTOPKGTEST_TMP}" --output stdout | wc -l
+}
+
+low="$(run_detail Low)"
+med="$(run_detail Med)"
+high="$(run_detail High)"
+
+echo "Detail line counts -> Low: ${low}, Med: ${med}, High: ${high}"
+
+echo "Checking that Low detail is less than Med detail"
+test "${low}" -lt "${med}"
+echo "Checking that Med detail is less than High detail"
+test "${med}" -lt "${high}"

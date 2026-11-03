@@ -55,7 +55,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    next if $EventLogType eq "Information" and $ExpandedString !~ "BlueScreen";
    next if $ExpandedString eq "N/A";
 
-   next if $SourceName =~ /^Microsoft-Windows-Store/;
+   next if $SourceName =~ /^Microsoft-(?:Windows-Store|WindowsAzure-Diagnostics\/(?:GuestAgent|Heartbeat))/;
    next if $SourceName eq "Microsoft-Windows-SettingSync/Debug";
    next if $Application =~ /^Microsoft-Windows-SettingsSync/;
    next if $Application eq "Windows-ApplicationModel-Store-SDK";
@@ -78,20 +78,26 @@ while (defined(my $ThisLine = <STDIN>)) {
       if (my ($ClientName, $UserName, $ShareName) = ($ExpandedString =~ /The share denied access to the client.*Client Name: (.*) Client Address: .* User Name: (.*) Session ID: .* Share Name: (.*) Share Path:/)) {
          $ExpandedString = "Access denied to share $ShareName by $UserName from $ClientName";
       }
+   } elsif ($Application eq "Microsoft-Windows-StorPort") {
+      next if $ExpandedString =~ /^The miniport logged an event\.$/;
+   } elsif ($Application eq "Microsoft-Windows-TaskScheduler") {
+      next if $ExpandedString =~ /^Task Scheduler did not launch task .* because user .* was not logged on when the launching conditions were met/;
+      next if $ExpandedString =~ /^Task Scheduler queued instance .* of task/;
    }
 
    # Modify some items that prevent de-duplication
    if ($Detail < 10) {
       $ExpandedString =~ s/(Task-S-)[0-9-]+/$1XXX/g;
-      $ExpandedString =~ s/(guid:|GUID:|Guid:|Guid is|KEY:|known folder|interface|PRINTENUM\\)( ?\{)[0-9A-Fa-f-]+\}/$1${2}XXX}/g;
+      $ExpandedString =~ s/(guid:|GUID:|Guid:|Guid is|KEY:|known folder|interface|PRINTENUM\\|TransactionId:)( ?\{)[0-9A-Fa-f-]+\}/$1${2}XXX}/g;
       $ExpandedString =~ s/(ClientProcessId =|ElapsedTime\(ms\):|NextScheduled\S+|Process ID:?|PID|Transaction [^:]*Time \(msec\):|Try) \d+/$1 XXX/g;
       $ExpandedString =~ s/[\d.]+ (milli|)seconds/XXX $1seconds/g;
       $ExpandedString =~ s,\d{4}/\d\d/\d\d \d\d:\d\d:\d\d(?:\.\d+)?,TIMESTAMP,g;
-      $ExpandedString =~ s,\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z?,TIMESTAMP,g;
-      $ExpandedString =~ s/(Hash|Message ID|Session ID):( ?0x)[0-9A-F]{2,16}/$1:${2}XXXX/g;
+      $ExpandedString =~ s,\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?Z?,TIMESTAMP,g;
+      $ExpandedString =~ s/(ddress|Hash|Message ID|offset|Session ID):( ?0x)[0-9A-Fa-f]{2,16}/$1:${2}XXXX/g;
       $ExpandedString =~ s/\d+ms/Xms/g;
       $ExpandedString =~ s/nstance "\{[^}]+\}"/nstance XXXX/g;
-      $ExpandedString =~ s/(adalCorrelationId|client|ID \(request\)): [0-9a-f-]+/$1: XXXX/g;
+      $ExpandedString =~ s/location [0-9a-f]{40}/location XXXX/g;
+      $ExpandedString =~ s/(adalCorrelationId|client|Correlation ID|ID \(request\)|Trace ID): [0-9a-f-]+/$1: XXXX/g;
       $ExpandedString =~ s/ddress: ([^:]+):\d+/ddress: $1:XXXXX/g;
    }
 

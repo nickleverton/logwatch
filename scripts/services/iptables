@@ -47,7 +47,7 @@ my $ListByCidrBits = $ENV{'iptables_list_by_cidr_mask'} || 0;
 my (
 $TU,                $action,            $actionType,
 $chain,             $chain_info,        $from,
-$fromHostCount,     $fromip,            
+$fromHostCount,     $fromip,
 $if,                $ifin,              $ifout,
 $inout,             $interface,         $interfaceCount,
 $outputMain,        $outputSection,

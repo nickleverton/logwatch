@@ -33,6 +33,9 @@ while (defined(my $ThisLine = <STDIN>)) {
     if ($ThisLine =~ m/^... .. ..:..:..[ ]*[^ ]* $ServiceName(\[[0123456789]*\])?:? /io) {
       print $ThisLine;
     }
+    elsif ($ThisLine =~ m/^... .. ..:..:..[ ]* \<[a-z0-9]*\.[a-z]*\> [^ ]* $ServiceName(\[[\d]*\])?:? /io) {
+      print $ThisLine;
+    }
     elsif ($ThisLine =~ m/^... .. ..:..:.. [^ ]* [^ ]*(\[[0123456789]*\])?: \[ID [0-9]+ $ServiceName/io) {
       print $ThisLine;
     }

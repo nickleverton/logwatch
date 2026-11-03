@@ -59,14 +59,15 @@ if ( $Debug >= 5 ) {
 
 sub DirUsage {
 	my $Dir = $_[0];
-        if ( !-d $Dir ) {
-           print "Directory $Dir not found\n";
-           return
-        };
+    if ( !-d $Dir ) {
+        print STDERR "Directory $Dir not found\n";
+        return
+    };
+	$Dir = $Dir . "/*"; # Add /* to the end of the directory name for globbing -mgt
 	if ($OSname eq "Linux") {
-		system("du -s --block-size=1048576 -h $Dir | sort -n -r -k 1");
+		system("du -s --block-size=1048576 -h $Dir | sort -h -r -k 1");
 	} elsif ($OSname eq "Darwin") {
-		system("du -s --block-size=1048576 -h $Dir | sort -n -r -k 1");
+		system("du -s --block-size=1048576 -h $Dir | sort -h -r -k 1");
 	} elsif ($OSname eq "SunOS") {
 		if ( ($release eq "5.10") || ($release eq "5.9") || ($release eq "5.11") ) {
 		   system("/usr/xpg4/bin/du -s -h $Dir | sort -n -r -k 1");
@@ -85,7 +86,7 @@ sub DirUsage {
 sub DirectorySizes
 {
 	my $Dir = $_[0];
-	DirUsage($Dir.'/*');
+	DirUsage($Dir); #Do not add a glob here -mgt
 }
 
 sub HomeDirectorySizes
@@ -162,7 +163,7 @@ sub DiskFull {
 #Main
 
 if ($OSname eq "Linux") {
-	$df_options = "-h -x tmpfs -x devtmpfs -x udf -x iso9660 -x squashfs";
+	$df_options = "-h -x tmpfs -x devtmpfs -x udf -x iso9660 -x squashfs -x overlay -x nsfs";
 	if ($local_disks_only) { $df_options .= " -l"; }
 } elsif ($OSname eq "Darwin") {
 	$df_options = "-h -T nodevfs,autofs";
@@ -170,7 +171,7 @@ if ($OSname eq "Linux") {
 } elsif ($OSname eq "SunOS") {
 	if ( ($release eq "5.10") || ($release eq "5.9") || ($release eq "5.11") ) {
 		$df_options = "-h";
-	} 
+	}
 	if ($local_disks_only) { $df_options .= " -l"; }
 } elsif ($OSname eq "AIX") {
 	$df_options = "-P";

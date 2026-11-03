@@ -10,8 +10,8 @@ use strict;
 
 ########################################################
 # Specify version and build-date:
-my $Version = '7.7';
-my $VDate = '07/22/22';
+my $Version = '7.15';
+my $VDate = '07/22/26';
 
 #######################################################
 # Logwatch was originally written by:
@@ -60,7 +60,7 @@ my $PerlVersion = "$^X";
 #############################################################################
 # SET LIBS, GLOBALS, and DEFAULTS
 use Getopt::Long;
-use POSIX qw(uname);
+use POSIX qw(uname strftime);
 use File::Temp qw/ tempdir /;
 use Cwd;
 
@@ -83,6 +83,7 @@ if ($ENV{'MAILTO'}) {
    $Config{'mailto'} = "root";
 }
 $Config{'mailfrom'} = "Logwatch";
+$Config{'mailer'} = "/usr/sbin/sendmail -t";
 $Config{'subject'} = "";
 $Config{'filename'} = "";
 $Config{'range'} = "yesterday";
@@ -203,7 +204,7 @@ my ($tmp_mailto, $tmp_savefile);
              "s|service=s@" => \@TempServiceList,
              "m|mailto=s"   => \$tmp_mailto,
              "filename=s"   => \$tmp_savefile,
-             "a|archives"   => \$Config{'archives'},
+             "a|archives!"  => \$Config{'archives'},
              "debug=s"      => \$Config{'debug'},
              "r|range=s"    => \$Config{'range'},
              "n|numeric"    => \$Config{'numeric'},
@@ -702,7 +703,7 @@ $ENV{'LOGWATCH_NUMERIC'} = $Config{'numeric'};
 $ENV{'HOSTNAME'} = $Config{'hostname'};
 $ENV{'OSname'} = $OSname;
 
-my $no_egrep =  system("egrep -V > /dev/null 2>&1");
+my $no_egrep =  system("grep -E -V > /dev/null 2>&1");
 
 #split and splitmail also play with LOGWATCH_ONLY_HOSTNAME which is not shown by debug
 if ($Config{'hostlimit'}) {
@@ -814,12 +815,16 @@ foreach $LogFile (@LogFileList) {
 	 next;
       }
       if (! -r $ThisFile) {
-         print "File $ThisFile is not readable.  Check permissions.";
-         if ($> != 0) {
-            print "  You are not running as superuser.";
+         # check again to ensure we do not have access due to ACL or similar methods as -r by default only checks permission bits
+         use filetest 'access';
+         if (! -r $ThisFile) {
+            print "File $ThisFile is not readable.  Check permissions.";
+            if ($> != 0) {
+               print "  You are not running as superuser.";
             }
-         print "\n";
-         next;
+            print "\n";
+            next;
+         }
       }
       #FIXME - We have a bug report for filenames with spaces, can be caught here needs test -mgt
       $FileText .= ("'" . $ThisFile . "' ");
@@ -1134,7 +1139,7 @@ sub Usage () {
    print "--logdir <name>: Name of default directory where logs are stored.\n";
    print "--service <name>: *Name of a service definition to report on.\n";
    print "--output <output type>: Report Output - stdout [default], mail, file.\n"; #8.0
-   print "--format <formatting>: Report Format - text [default], html.\n"; #8.0
+   print "--format <formatting>: Report Format - text [default], html, xml.\n"; #8.0
    print "--encode <encoding>: Encoding to use - none [default], base64, 7bit, 8bit [same as 'none'].\n"; #8.0
    print "--mailto <addr>: Mail report to <addr>.\n";
    print "--archives: Use archived log files too.\n";
@@ -1174,7 +1179,6 @@ sub initprint {
    } elsif ($Config{'output'} eq "file") {
       open(OUTFILE,">>" . $Config{'filename'}) or die "Can't open output file: $Config{'filename'} $!\n";
    } else {
-   #fixme mailto
       if (($Config{'hostformat'} eq "splitmail") || ($emailopen eq "")) {
          #Use mailer = in logwatch.conf to set options. Default should be "sendmail -t"
          #In theory this should be able to handle many different mailers. I might need to add
@@ -1182,10 +1186,13 @@ sub initprint {
          open(OUTFILE,"|$Config{'mailer'}") or die "Can't execute $Config{'mailer'}: $!\n";
          my $mailto = $Config{"mailto_$Config{'hostname'}"};
          $mailto = $Config{'mailto'} unless $mailto;
-         for my $to (split(/ /, $mailto)) {
-            print OUTFILE "To: $to\n";
+         my @mail_addrs = split(/ /, $mailto);
+         my $oneto = pop @mail_addrs;
+         print OUTFILE "To: $oneto ";
+         foreach (@mail_addrs) {
+            print OUTFILE ", $_";
          }
-         print OUTFILE "From: $Config{'mailfrom'}\n";
+         print OUTFILE "\nFrom: $Config{'mailfrom'}\n";
          #If $Config{'subject'} exists lets use it.
          #This does not allow for variable expansion as the default below does -mgt
          if ($Config{'subject'}) {
@@ -1209,6 +1216,8 @@ sub initprint {
          #Config{output} html
          if ( $Config{'format'} eq "html" ) {
             $out_mime .= "Content-Type: text/html; charset=\"UTF-8\"\n\n";
+         } elsif ( $Config{'format'} eq "xml" ) {
+            $out_mime .= "Content-Type: application/xml; charset=\"UTF-8\"\n\n";
          } else {
             $out_mime .= "Content-Type: text/plain; charset=\"UTF-8\"\n\n";
          }
@@ -1242,25 +1251,45 @@ sub initprint {
    if ( $Config{'format'} eq "html" ) {
       &output( $index_par, "LOGWATCH Summary" . (($Config{'hostformat'} ne "none") ? ": $Config{'hostname'}" : ""), "start");
       &output( $index_par, "       Logwatch Version: $Version ($VDate)\n", "line");
+   } elsif ( $Config{'format'} eq "xml" ) {
+      &output( $index_par, "<LOGWATCH xmlns='http://sourceforge.net/projects/logwatch/7.7.20221001' Version=\'${Version}\' VDate=\'${VDate}\' "
+         . (($Config{'hostformat'} ne "none") ? "hostname=\'$Config{'hostname'}\'" : "").">\n", "line");
    }       else {
       &output( $index_par, "\n ################### Logwatch $Version ($VDate) #################### \n", "line");
    }
 
-   &output( $index_par, "       Processing Initiated: " . localtime(time) . "\n", "line");
-   &output( $index_par, "       Date Range Processed: $Config{'range'}\n", "line");
-   &output( $index_par, "                             $print_range\n", "line")
-      if ($Config{'range'} ne 'all');
-   &output( $index_par, "                             Period is " . &GetPeriod() . ".\n", "line")
-      if ($Config{'range'} ne 'all');
-   &output( $index_par, "       Detail Level of Output: $Config{'detail'}\n", "line");
-   &output( $index_par, "       Type of Output/Format: $Config{'output'} / $Config{'format'}\n", "line");
-   &output( $index_par, "       Logfiles for Host: $Config{'hostname'}\n", "line");
-
-   if ( $Config{'hostlimit'} ) {
-      &output( $index_par, "       Hosts limited to:  $Config{'hostlimit'}\n", "line");
+   if ( $Config{'format'} eq "xml" ) {
+      &output( $index_par, "<ReportMetaData ", "line");
+      &output( $index_par, "processingInitiated='" . strftime("%Y-%m-%dT%H:%M:%S%z",localtime(time)) . "' ", "line");
+      &output( $index_par, "configRange=\'$Config{'range'}\' ", "line");
+      &output( $index_par, "printRange=\'${print_range}\' ", "line")
+         if ($Config{'range'} ne 'all');
+      &output( $index_par, "period=\'" . &GetPeriod(). "\' ", "line")
+         if ($Config{'range'} ne 'all');
+      &output( $index_par, "configDetail=\'$Config{'detail'}\' ", "line");
+      &output( $index_par, "configOutput=\'$Config{'output'}\' ", "line");
+      &output( $index_par, "configFormat=\'$Config{'format'}\' ", "line");
+      &output( $index_par, "configHostname=\'$Config{'hostname'}\' ", "line");
+      &output( $index_par, "configHostlimit=\'$Config{'hostlimit'}\' ", "line")
+         if ( $Config{'hostlimit'} );
+   } else {
+      &output( $index_par, "       Processing Initiated: " . localtime(time) . "\n", "line");
+      &output( $index_par, "       Date Range Processed: $Config{'range'}\n", "line");
+      &output( $index_par, "                             $print_range\n", "line")
+         if ($Config{'range'} ne 'all');
+      &output( $index_par, "                             Period is " . &GetPeriod() . ".\n", "line")
+         if ($Config{'range'} ne 'all');
+      &output( $index_par, "       Detail Level of Output: $Config{'detail'}\n", "line");
+      &output( $index_par, "       Type of Output/Format: $Config{'output'} / $Config{'format'}\n", "line");
+      &output( $index_par, "       Logfiles for Host: $Config{'hostname'}\n", "line");
+      &output( $index_par, "       Hosts limited to:  $Config{'hostlimit'}\n", "line")
+         if ( $Config{'hostlimit'} );
    }
+
    if ( $Config{'format'} eq "html" ) {
       &output( $index_par, "\n", "stop");
+   } elsif ( $Config{'format'} eq "xml" ) {
+      &output( $index_par, "/>\n", "line");
    } else {
       &output( $index_par, "################################################################## \n", "line");
    }
@@ -1401,11 +1430,11 @@ sub parselogs {
             $Command = " ( $Config{'pathtocat'} $FileText| " ;
             if ($ServiceData{$Service}{pre_ignore}) {
                if ($no_egrep) {
-                  die "No egrep executable found, which is required when\n" .
+                  die "No working grep -E found, which is required when\n" .
                       "using the Pre_Ignore variable in configuration \n" .
                       "file ${Service}.conf\n";
                } else {
-                  $Command .= "egrep -v \"$ServiceData{$Service}{pre_ignore}\" | ";
+                  $Command .= "grep -E -v \"$ServiceData{$Service}{pre_ignore}\" | ";
                }
             }
             if ($HostStrip ne " ") {
@@ -1422,6 +1451,7 @@ sub parselogs {
          open (TESTFILE,$Command . " |");
          my $ThisLine;
          my $has_output = 0;
+         my $serviceKnowsXML = 0;
          LINE: while (defined ($ThisLine = <TESTFILE>)) {
             next LINE if ((not $printing) and $ThisLine =~ /^\s*$/);
             IGNORE: for my $ignore_filter (@IGNORE) {
@@ -1444,11 +1474,22 @@ sub parselogs {
                if ( $Config{'format'} eq "html" ) {
                #BODY <!-- SERVICE START -->
                    #&output( $index_par, "\n <h2>$ServiceData{$Service}{'title'}</h2>\n", "header");
+               } elsif ( $Config{'format'} eq "xml" ) {
+                   &output( $index_par, "\n<ServiceData title=\'$ServiceData{$Service}{'title'}\'"
+                      . ($ENV{'LOGWATCH_GLOBAL_DETAIL'} == $ENV{'LOGWATCH_DETAIL_LEVEL'} ? "" : " detail=\'$ENV{'LOGWATCH_DETAIL_LEVEL'}\'")
+                      . ">\n", "line");
+                   if ($ThisLine =~ /^<\?xml\s.*\?>\s*$/) {
+                      $serviceKnowsXML = 1;
+                      $ThisLine = ""; # gobble up the PROLOG
+                   } else {
+                      &output( $index_par, "<![CDATA[", "line");
+                   }
                } else {
                    &output( $index_par, "\n --------------------- $ServiceData{$Service}{'title'} $BeginVar ------------------------ \n\n", "line");
                }
                $has_output = 1;
             }
+            $ThisLine =~ s/]]>/]]]]><![CDATA[>/g if $Config{'format'} eq "xml" and $serviceKnowsXML == 0;
             &output( $index_par, $ThisLine, "line");
          }
          close (TESTFILE);
@@ -1457,6 +1498,14 @@ sub parselogs {
             if ( $Config{'format'} eq "html" ) {
                 if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) {  &output( $index_par, "\n $Ignored Ignored Lines\n", "header"); };
                 #&output( $index_par,  "\n <h3><font color=\"blue\">$ServiceData{$Service}{'title'} End </font></h3>\n", "header");
+            } elsif ( $Config{'format'} eq "xml" ) {
+                if ($serviceKnowsXML == 0) {
+                   &output( $index_par,  "]]>\n", "line");
+                }
+                if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) {
+                   &output( $index_par, "<IgnoredLines count='$Ignored' />\n", "line");
+                }
+                &output( $index_par,  "</ServiceData>\n", "line");
             } else {
                 if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) { &output( $index_par, "\n $Ignored Ignored Lines\n", "line"); };
                 &output( $index_par,  "\n ---------------------- $ServiceData{$Service}{'title'} End ------------------------- \n\n", "line");
@@ -1508,6 +1557,9 @@ sub parselogs {
       $index_par++;
       &output( $index_par,  "Logwatch Ended at " . localtime(time) , "start" );
       &output( $index_par, "\n", "stop");
+   } elsif ( $Config{'format'} eq "xml" ) {
+      &output( $index_par, "<ReportEpilog endTime='".strftime("%Y-%m-%dT%H:%M:%S%z",localtime(time))."' />\n", "line");
+      &output( $index_par, "</LOGWATCH>", "line");
    } else {
       &output( $index_par, $report_finish, "line") if ($printing);
    }
@@ -1583,6 +1635,8 @@ sub output {
    if ( $type eq "header" ) {
 	   if ( $Config{'format'} eq "text" ) {
 	      $out_body{$index} .= "$text \n";
+	  } elsif ( $Config{'format'} eq "xml" ) {
+	      $out_body{$index} .= "$text \n";
       } elsif ( $Config{'format'} eq "html" ) {
          #Covert spaces
          $text =~ s/  / \&nbsp;/go;
@@ -1620,6 +1674,8 @@ sub output {
          } else {
             $out_body{$index} .= "  <tr>\n    <th align=left>$text</th>\n  </tr>\n";
          }
+      } elsif ( $Config{'format'} eq "xml" ) {
+         $out_body{$index} .= "$text";
       } else { #fixme formatted?
 	      if ( length($text) > $format[0] ) {
 	         $out_body{$index} .=

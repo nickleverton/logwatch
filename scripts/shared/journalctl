@@ -15,18 +15,36 @@
 ########################################################
 #
 # The purpose of this script is to pass the output of the journalctl
-# command to the logwatch parsers.  The corresponding conf/logfile 
-# can be simple.  The following example shows a logfile with two lines:
+# command to the logwatch parsers.  The corresponding service file
+# in conf/services/ can be simple.  The following example shows a
+# service configuration file with two lines:
 #   LogFile = none
-#   *JournalCtl = "--output=cat --unit=service_name.service"
-# or when combining journals from multiple sources (additional
-# processing is needed in this case):
+#   *JournalCtl = "--unit=service_name.service"
+# or when combining journals from multiple sources:
 #   *JournalCtl = "--merge --no-pager --unit=service_name.service"
 #
-# In the example above, the arguments to the JournalCtl command are
+# If the *JournalCtl command is called from a logfile configuration
+# file (in directory conf/logfiles) rather than the service
+# configuration file (in directory conf/services), then the
+# following is needed in the logfile configuration file:
+#   LogFile =
+#   LogFile = /dev/null
+#   *JournalCtl = "--no-pager --unit=service_name.service"
+#
+# In addition to the examples above that use --unit, additional
+# field values may be needed.  Both "man journalctl" and
+# "man systemd.journal-fields" describe additional options and
+# fields that may be required.  For example, --facility, --priority,
+# --identifier, and _TRANSPORT may need to be specified.
+#
+# To strip the output of journalctl of additional output, including
+# timestamps, the option "--output cat" can be used.  Otherwise,
+# additional commands in logwatch (such as "*ApplyStdDate" or
+# "*RemoveHeaders", for example) may be needed.
+#
+# In the examples above, the arguments to the JournalCtl command are
 # passed to the journalctl system command.  It is advised to delimit
-# the arguments in double quotes to preserve mixed case, if
-# applicable.
+# the arguments in double quotes to preserve mixed case.
 
 use strict;
 use warnings;

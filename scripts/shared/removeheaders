@@ -22,6 +22,11 @@ use strict;
 my $RemovePattern = $ARGV[0] || '^... .. ..:..:.. [^ ]* [^\[:]*(?:\[\d*\])?: (?:\[\d+\.\d+\] )?';
 
 while (defined(my $ThisLine = <STDIN>)) {
+    # remove verbose syslog-style <facility.severity> patterns (FreeBSD's syslogd -v -v)
+    # these <facility.severity> patterns need to be removed *before* all other tests!
+    if ($ThisLine =~ m/^... .. ..:..:..[ ]* \<[a-z0-9]*\.[a-z]*\> /io) {
+       $ThisLine =~ s/(\<[a-z0-9]*\.[a-z]*\>){1} //;
+    }
     # remove standard syslog-style header or configurable pattern
     $ThisLine =~ s/$RemovePattern//;
     #First line is Solaris ID tag style -mgt

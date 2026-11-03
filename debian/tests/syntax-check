@@ -1,0 +1,16 @@
+#!/bin/bash
+
+################################
+### Check perl syntax status ###
+################################
+
+set -e
+
+SHAREDIR="/usr/share/logwatch"
+
+echo "Checking script's perl syntax"
+
+while IFS= read -r f
+do
+  PERL5LIB="${SHAREDIR}"/lib perl -c "${f}"
+done < <(grep -Erl "\#\!.*perl" "${SHAREDIR}"/scripts/)

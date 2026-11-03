@@ -9,14 +9,6 @@
 
 ########################################################
 
-# This script prints out information about the CPU(s) and physical memory.
-# It obtains the information from the Sys::CPU and Sys::MemInfo perl modules,
-# so these must be installed.
-
-# Note that the number of CPUs is not the number of physical CPU chips;
-# CPUs with Hyperthreading or multiple cores affect the number of CPUs
-# displayed.
-
 #######################################################
 ## Copyright (c) 2008 Laurent Dufour
 ## Covered under the included MIT/X-Consortium License:
@@ -34,33 +26,45 @@
 #########################################################
 use strict;
 
-eval "require Sys::CPU";
-if ($@) {
-   print STDERR "No Sys::CPU module installed.  To install, execute the command:\n";
-   print STDERR "   perl -MCPAN -e 'install Sys::CPU' \n\n";
-} else {
-   import Sys::CPU;
-   print "   CPU:     " . Sys::CPU::cpu_count() . " " . Sys::CPU::cpu_type() . " at " . Sys::CPU::cpu_clock() . "MHz\n";
-}
-
 use POSIX qw(uname);
+
+my %CPUModel;
+my $Model;
+
 my ($OSname, $hostname, $release, $version, $machine) = POSIX::uname();
 print "   Machine: $machine\n";
 my $OStitle;
 $OStitle = $OSname;
 $OStitle = "Solaris" if ($OSname eq "SunOS" && $release >= 2);
-print "   Release: $OStitle $release\n";
+print ("   Release: $OStitle $release\n");
 
-eval "require Sys::MemInfo";
-if ($@) {
-   print STDERR "No Sys::MemInfo module installed.  To install, execute the command:\n";
-   print STDERR "   perl -MCPAN -e 'install Sys::MemInfo' \n\n";
-} else {
-   import Sys::MemInfo qw(totalmem freemem totalswap freeswap);
-   my $swapused = &totalswap - &freeswap;
-   printf "   Total Memory:  %6d MB\n", ((&totalmem - (&totalmem % (1024*1024))) / (1024*1024));
-   printf "   Free Memory:   %6d MB\n", ((&freemem - (&freemem % (1024*1024))) / (1024*1024));
-   printf "   Swap Used:     %6d MB\n", (($swapused - ($swapused % (1024*1024))) / (1024*1024));
+if (open FH, '<', '/proc/cpuinfo') {
+   while (<FH>) {
+      if (($Model) = $_ =~ /^model name\s*: (.*)$/) {
+         $CPUModel{$Model}++;
+      }
+   }
+   close(FH);
+}
+
+if (keys %CPUModel) {
+   print ("\n   CPU Model(s):");
+   foreach my $cpu (keys %CPUModel) {
+      print ("\n      CPU Model: $cpu: $CPUModel{$cpu} processors");
+   }
+}
+print ("\n\n");
+
+if (open FH, '<', '/proc/meminfo') {
+   while (my $ThisLine = <FH>) {
+      if ($ThisLine =~ /^(Mem|Swap)(Total|Free)/) {
+         chomp ($ThisLine);
+         print ("   " . $ThisLine);
+         my @fields = split(' ', $ThisLine);
+         printf (" (%.2f GB)\n", @fields[1]/(1024*1024));
+      }
+   }
+   close(FH);
 }
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et

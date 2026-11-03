@@ -49,7 +49,7 @@ my $PreviousLine = '';
 
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   
+
    if ($ThisLine =~ /^Listening for new connections again$/
        or $ThisLine =~ /^Beginning export of /
        or $ThisLine =~ /^Export finished/
@@ -64,8 +64,11 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^WARN - Security Initialization - SSL alert: Sending pin request to SVRCore. You may need to run systemd-tty-ask-password-agent to provide the password/
        # Will not be a warning in future versions
        or $ThisLine =~ /^WARN - content-sync-plugin - sync_update_persist_betxn_pre_op - DB retried operation targets .* => op not changed in PL/
-       or $ThisLine =~ /^ERR - NSACLPlugin - acl_parse - The ACL target .* does not exist/
+       # Have to get parsed at startup
+       or $ThisLine =~ /NSACLPlugin - acl_parse - The ACL target .* does not exist/
        or $ThisLine =~ /^ERR - cos-plugin - cos_dn_defs_cb - Skipping CoS Definition .*no CoS Templates found, which should be added before the CoS Definition/
+       # Informational that needs to be at ERR level for startup
+       or $ThisLine =~ /^ERR - schema-compat-plugin - (?:Finished plugin initialization|.*schema-compat-plugin tree scan|warning: no entries set up under)/
       ) {
       #Ignore
    } elsif ($ThisLine =~ /^ERR - /
